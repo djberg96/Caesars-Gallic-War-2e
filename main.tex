@@ -1,0 +1,57 @@
+\documentclass[11pt,twocolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[letterpaper,margin=0.5in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{tgbonum}
+\usepackage{csquotes}
+
+\AtBeginEnvironment{quote}{\itshape}
+
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\renewcommand\mkcitation[1]{ - #1 }
+\renewcommand\mkblockquote[4]{\enquote{#1#2#3}\par\hfill#4}
+
+\usepackage[compact]{titlesec}
+\titlespacing{\section}{0pt}{2ex}{1ex}
+\titlespacing{\subsection}{0pt}{1ex}{0ex}
+\titlespacing{\subsubsection}{0pt}{0.5ex}{0ex}
+\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection}{0.5em}{}
+
+\usepackage[]{hyperref}
+\hypersetup{
+  bookmarksnumbered=true,     
+  bookmarksopen=true,         
+  bookmarksopenlevel=1,       
+  colorlinks=true,            
+  pdfstartview=Fit,           
+  pdfpagemode=UseOutlines,
+  pdfpagelayout=TwoPageRight
+}
+
+\title{Caesar's Gallic War, 2nd Edition}
+\author{Daniel Berger}
+
+\frenchspacing
+\setlength{\parskip}{0.8em}
+\setlength{\columnsep}{2em}
+\setlength{\parindent}{1em}
+
+\begin{document}
+\maketitle
+\input{introduction.tex}
+\input{components.tex}
+\input{game_setup.tex}
+\input{sequence_of_play.tex}
+\input{card_phase.tex}
+\input{battle.tex}
+\input{end_of_turn.tex}
+\input{leaders.tex}
+\input{victory_conditions.tex}
+\input{yearly_objectives.tex}
+\input{optional_rules.tex}
+\input{quotes.tex}
+\end{document}
