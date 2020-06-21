@@ -2,15 +2,15 @@
 
 If you wish to play this game solitaire, then you will play as the Romans and attempt to match Caesar's historical accomplishments. Some changes to setup apply, as well as special rules that will govern how the Barbarian "bot" behaves.
 
-Since you are playing solitaire, you may play with your units face up if you wish. However, to avoid potentially confusing your own units with enemy controlled units, all bot units should remain hidden and pointed away from you until the area is activated for movement and potential attacks.
+Since you are playing solitaire, you may play with your units face up if you wish. However, to avoid potentially confusing your own units with other units, all enemy units should remain hidden and pointed away from you until the area is activated for movement and potential attacks.
 
-In some cases you will roll on the Random Tribe Selection table. However, in others the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units. For example, you could assign each area a range of values and roll a die to see which area was selected.
+In some cases you will roll on the Random Tribe Selection table. However, in others the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units.
 
 \textit{For example, for the Massive Revolt event, the second tribe selected must be an adjacent area which is randomly determined based on the results of the first roll. If there were three adjacent areas that were all viable options, then you could assign 1-2 to one, 3-4 to another, and 5-6 to another. Then roll 1d6 to determine which one is actually selected.}
 
 SETUP
 
-Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules.
+Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. You will play first.
 
 CARD ACTION PHASE
 
@@ -26,7 +26,9 @@ After you play your card and complete your action, draw a card from the top of t
 
   \item POLITICAL ACTION
   
-  If the card revealed is a neutral area, but the bot has already activated 2 neutral areas (or there aren't any neutral areas), then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action, using the -1 bonus for the card matching the area. If successful, the tribes in that area are now controlled by the bot.
+  If the card revealed is a neutral area, but the bot has already activated 2 neutral areas (or there aren't any neutral areas), then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules at \ref{political_action}.
+  
+  \textbf{Exception:} If the card revealed is the Helvetii/Namnetes area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Namnetes if the Helvetii have been eliminated.
 
   \item UNSUBJUGATION
   
@@ -66,7 +68,7 @@ After you play your card and complete your action, draw a card from the top of t
   \begin{enumerate}[leftmargin=0in]
     \item If the card revealed is a Baggage Train, then treat it the same as if Germania had been activated as per \ref{solitaire:germania}.
     
-    \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot.
+    \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot, eliminated, or subjugated.
   
     \item If the card revealed is a Major Revolt, then roll a die. On a 2 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select one tribe randomly using the Random Tribe Selection table. Continue to re-roll if a tribe is already controlled by the bot or occupied an enemy unit. Then randomly select a second, adjacent and tribal area that is not occupied by an enemy unit. Both areas are now controlled by the bot.
   
@@ -81,12 +83,21 @@ After you play your card and complete your action, draw a card from the top of t
     \end{itemize}
   \end{enumerate}
   
+  \item REGROUPING
+  \begin{itemize}
+    \item All bot controlled units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot.
+    
+    \item If the bot attacked from an area where not all of that area's tribes were controlled by the bot, e.g. the was conquered earlier in the turn, and it successfully conquers another adjacent area, then one unit will regroup back to that area after combat.
+    
+    \item In short, the bot will try to conquer and hold as much territory as possible so that the tribes it attacks come under its control at the end of the turn.
+  \end{itemize}
+  
   \item DEFENSE AND RETREAT
   \begin{itemize}
-    \item Barbarian units in their home area will fight to the death, except German units in Germania, which might strategically withdraw.
+    \item Barbarian units in their home area will fight to the death, except German units in Germania, which might strategically withdraw (see below).
     \item At the start of a battle round, if the total strength of the attacker is at least 2-1, the defending Barbarian units will, as their first action, retreat to an adjacent barbarian controlled area if possible.
     
-    \textbf{Exception:} Barbarian units in their home area will remain and retreat into a fortress, if present.
+    \textbf{Exception:} Barbarian units outnumbered 2-1 or more in their home area will retreat into a fortress if a fortress exists in that area.
     
     \textbf{Exception:} German units in Germania will strategically withdraw at the start of each battle round (before any dice are rolled) if the attacking units have a 2-1 or greater advantage. This supersedes the normal rule that they only have one chance to withdraw before battle begins.
     \item Barbarian units that can retreat will retreat to an area with a Barbarian leader first, if possible. If there is no Barbarian leader, but more than one possible retreat option, then select the retreat location randomly.
