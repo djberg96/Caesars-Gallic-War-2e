@@ -26,7 +26,9 @@ After you play your card and complete your action, draw a card from the top of t
 
   \item POLITICAL ACTION
   
-  If the card revealed is a neutral area, but the bot has already activated 2 neutral areas (or there aren't any neutral areas), then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules at \ref{political_action}.
+  If the card revealed is a neutral area but the bot has already activated 2 neutral areas (or there aren't any neutral areas), or the area is Roman controlled, then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules at \ref{political_action}, except that a natural "1" is always considered successful.
+  
+  If the card revealed is a Roman controlled area, but all of tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
   
   \textbf{Exception:} If the card revealed is the Helvetii/Namnetes area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Namnetes if the Helvetii have been eliminated.
 
@@ -58,6 +60,8 @@ After you play your card and complete your action, draw a card from the top of t
     \item If the Germans do not have at least two blocks of 2 or more strength anywhere on the board then treat the card as a modified Baggage Train instead, increasing the strength of all units German units by one.
 
     \item If there are no adjacent Roman controlled or neutral units with only one or two blocks, then use the card for a political action instead. Randomly determine the target, re-rolling until you find an tribal home area that is either neutral or enemy controlled.
+    
+    \item When taking losses, bot controlled units not in their home area will take losses prior to units in their home area when they are the same strength. If there are multiple bot controlled barbarian units that could take a point of damage, randomly determine which unit takes the damage.
   \end{enumerate}
   
   If Ariovistus is part of an attacking force, then attempt to use his special ability before battle if possible.
