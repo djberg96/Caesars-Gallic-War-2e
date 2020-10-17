@@ -4,7 +4,7 @@ If you wish to play this game solitaire, then you will play as the Romans and at
 
 Since you are playing solitaire, you may play with your units face up if you wish. However, to avoid potentially confusing your own units with other units, all enemy units should remain hidden and pointed away from you until the area is activated for movement and potential attacks.
 
-In some cases you will roll on the Random Tribe Selection table. However, in others the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units.
+In most cases you will roll on the Random Tribe Selection table. However, in other cases the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units.
 
 \textit{For example, for the Massive Revolt event, the second tribe selected must be an adjacent area which is randomly determined based on the results of the first roll. If there were three adjacent areas that were all viable options, then you could assign 1-2 to one, 3-4 to another, and 5-6 to another. Then roll 1d6 to determine which one is actually selected.}
 
@@ -22,7 +22,7 @@ After you play your card and complete your action, draw a card from the top of t
 \begin{enumerate}
   \item NEUTRAL TRIBE ACTIVATION
 
-  If the card revealed is a neutral area, and the bot has not yet activated 2 neutral areas yet, then treat it as a neutral tribe activation. The tribes in the area on the card are now controlled by the bot.
+  If the card revealed is a neutral area, and the bot has not yet activated 2 neutral areas, then treat it as a neutral tribe activation. The tribes in the area on the card are now controlled by the bot.
 
   \item POLITICAL ACTION
   
@@ -45,7 +45,7 @@ After you play your card and complete your action, draw a card from the top of t
   \item MOVEMENT AND ATTACK
 
   \begin{enumerate}[leftmargin=0in]
-    \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the Barbarian bot, then that area is activated for movement. All tribes in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
+    \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All tribes in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
     
     If there is more than one, then select one randomly. Roman controlled areas should be prioritized over neutral areas. If there are none then skip to 4e.
 
@@ -57,7 +57,7 @@ After you play your card and complete your action, draw a card from the top of t
 
     \item If there are no adjacent areas with only one block, and the activated area contains at least two blocks, then instead they will attack an adjacent target area that contains only two blocks. Again, determine one randomly if there is more than one.
     
-    \item If the Germans do not have at least two blocks of 2 or more strength anywhere on the board then treat the card as a modified Baggage Train instead, increasing the strength of all units German units by one.
+    \item If the Germans do not have at least two blocks of 2 or more strength anywhere on the board then treat the card as a modified Baggage Train instead, increasing the strength of all German units in Germania by one.
 
     \item If there are no adjacent Roman controlled or neutral units with only one or two blocks, then use the card for a political action instead. Randomly determine the target, re-rolling until you find an tribal home area that is either neutral or enemy controlled.
     
@@ -72,7 +72,7 @@ After you play your card and complete your action, draw a card from the top of t
   \begin{enumerate}[leftmargin=0in]
     \item If the card revealed is a Baggage Train, then treat it the same as if Germania had been activated as per \ref{solitaire:germania}.
     
-    \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot, eliminated, or subjugated.
+    \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot, eliminated, or subjugated. Then, activate that tribe as per \ref{solitaire:tribal}.
   
     \item If the card revealed is a Major Revolt, then roll a die. On a 2 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select one tribe randomly using the Random Tribe Selection table. Continue to re-roll if a tribe is already controlled by the bot or occupied an enemy unit. Then randomly select a second, adjacent and tribal area that is not occupied by an enemy unit. Both areas are now controlled by the bot.
   
@@ -89,9 +89,9 @@ After you play your card and complete your action, draw a card from the top of t
   
   \item REGROUPING
   \begin{itemize}
-    \item All bot controlled units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot.
+    \item All bot units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot.
     
-    \item If the bot attacked from an area where not all of that area's tribes were controlled by the bot, e.g. the was conquered earlier in the turn, and it successfully conquers another adjacent area, then one unit will regroup back to that area after combat.
+    \item If the bot attacked from an area where not all of that area's tribes are controlled by the bot, i.e. the area was conquered earlier in the turn, and it successfully conquers another adjacent area, then one unit will regroup back to that area after combat.
     
     \item In short, the bot will try to conquer and hold as much territory as possible so that the tribes it attacks come under its control at the end of the turn.
   \end{itemize}
