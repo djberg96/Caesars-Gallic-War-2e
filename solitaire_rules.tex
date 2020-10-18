@@ -4,13 +4,13 @@ If you wish to play this game solitaire, then you will play as the Romans and at
 
 Since you are playing solitaire, you may play with your units face up if you wish. However, to avoid potentially confusing your own units with other units, all enemy units should remain hidden and pointed away from you until the area is activated for movement and potential attacks.
 
-In most cases you will roll on the Random Tribe Selection table. However, in other cases the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units.
+In most cases you will roll on the Random Tribe Selection table when asked to randomly select an area. However, in other cases the instructions will simply state that you should "randomly determine" one or more areas. If this is the case then you must devise a reasonable way to randomly select from multiple areas or units.
 
 \textit{For example, for the Massive Revolt event, the second tribe selected must be an adjacent area which is randomly determined based on the results of the first roll. If there were three adjacent areas that were all viable options, then you could assign 1-2 to one, 3-4 to another, and 5-6 to another. Then roll 1d6 to determine which one is actually selected.}
 
 SETUP
 
-Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. You will play first.
+Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. In the solitaire version cards are not played simultaneously, but one at a time. You will play a card and then, after resolving any battles, you reveal the top card from the deck for the bot. You will play first on every turn. 
 
 CARD ACTION PHASE
 
@@ -28,7 +28,9 @@ After you play your card and complete your action, draw a card from the top of t
   
   If the card revealed is a neutral area but the bot has already activated 2 neutral areas (or there aren't any neutral areas), or the area is Roman controlled, then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules at \ref{political_action}, except that a natural "1" is always considered successful.
   
-  If the card revealed is a Roman controlled area, but all of tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
+  If the card revealed is a Roman controlled area, but all tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
+  
+  If the card revealed is a Barbarian controlled area, but all tribes of that area were eliminated earlier in the turn, then use the Random Tribe Selection table for the target of a political action. Re-roll if the result happens to match the current card.
   
   \textbf{Exception:} If the card revealed is the Helvetii/Namnetes area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Namnetes if the Helvetii have been eliminated.
 
