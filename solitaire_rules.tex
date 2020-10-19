@@ -10,7 +10,7 @@ In most cases you will roll on the Random Tribe Selection table when asked to ra
 
 SETUP
 
-Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. In the solitaire version cards are not played simultaneously, but one at a time. You will play a card and then, after resolving any battles, you reveal the top card from the deck for the bot. You will play first on every turn. 
+Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. In the solitaire version cards are not played simultaneously, but one at a time. You will play a card and then, after resolving any battles, you reveal the top card from the deck for the bot. You will play first on every turn.
 
 CARD ACTION PHASE
 
@@ -98,6 +98,20 @@ After you play your card and complete your action, draw a card from the top of t
     \item In short, the bot will try to conquer and hold as much territory as possible so that the tribes it attacks come under its control at the end of the turn.
   \end{itemize}
   
+  \item REINFORCEMENT
+  
+  Because card play is not simultaneous in solitaire mode, the normal reinforcement rules do not apply. Instead, both you and the bot may potentially move to reinforce an area in response to an attack.
+  
+  \begin{itemize}
+    \item You, the Roman player, may move up to two Roman legions (only) from the same area to reinforce an adjacent friendly controlled area that is under attack. It costs 1 supply point per legion that reacts. Normal pinning restrictions apply, i.e. you cannot leave if your units are pinned.
+    
+    \item The bot will reinforce a bot controlled area with up to two friendly Gallic or German units that are adjacent and not themselves under attack, unless the original defending units are outnumbered by 3-1 or more.
+    
+    \item If there is more than one area from which the bot could defend, then randomly determine which area the reinforcements come from. If there happen to be more than two blocks in that area, then randomly determin which two reinforce the battle while leaving the others behind.
+    
+    \item Neither you nor the bot can reinforce an area that was neutral immediately prior to being attacked.
+  \end{itemize}
+  
   \item DEFENSE AND RETREAT
   \begin{itemize}
     \item Barbarian units in their home area will fight to the death, except German units in Germania, which might strategically withdraw (see below).
@@ -108,6 +122,14 @@ After you play your card and complete your action, draw a card from the top of t
     \textbf{Exception:} German units in Germania will strategically withdraw at the start of each battle round (before any dice are rolled) if the attacking units have a 2-1 or greater advantage. This supersedes the normal rule that they only have one chance to withdraw before battle begins.
     \item Barbarian units that can retreat will retreat to an area with a Barbarian leader first, if possible. If there is no Barbarian leader, but more than one possible retreat option, then select the retreat location randomly.
     \item If the total strength of the attacking units is less than 2-1, then all Barbarian units will fight, outside a fortress if present.
+  \end{itemize}
+  
+  \item END OF TURN
+  \begin{itemize}
+    \item German and Gallic units controlled by the bot always take replacements if possible.
+    \item If there was a poor harvest, or if Ariovistus wintered outside of Germania on the previous turn, then Ariovistus and all German units outside of Germania return home.
+    
+    Otherwise, roll a die. On a 1-3 Ariovistus and any German units with him remain in their current area for the winter. Otherwise they return to Germania.
   \end{itemize}
 \end{enumerate}
 
