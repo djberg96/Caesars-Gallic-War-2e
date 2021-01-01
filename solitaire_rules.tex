@@ -95,11 +95,13 @@ After you play your card and complete your action, draw a card from the top of t
   \begin{itemize}
     \item You, the Roman player, may move up to two Roman legions (only) from the same area to reinforce an adjacent friendly controlled area that is under attack. It costs 1 supply point per legion that reacts. Normal pinning restrictions apply, i.e. you cannot leave if your units are pinned.
     
-    \item The bot will potentially reinforce a bot controlled area with up to two friendly Gallic or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 3-1 strength or more. Otherwise, roll a die. On a 1-4 the bot attempts to reinforce the area. On a 5-6 it does not respond.
+    \item The bot will potentially reinforce a bot controlled area with up to two friendly Gallic and/or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 3-1 strength or more. Otherwise, roll a die. On a 1-4 the bot attempts to reinforce the area. On a 5-6 it does not respond.
     
-    \item If there is more than one area from which the bot could reinforce, then randomly determine which area the reinforcements come from. If there happen to be more than two blocks in that area, then randomly determine which two reinforce the battle while leaving the others behind.
+    \item If there is more than one area from which the bot could reinforce, then randomly determine which area the reinforcements come from.
     
-    \item If there is more than one are under attack, then randomly determine reinforcement for each area. You may choose the order in which these are resolved. 
+    \item If there happen to be more than two blocks in the reinforcing area, then randomly determine which two units reinforce the battle while leaving the others behind, except that German units should be prioritized over Gallic units if the area being reinforced also contains a German unit.
+    
+    \item If there is more than one are under attack, then randomly determine reinforcement for each area. You may choose the order in which these are resolved.
     
     \item Neither you nor the bot can reinforce an area that was neutral immediately prior to being attacked.
   \end{itemize}
