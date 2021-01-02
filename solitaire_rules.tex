@@ -10,7 +10,7 @@ In most cases you will roll on the Random Tribe Selection table when asked to ra
 
 SETUP
 
-Deal 5 cards only to yourself, the Roman player, at the start of each turn as per the two player rules. In the solitaire version cards are not played simultaneously, but one at a time. You will play a card and then, after resolving any battles, you reveal the top card from the deck for the bot. You will play first on every turn.
+Deal cards only to yourself, the Roman player, at the start of each turn as per the two player rules. In the solitaire version cards are not played simultaneously, but one at a time. You will play a card and then, after resolving any battles, you reveal the top card from the deck for the bot. You will play first on every turn.
 
 CARD ACTION PHASE
 
@@ -37,9 +37,11 @@ After you play your card and complete your action, draw a card from the top of t
   \item MOVEMENT AND ATTACK
 
   \begin{enumerate}[leftmargin=0in]
-    \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All tribes in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
+    \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All bot controlled units in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
     
     If there is more than one, then select one randomly. Roman controlled areas should be prioritized over neutral areas. If there are none then skip to 4e.
+    
+    If there aren't any Roman controlled or neutral areas adjacent, then activate the Germans instead as per \ref{solitaire:germania}.
 
     \item \label{solitaire:germania}If the card revealed is the Germania card, then the German units in Germania will attack two different adjacent areas with two blocks each if possible, with the composition of the two attacking groups determined randomly. Only German blocks with two or more strength are selected. The rest remain in place.
 
@@ -66,7 +68,7 @@ After you play your card and complete your action, draw a card from the top of t
     
     \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot, or was eliminated. Then, activate that tribe as per \ref{solitaire:tribal}.
   
-    \item If the card revealed is a Major Revolt, then roll a die. On a 2 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select one tribe randomly using the Random Tribe Selection table. Continue to re-roll if a tribe is already controlled by the bot or occupied an enemy unit. Then randomly select a second, adjacent and tribal area that is not occupied by an enemy unit. Both areas are now controlled by the bot.
+    \item If the card revealed is a Major Revolt, then roll a die. On a 2 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select one tribe randomly using the Random Tribe Selection table. Continue to re-roll if a tribe is already controlled by the bot or occupied an enemy unit. Then randomly select a second, adjacent tribal area that is not occupied by an enemy unit if possible. Both areas are now controlled by the bot.
   
     In addition, add one minor leader to the first tribal area that was selected: Dumnorix in a Celtae area or Ambiorix in a Belgic area. Treat that area as that leader's home area.
   
@@ -104,6 +106,12 @@ After you play your card and complete your action, draw a card from the top of t
     \item If there is more than one are under attack, then randomly determine reinforcement for each area. You may choose the order in which these are resolved.
     
     \item Neither you nor the bot can reinforce an area that was neutral immediately prior to being attacked.
+  \end{itemize}
+  
+  \item ATTACK AND RETREAT
+  \begin{itemize}
+    \item Attacking barbarian units will retreat instead of firing in a field battle if, at the start of a battle round, the strength of the defending units is greater than their own.
+    \item Attacking barbarian units will retreat instead of firing in a siege if, at the start of a battle round, the strength of the defending units is equal to or greater than their own.
   \end{itemize}
   
   \item DEFENSE AND RETREAT
