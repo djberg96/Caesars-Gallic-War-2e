@@ -26,7 +26,7 @@ After you play your card and complete your action, draw a card from the top of t
 
   \item POLITICAL ACTION
   
-  If the card revealed is a neutral area but the bot has already activated 2 neutral areas (or there aren't any neutral areas), or the area is Roman controlled, then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules at \ref{political_action}, except that a natural "1" is always considered successful.
+  If the card revealed is a neutral area but the bot has already activated 2 neutral areas (or there aren't any neutral areas), or the area is Roman controlled, then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules, except that a natural "1" is always considered successful.
   
   If the card revealed is a Roman controlled area, but all tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
   
@@ -81,9 +81,14 @@ After you play your card and complete your action, draw a card from the top of t
     \item If the card reveals is a Massive Revolt, then the behavior is dependent on the turn.
     \begin{itemize}
       \item If it is 54 BC or earlier (i.e. turns 1-5), then treat the card as a Minor Revolt.
-      \item If it is 53 BC or later (turn 6 or later), then randomly select one area using the Random Tribe Selection table, and place Vercingetorix in that area and treat it as his home area. After the first area is selected, randomly select 2 adjacent tribal areas to join the revolt.
+      \item \label{:solitaire:massive_revolt}If it is 53 BC or later (turn 6 or later), then randomly select one area using the Random Tribe Selection table, and place Vercingetorix in that area and treat it as his home area. After the first area is selected, randomly select 2 adjacent tribal areas to join the revolt.
     \end{itemize}
   \end{enumerate}
+  
+  \item MASSIVE REVOLT
+  If, at the start of turn 7 (52 BC) the Massive Revolt has not already been played as an event, then set it aside before reshuffling the deck and drawing cards.
+  
+  The normal play order this turn will be reversed, i.e. the bot will play the first card, then you, and so on. The first card played by the bot will be the Massive Revolt. Resolve it as per \ref{:solitaire:massive_revolt}.
   
   \item REGROUPING
   \begin{itemize}
@@ -128,6 +133,17 @@ After you play your card and complete your action, draw a card from the top of t
     \textbf{Exception:} German units in Germania will strategically withdraw at the start of each battle round (before any dice are rolled) if the attacking units have a 2-1 or greater advantage. This supersedes the normal rule that they only have one chance to withdraw before battle begins.
     \item Barbarian units that can retreat will retreat to an area with a Barbarian leader first, if possible. If there is no Barbarian leader, but more than one possible retreat option, then select the retreat location randomly.
     \item If the total strength of the attacking units is less than 2-1, then all Barbarian units will fight, outside a fortress if present.
+  \end{itemize}
+  
+  \item VERCINGETORIX
+  \begin{itemize}
+    \item If Vercingetorix is on the board, i.e. the Massive Event has occurred, then whenever Germania would normally be activated, roll a die. On a 1-3 Vercingetorix and all tribes in his area are activated instead.
+    
+    \item If the Romans have at least 1 supply point, and there has not already been a raid this turn, treat the card as a raid, and reduce the Roman supply by the value of the card as per the \textit{Supply Action} rules.
+    
+    \item If activated, Vercingetorix and as many units in his area as possible attack the nearest enemy (first priority) or neutral (second priority) location where he can muster at least equal strength.
+    
+    If the terrain prevents all units from attacking the same area, then any gallic units in their home area should be left behind first, randomly determined if necessary.
   \end{itemize}
   
   \item END OF TURN
