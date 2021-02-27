@@ -32,14 +32,16 @@ After you play your card and complete your action, draw a card from the top of t
   
   If the card revealed is a Barbarian controlled area, but all tribes of that area were eliminated earlier in the turn, then use the Random Tribe Selection table for the target of a political action. Re-roll if the result happens to match the current card.
   
-  \textbf{Exception:} If the card revealed is the Helvetii/Namnetes area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Namnetes if the Helvetii have been eliminated.
+  \textbf{Exception:} If the card revealed is the Helvetii/Nantuates area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Namnetes if the Helvetii have been eliminated.
 
   \item MOVEMENT AND ATTACK
 
   \begin{enumerate}[leftmargin=0in]
     \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All bot controlled units in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
     
-    If there is more than one, then select one randomly. Roman controlled areas should be prioritized over neutral areas. If there are none then skip to 4e.
+    If there is more than one, then select one randomly. Roman controlled areas should be prioritized over neutral areas.
+    
+    If there are no adjacent areas with only one block then skip to \ref{solitaire:attack_two}
     
     If there aren't any Roman controlled or neutral areas adjacent, then activate the Germans instead as per \ref{solitaire:germania}.
 
@@ -49,7 +51,7 @@ After you play your card and complete your action, draw a card from the top of t
     
     \item If the Germans do not have at least two units of 2 or more strength in Germania, but do have two or more units of 2 or more strength in a tribal area outside of Germania, then activate that area instead.
 
-    \item If there are no adjacent areas with only one block, and the activated area contains at least two blocks, then instead they will attack an adjacent target area that contains only two blocks. Again, determine one randomly if there is more than one.
+    \item \label{solitaire:attack_two}If there are no adjacent areas with only one block, and the activated area contains at least two blocks, then instead they will attack an adjacent target area that contains only two blocks. Again, determine one randomly if there is more than one.
     
     \item If the Germans do not have at least two blocks of 2 or more strength anywhere on the board then treat the card as a modified Baggage Train instead, increasing the strength of all German units in Germania by one.
 
