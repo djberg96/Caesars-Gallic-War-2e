@@ -32,7 +32,7 @@ After you play your card and complete your action, draw a card from the top of t
   
   If the card revealed is a Roman controlled area, but all tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
   
-  If the card revealed is a Barbarian controlled area, but all tribes of that area were eliminated earlier in the turn, then use the Random Tribe Selection table for the target of a political action. Re-roll if the result happens to match the current card.
+  If the card revealed is a Barbarian controlled area but all tribes of that area were eliminated earlier in the turn, or the Germania card and the Germans have been eliminated or left via Strategic Withdrawal, then use the Random Tribe Selection table for the target of a political action. Re-roll if the result happens to match the current card.
   
   \textbf{Exception:} If the card revealed is the Helvetii/Nantuates area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Nantutaes if the Helvetii have been eliminated.
   
@@ -140,6 +140,7 @@ After you play your card and complete your action, draw a card from the top of t
   \begin{itemize}
     \item Attacking barbarian units will retreat instead of firing in a field battle if, at the start of a battle round, the strength of the defending units is greater than their own.
     \item Attacking barbarian units will retreat instead of firing in a siege if, at the start of a battle round, the strength of the defending units is equal to or greater than their own.
+    \item If the bot is attacking more than one area, resolve the area with the most units attacking + reinforcing first. If there is a tie, resolve the order randomly.
   \end{itemize}
   
   \item DEFENSE AND RETREAT
