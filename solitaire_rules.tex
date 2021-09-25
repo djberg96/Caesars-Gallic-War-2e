@@ -70,11 +70,11 @@ If there is no minor leader on the board, then follow the instructions of the ma
     
     If there aren't any Roman controlled or neutral areas adjacent, then activate the Germans instead as per \ref{solitaire:germania}.
 
-    \item \label{solitaire:germania}If the card revealed is the Germania card, and all German units are in Germania, then the German units in Germania will attack two different adjacent areas with two blocks each if possible, with the composition of the two attacking groups determined randomly. Only German blocks with two or more strength are selected. The rest remain in place.
+    \item \label{solitaire:germania}If the card revealed is the Germania card (or Germania is activated by other means), and all German units are in Germania, then the German units in Germania will attack two different adjacent areas with two blocks each if possible, with the composition of the two attacking groups determined randomly. Only German blocks with two or more strength are selected. The rest remain in place.
 
     \item If the Germans have fewer than four blocks with at least two strength, then randomly select two blocks with at least two strength and only attack one adjacent area.
     
-    \item If the Germans do not have at least two units of 2 or more strength in Germania, but do have two or more units of 2 or more strength in a tribal area outside of Germania, then activate that area instead.
+    \item If the Germans do not have at least two units of 2 or more strength in Germania, but do have two or more units of 2 or more strength in a tribal area outside of Germania, then activate that area instead. If they have two units of 2 or more strength in two separate areas, then randomly choose one.
 
     \item \label{solitaire:attack_two}If there are no adjacent areas with only one block, and the activated area contains at least two blocks, then instead they will attack an adjacent target area that contains only two blocks. Again, determine one randomly if there is more than one.
     
@@ -132,9 +132,9 @@ The normal play order this turn (only) will be reversed, i.e. the bot will play 
   
 \label{solitaire:regrouping}REGROUPING
 
-All bot units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot.
+All bot units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot, as well as German units that attacked from Germania.
     
-If the bot attacked from an area where not all of that area's tribes are controlled by the bot, i.e. the area was conquered earlier in the turn, and it successfully conquers another adjacent area, then one unit will regroup back to that area after combat.
+If the bot attacked or reinforced from an area where not all of that area's tribes are controlled by the bot, i.e. the area was conquered earlier in the turn, and it successfully conquers another adjacent area, then one unit will regroup back to that area after combat. If there is more than one, select one randomly.
     
 In short, the bot will try to conquer and hold as much territory as possible so that the tribes it attacks come under its control at the end of the turn.
   
@@ -144,7 +144,9 @@ Because card play is not simultaneous in solitaire mode, the normal Reserves rul
   
 You, the Roman player, may move up to two Roman legions (only) from the same area to reinforce an adjacent friendly controlled area that is under attack. It costs 1 supply point per legion that reacts. Normal pinning restrictions apply, i.e. you cannot leave if your units are pinned.
     
-The bot will potentially reinforce a bot controlled area with up to two friendly Gallic and/or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 2-1 strength or more. Otherwise, roll a die. On a 1-4 the bot attempts to reinforce the area. On a 5-6 it does not respond.
+The bot will potentially reinforce a bot controlled area with up to two friendly Gallic and/or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 2-1 strength or more. Otherwise, roll a die. On a 1-3 the bot attempts to reinforce the area. On a 4-6 it does not respond.
+
+If a leader is present then substract 1 from the die roll.
 
 \begin{itemize}
   \item If there is more than one area from which the bot could reinforce, then randomly determine which area the reinforcements come from.
@@ -168,9 +170,9 @@ If the bot is attacking more than one area, resolve the area with the most units
 
 Barbarian units in their home area will fight to the death, except German units in Germania, which might strategically withdraw (see below).
 
-At the start of a battle round, if the total strength of the attacker is at least 2-1, the defending Barbarian units will, as their first action, retreat to an adjacent barbarian controlled area if possible. German unit will retreat into Germania if possible.
+At the start of a battle round, if the total strength of the attacker is at least 2-1, any defending Barbarian units not in their home area will, as their first action, retreat to an adjacent barbarian controlled area if possible. German unit will retreat into Germania if possible.
     
-\textbf{Exception:} Barbarian units outnumbered by 2-1 strength or more in their home area will retreat into a fortress if a fortress exists in that area.
+\textbf{Exception:} Barbarian units outnumbered by 2-1 strength or more in their home area will retreat into a fortress if a fortress exists in that area. If there is more than one, the strongest unit goes into the fortress. If they are the same strength, select one randomly.
     
 \textbf{Exception:} German units in Germania will strategically withdraw at the start of each battle round (before any dice are rolled) if the attacking units have a 2-1 or greater strength advantage. This supersedes the normal rule that they only have one chance to withdraw before battle begins.
 
@@ -190,7 +192,13 @@ If the Romans have at least 1 supply point, and there has not already been a rai
 If activated, Vercingetorix and as many units in his area as possible attack the nearest enemy (first priority) or neutral (second priority) location where he can muster at least equal strength.
     
 If the terrain prevents all units from attacking the same area, then any gallic units in their home area should be left behind first, randomly determined if necessary.
-  
+
+\label{solitaire:minor_leaders}MINOR LEADERS
+
+At the start of turn 5 if Dumnorix is not already on the board, prior to playing any cards, randomly select one neutral or Roman controlled area in Celtae. Place the Dumnorix unit there. That area is now his home area, and all tribes of that area are now controlled by the bot.
+
+At the start of turn 6 if Ambiorix is not already on the board, prior to playing any cards, randomly select one neutral or Roman controlled area in Belgica. Place the Ambiorix unit there. That area is now his home area, and all tribes of that area are now controlled by the bot.
+
 \label{solitaire:end_of_turn}END OF TURN
 
 German and Gallic units controlled by the bot always take replacements if possible.
@@ -198,12 +206,6 @@ German and Gallic units controlled by the bot always take replacements if possib
 If there was a poor harvest, or if Ariovistus wintered outside of Germania on the previous turn, then Ariovistus and all German units outside of Germania return home.
     
 If Ariovistus did not winter on the previous turn then roll a die. On a 1-3 Ariovistus and any German units with him remain in their current area for the winter. Otherwise they return to Germania.
-
-\label{solitaire:minor_leaders}MINOR LEADERS
-
-At the start of turn 5, prior to playing any cards, randomly select one neutral or Roman controlled area in Celtae. Place the Dumnorix unit there. That area is now his home area, and all tribes of that area are now controlled by the bot.
-
-At the start of turn 6, prior to playing any cards, randomly select one neutral or Roman controlled area in Belgica. Place the Ambiorix unit there. That area is now his home area, and all tribes of that area are now controlled by the bot.
 
 \begin{samepage}
 RANDOM TRIBE SELECTION
