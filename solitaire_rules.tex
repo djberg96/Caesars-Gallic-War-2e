@@ -119,7 +119,7 @@ Whenever the solitaire rules mention the term "adjacent", treat any area with a 
     \item If the card reveals is a Massive Revolt, then the behavior is dependent on the turn.
     \begin{itemize}
       \item If it is 54 BC or earlier (i.e. turns 1-5), then treat the card as a Major Revolt.
-      \item \label{:solitaire:massive_revolt}If it is 53 BC or later (turn 6 or later), then randomly select one neutral or Roman controlled area that contains a fort (except Aquae Sextae), and place Vercingetorix in that area and treat it as his home area.
+      \item \label{:solitaire:massive_revolt}If it is 53 BC or later (turn 6 or later), then randomly select one neutral or Roman controlled area using the Vercingetorix Home Area table and place Vercingetorix in that area, and mark it as his home area. Re-roll if the area is already controlled by the bot.
       
       After the first area is selected, randomly select 2 adjacent tribal areas to join the revolt. If possible, neutral or Roman controlled areas should be prioritized over areas already controlled by the bot.
       
@@ -150,7 +150,7 @@ You, the Roman player, may move up to two Roman legions (only) from the same are
     
 The bot will potentially reinforce a bot controlled area with up to two friendly Gallic and/or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 2-1 strength or more. Otherwise, roll a die. On a 1-3 the bot attempts to reinforce the area. On a 4-6 it does not respond.
 
-If a leader is present, either entering as a possible reinforcement or in the area already under attack, then substract 1 from the die roll.
+If a leader is present, either from a possible reinforcement area or in the area already under attack, then substract 1 from the reinforcement die roll.
 
 \begin{itemize}
   \item If there is more than one area from which the bot could reinforce, then randomly determine which area the reinforcements come from.
@@ -283,5 +283,19 @@ Once you have determined the region, roll 1d6 to determine the specific tribal a
 4: & Carnutes / Cenomani \\
 5: & Esuvii / Luxovii \\
 6: & Volcae \\
+\end{tabular}
+
+\begin{tabular}{l|l}
+\multicolumn{2}{l}{Vercingetorix Home Area (2d6):} \\
+\hline
+\noalign{\vskip 0.5em}
+2: & Carnutes \\
+3: & Cadurci \\
+4-5: & Bellovaci  \\
+6-7: & Arverni \\
+8-9: & Mandubii \\
+10: & Biturges \\
+11: & Sequani \\
+12: & Aedui \\
 \end{tabular}
 \end{samepage}
