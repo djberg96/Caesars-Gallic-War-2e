@@ -22,6 +22,18 @@
     />
 
     <text x="50" y="34">Elusates</text>
+    <ellipse
+      id="shield"
+      cx="50"
+      cy="50"
+      rx="8"
+      ry="11"
+      fill="rgb(160,125,80)"
+      stroke="black"
+      stroke-width="0.5"
+    />
+    <circle cx="50" cy="50" r="3" fill="darkgreen"/>
+    <line x1="50" y1="42" x2="50" y2="58" stroke="darkgreen"/>
     <text x="50" y="74" font-size="8">[Tarbelli]</text>
   </g>
 
