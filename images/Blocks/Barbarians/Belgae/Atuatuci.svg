@@ -32,8 +32,8 @@
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="50" r="3" fill="darkgreen"/>
-    <line x1="50" y1="42" x2="50" y2="58" stroke="darkgreen"/>
+    <circle cx="50" cy="50" r="3" fill="rgb(246,190,0)"/>
+    <line x1="50" y1="42" x2="50" y2="58" stroke="rgb(246,190,0)"/>
     <text x="50" y="74" font-size="8" fill="white">[Remi]</text>
   </g>
 
