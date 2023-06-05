@@ -68,7 +68,7 @@
 
   <g id="strength" text-anchor="middle" font-family="Papyrus" font-size="18">
     <text x="50" y="16">4</text>
-    <text x="50" y="16" transform="rotate(90,50,50)">3</text>
+    <text x="50" y="16" fill="white" transform="rotate(90,50,50)">3</text>
     <text x="50" y="16" transform="rotate(180,50,50)">2</text>
     <text x="50" y="16" transform="rotate(270,50,50)">1</text>
   </g>
