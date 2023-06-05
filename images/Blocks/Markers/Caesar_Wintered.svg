@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="100" height="100" >
+  <title>Caesar Wintered</title>
+  <desc>Marker to indicate that Caesar wintered on previous turn</desc>
+
+  <rect
+    id="background"
+    fill="red"
+    height="100"
+    width="100"
+    stroke="black"
+    stroke-width="3"
+  />
+
+  <g id="info" text-anchor="middle" font-size="12" font-family="Papyrus">
+    <rect
+      x="10"
+      y="10"
+      width="80"
+      height="80"
+      fill="yellow"
+      stroke="black"
+    />
+
+    <text x="0" y="0" font-size="18">
+      <tspan x="50" y="40">Caesar</tspan>
+      <tspan x="50" dy="24">Wintered</tspan>
+    <text>
+  </g>
+</svg>
