@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="100" height="100" >
+  <title>Legion XI</title>
+  <desc>Roman Legion XI</desc>
+
+  <rect
+    id="background"
+    fill="salmon"
+    height="100"
+    width="100"
+    stroke="black"
+    stroke-width="3"
+  />
+
+  <g id="tribe" text-anchor="middle" font-size="12" font-family="Papyrus">
+    <rect
+      x="21"
+      y="21"
+      width="58"
+      height="58"
+      fill="red"
+      stroke="black"
+    />
+
+    <text x="50" y="36" fill="white">Legion XI</text>
+    <rect
+      id="shield"
+      x="42"
+      y="44"
+      width="16"
+      height="26"
+      rx="2"
+      ry="2"
+      fill="darkred"
+      stroke="black"
+      stroke-width="0.5"
+    />
+
+    <line x1="43" y1="45" x2="57" y2="69" stroke="yellow"/>
+    <line x1="57" y1="45" x2="43" y2="69" stroke="yellow"/>
+    <rect x="48" y="55" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.5"/>
+  </g>
+
+  <g id="attributes" text-anchor="middle" font-size="16">
+    <rect
+      id="initiative"
+      x="10"
+      y="70"
+      height="16"
+      width="20"
+      fill="white"
+      stroke="black"
+    />
+
+    <text x="20" y="84">A</text>
+
+    <rect
+      id="firepower"
+      x="70"
+      y="70"
+      height="16"
+      width="20"
+      fill="white"
+      stroke="black"
+    />
+
+    <text x="80" y="84">2</text>
+  </g>
+
+  <g id="strength" text-anchor="middle" font-family="Papyrus" font-size="18">
+    <text x="50" y="16">4</text>
+    <text x="50" y="16" transform="rotate(90,50,50)">3</text>
+    <text x="50" y="16" transform="rotate(180,50,50)">2</text>
+    <text x="50" y="16" transform="rotate(270,50,50)">1</text>
+  </g>
+</svg>
