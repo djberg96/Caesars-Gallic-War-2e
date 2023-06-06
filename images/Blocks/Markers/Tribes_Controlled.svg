@@ -24,6 +24,6 @@
     <text x="0" y="0" font-size="16">
       <tspan x="50" y="40">Tribes</tspan>
       <tspan x="50" dy="24">Controlled</tspan>
-    <text>
+    </text>
   </g>
 </svg>

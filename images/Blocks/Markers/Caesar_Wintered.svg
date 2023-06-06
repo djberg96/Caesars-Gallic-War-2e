@@ -24,6 +24,6 @@
     <text x="0" y="0" font-size="18">
       <tspan x="50" y="40">Caesar</tspan>
       <tspan x="50" dy="24">Wintered</tspan>
-    <text>
+    </text>
   </g>
 </svg>
