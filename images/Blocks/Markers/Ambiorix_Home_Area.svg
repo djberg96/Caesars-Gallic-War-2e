@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="100" height="100" >
+  <title>Ambiorix Home Area</title>
+  <desc>Home area marker for Ambiorix</desc>
+
+  <rect
+    id="background"
+    fill="white"
+    height="100"
+    width="100"
+    stroke="black"
+    stroke-width="3"
+  />
+
+  <g id="info" text-anchor="middle" font-size="12" font-family="Papyrus">
+    <rect
+      x="10"
+      y="10"
+      width="80"
+      height="80"
+      fill="tan"
+      stroke="black"
+    />
+
+    <text x="0" y="0" font-size="14">
+      <tspan x="50" y="30">Ambiorix</tspan>
+      <tspan x="50" dy="24">Home</tspan>
+      <tspan x="50" dy="24">Area</tspan>
+    <text>
+  </g>
+</svg>
