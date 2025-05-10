@@ -52,8 +52,11 @@
         stroke-width="0.5"
       />
 
-      <line x1="42" y1="42" x2="58" y2="70" stroke="yellow" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-      <line x1="58" y1="42" x2="42" y2="70" stroke="yellow" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <g id="lightning" stroke="yellow" stroke-width="0.6" marker-start="url(#arrow)" marker-end="url(#arrow)">
+        <polyline points="42,42 58,70"/>
+        <polyline points="58,42 42,70"/>
+      </g>
+
       <rect x="48" y="54" rx="1" ry="1" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.3"/>
     </g>
   </g>
