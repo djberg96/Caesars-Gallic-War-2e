@@ -52,12 +52,15 @@
         stroke-width="0.5"
       />
 
-      <g id="lightning" stroke="yellow" stroke-width="0.6" marker-start="url(#arrow)" marker-end="url(#arrow)">
-        <polyline points="42,42 58,70"/>
-        <polyline points="58,42 42,70"/>
+      <g id="lightning" stroke="yellow" stroke-width="0.6" marker-end="url(#arrow)">
+        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(30,0,6) scale(-1,1)" transform-origin="center"/>
+        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(150,50,56)"/>
+        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(210,0,6) scale(-1,1)" transform-origin="center"/>
+        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(330,50,56)"/>
       </g>
 
       <rect x="48" y="54" rx="1" ry="1" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.3"/>
+      <circle cx="50" cy="56" r="1" fill="silver" stroke="black" stroke-width="0.2"/>
     </g>
   </g>
 
