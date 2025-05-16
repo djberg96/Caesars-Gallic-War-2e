@@ -25,16 +25,50 @@
     <ellipse
       id="shield"
       cx="50"
-      cy="54"
-      rx="8"
-      ry="11"
+      cy="56"
+      rx="10"
+      ry="13"
       fill="rgb(160,125,80)"
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="54" r="3" fill="darkblue"/>
-    <line x1="50" y1="46" x2="50" y2="62" stroke="darkblue"/>
+    <circle cx="50" cy="56" r="3" fill="darkblue"/>
+    <circle cx="44" cy="56" r="1" fill="darkblue" stroke-width="0.3" stroke="white"/>
+    <circle cx="56" cy="56" r="1" fill="darkblue" stroke-width="0.3" stroke="white"/>
   </g>
+
+  <g id="spear" transform="scale(0.6) translate(68, 44) rotate(30, 14, 47)">
+      <path
+        d="
+          M 16 19
+          L 14 30
+          Q 16 33, 15 37
+          L 16 37
+          L 17 37
+          Q 16 33, 18 30
+          Z
+        "
+        fill="grey"
+        stroke="black"
+        stroke-width="0.3"
+      />
+
+      <line 
+        x1="16" y1="74.3"
+        x2="16" y2="37"
+        stroke="black"
+        stroke-width="2"
+      />
+
+      <line 
+        x1="16" y1="74"
+        x2="16" y2="37"
+        stroke="saddlebrown"
+        stroke-width="1.5"
+      />
+  </g>
+
+  <use href="#spear" transform="scale(-1,1) translate(-100,0)"/>
 
   <g id="attributes" text-anchor="middle" font-size="16">
     <rect
