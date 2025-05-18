@@ -2,6 +2,31 @@
   <title>Arvii</title>
   <desc>Arvii barbarian block</desc>
 
+  <defs>
+    <filter id="metallic">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.04"
+        result="noise"
+        numOctaves="5"
+      />
+
+      <feDiffuseLighting in="noise" surfaceScale="2" result="texture">
+        <feDistantLight azimuth="45" elevation="75"/>
+      </feDiffuseLighting>
+
+      <feComposite
+        in="SourceGraphic"
+        in2="texture"
+        operator="arithmetic"
+        k1="1"
+        k2="0"
+        k3="0"
+        k4="0"
+      />
+    </filter>
+  </defs>
+
   <rect
     id="background"
     fill="rgb(175,255,165)"
@@ -21,22 +46,54 @@
       stroke="black"
     />
 
-    <text x="50" y="34" fill="white" font-size="10">Arvii</text>
-    <text x="50" y="74" font-size="8" fill="white">[Bituriges]</text>
+    <text x="50" y="34" fill="white" font-size="12">Arvii</text>
+    <text x="50" y="74" font-size="7" fill="white">[Bituriges]</text>
 
     <ellipse
       id="shield"
       cx="50"
-      cy="50"
-      rx="8"
-      ry="11"
+      cy="54"
+      rx="10"
+      ry="13"
       fill="rgb(160,125,80)"
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="50" r="3" fill="violet"/>
-    <line x1="50" y1="42" x2="50" y2="58" stroke="violet"/>
+    <circle cx="50" cy="54" r="3" fill="violet"/>
+    <circle cx="44" cy="54" r="1" fill="violet" stroke-width="0.3" stroke="black"/>
+    <circle cx="56" cy="54" r="1" fill="violet" stroke-width="0.3" stroke="black"/>
   </g>
+
+  <g id="axe" transform="scale(0.4) rotate(-30,240,-46)">
+    <rect
+      id="axe-handle"
+      x="48"
+      y="4"
+      width="4"
+      height="90"
+      fill="#4f301f"
+      stroke="black"
+      stroke-width="0.5"
+    />
+
+    <path
+      id="axe-blade"
+      d="
+        M 50 6
+        Q 30 12 20 6
+        Q 14 14 20 28
+        Q 30 20 50 25
+      "
+      fill="silver"
+      stroke="black"
+      stroke-width=".5"
+      filter="url(#metallic)"
+    />
+
+    <rect id="blade-base" x="47" y="5" width="6" height="21" fill="grey"/>
+  </g>
+
+  <use href="#axe" transform="scale(-1,1) translate(-100,0)"/>
 
   <g id="attributes" text-anchor="middle" font-size="16">
     <rect
