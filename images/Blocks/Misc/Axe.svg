@@ -11,7 +11,7 @@
         numOctaves="5"
       />
 
-      <feDiffuseLighting in="noise" surfaceScale="4" result="texture">
+      <feDiffuseLighting in="noise" surfaceScale="3" result="texture">
         <feDistantLight azimuth="5" elevation="55"/>
       </feDiffuseLighting>
 
@@ -32,6 +32,18 @@
         <stop offset="85%" stop-color="#cbcdcd" />
       </linearGradient>
     </filter>
+
+    <clipPath id="axe-blade-clip">
+      <path
+
+        d="
+          M 50 6
+          Q 34 8 24 6
+          Q 18 18 24 28
+          Q 34 16 50 25
+        "
+      />
+    </clipPath>
   </defs>
 
   <rect
@@ -72,14 +84,15 @@
     <path
       id="axe-blade-edge"
       d="
-        M 24 6
-        Q 17 18 24 27.9
-        Q 19 18 24 6
+        M 24 5
+        Q 17 18 24 29
+        Q 20 18 24 5
         Z
       "
-      fill="url(#blade-edge)"
       stroke="silver"
-      stroke-width="0.7"
+      stroke-width="2"
+      fill="url(#blade-edge)"
+      clip-path="url(#axe-blade-clip)"
     />
 
     <rect
