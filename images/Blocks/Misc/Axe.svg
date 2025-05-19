@@ -25,6 +25,13 @@
         k4="0"
       />
     </filter>
+
+    <filter id="blade-edge"
+      <linearGradient gradientTransform="rotate(90)" >
+        <stop offset="15%" stop-color="#54575b" />
+        <stop offset="85%" stop-color="#cbcdcd" />
+      </linearGradient>
+    </filter>
   </defs>
 
   <rect
@@ -60,6 +67,19 @@
       stroke="darkgrey"
       stroke-width="0.5"
       filter="url(#metallic)"
+    />
+
+    <path
+      id="axe-blade-edge"
+      d="
+        M 24 6
+        Q 17 18 24 27.9
+        Q 19 18 24 6
+        Z
+      "
+      fill="url(#blade-edge)"
+      stroke="silver"
+      stroke-width="0.7"
     />
 
     <rect
