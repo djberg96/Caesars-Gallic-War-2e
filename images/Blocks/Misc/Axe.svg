@@ -11,8 +11,8 @@
         numOctaves="5"
       />
 
-      <feDiffuseLighting in="noise" surfaceScale="2" result="texture">
-        <feDistantLight azimuth="45" elevation="75"/>
+      <feDiffuseLighting in="noise" surfaceScale="4" result="texture">
+        <feDistantLight azimuth="5" elevation="55"/>
       </feDiffuseLighting>
 
       <feComposite
@@ -62,6 +62,14 @@
       filter="url(#metallic)"
     />
 
-    <rect id="blade-base" x="47" y="5" width="6" height="21" fill="grey"/>
+    <rect
+      id="blade-base"
+      x="47"
+      y="5"
+      width="6"
+      height="21"
+      fill="grey"
+      filter="url(#metallic)"
+    />
   </g>
 </svg>
