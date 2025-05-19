@@ -26,16 +26,13 @@
       />
     </filter>
 
-    <filter id="blade-edge"
-      <linearGradient gradientTransform="rotate(90)" >
-        <stop offset="15%" stop-color="#54575b" />
-        <stop offset="85%" stop-color="#cbcdcd" />
-      </linearGradient>
-    </filter>
+    <linearGradient id="blade-edge-gradient">
+      <stop offset="15%" stop-color="#54575b" />
+      <stop offset="85%" stop-color="#cbcdcd" />
+    </linearGradient>
 
     <clipPath id="axe-blade-clip">
       <path
-
         d="
           M 50 6
           Q 34 8 24 6
@@ -85,13 +82,11 @@
       id="axe-blade-edge"
       d="
         M 24 5
-        Q 17 18 24 29
-        Q 20 18 24 5
+        Q 17 18 25 29
+        Q 20 18 25 5
         Z
       "
-      stroke="silver"
-      stroke-width="2"
-      fill="url(#blade-edge)"
+      fill="url(#blade-edge-gradient)"
       clip-path="url(#axe-blade-clip)"
     />
 
