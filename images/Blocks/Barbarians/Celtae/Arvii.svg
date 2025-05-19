@@ -11,8 +11,8 @@
         numOctaves="5"
       />
 
-      <feDiffuseLighting in="noise" surfaceScale="2" result="texture">
-        <feDistantLight azimuth="45" elevation="75"/>
+      <feDiffuseLighting in="noise" surfaceScale="1" result="texture">
+        <feDistantLight azimuth="5" elevation="55"/>
       </feDiffuseLighting>
 
       <feComposite
@@ -25,6 +25,38 @@
         k4="0"
       />
     </filter>
+
+    <filter id="wood-grain">
+      <feTurbulence type="fractalNoise" basefrequency=".05 .01" result="noise" numOctaves="5"/>
+      <feDiffuseLighting in="noise" surfaceScale="3" result="texture">
+        <feDistantLight azimuth="5" elevation="35"/>
+      </feDiffuseLighting>
+      <feComposite
+        in="SourceGraphic"
+        in2="texture"
+        operator="arithmetic"
+        k1="1"
+        k2="0"
+        k3="0"
+        k4="0"
+      />
+    </filter>
+
+    <linearGradient id="blade-edge-gradient">
+      <stop offset="15%" stop-color="#54575b" />
+      <stop offset="85%" stop-color="#cbcdcd" />
+    </linearGradient>
+
+    <clipPath id="axe-blade-clip">
+      <path
+        d="
+          M 50 6
+          Q 34 8 24 6
+          Q 18 18 24 28
+          Q 34 16 50 25
+        "
+      />
+    </clipPath>
   </defs>
 
   <rect
@@ -74,23 +106,44 @@
       fill="#4f301f"
       stroke="black"
       stroke-width="0.5"
+      filter="url(#wood-grain)"
     />
 
     <path
       id="axe-blade"
       d="
         M 50 6
-        Q 30 12 20 6
-        Q 14 14 20 28
-        Q 30 20 50 25
+        Q 34 8 24 6
+        Q 18 18 24 28
+        Q 34 16 50 25
       "
       fill="silver"
-      stroke="black"
-      stroke-width=".5"
+      stroke="darkgrey"
+      stroke-width="0.5"
       filter="url(#metallic)"
     />
 
-    <rect id="blade-base" x="47" y="5" width="6" height="21" fill="grey"/>
+    <path
+      id="axe-blade-edge"
+      d="
+        M 24 5
+        Q 17 18 25 29
+        Q 20 18 25 5
+        Z
+      "
+      fill="url(#blade-edge-gradient)"
+      clip-path="url(#axe-blade-clip)"
+    />
+
+    <rect
+      id="blade-base"
+      x="47"
+      y="5"
+      width="6"
+      height="21"
+      fill="grey"
+      filter="url(#metallic)"
+    />
   </g>
 
   <use href="#axe" transform="scale(-1,1) translate(-100,0)"/>
