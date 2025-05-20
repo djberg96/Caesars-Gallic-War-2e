@@ -3,50 +3,6 @@
   <desc>Arvii barbarian block</desc>
 
   <defs>
-    <filter id="metallic">
-      <feTurbulence
-        type="fractalNoise"
-        baseFrequency="0.04"
-        result="noise"
-        numOctaves="5"
-      />
-
-      <feDiffuseLighting in="noise" surfaceScale="1" result="texture">
-        <feDistantLight azimuth="5" elevation="55"/>
-      </feDiffuseLighting>
-
-      <feComposite
-        in="SourceGraphic"
-        in2="texture"
-        operator="arithmetic"
-        k1="1"
-        k2="0"
-        k3="0"
-        k4="0"
-      />
-    </filter>
-
-    <filter id="wood-grain">
-      <feTurbulence type="fractalNoise" basefrequency=".05 .01" result="noise" numOctaves="5"/>
-      <feDiffuseLighting in="noise" surfaceScale="3" result="texture">
-        <feDistantLight azimuth="5" elevation="35"/>
-      </feDiffuseLighting>
-      <feComposite
-        in="SourceGraphic"
-        in2="texture"
-        operator="arithmetic"
-        k1="1"
-        k2="0"
-        k3="0"
-        k4="0"
-      />
-    </filter>
-
-    <linearGradient id="blade-edge-gradient">
-      <stop offset="15%" stop-color="#54575b" />
-      <stop offset="85%" stop-color="#cbcdcd" />
-    </linearGradient>
-
     <clipPath id="axe-blade-clip">
       <path
         d="
@@ -106,7 +62,6 @@
       fill="#4f301f"
       stroke="black"
       stroke-width="0.5"
-      filter="url(#wood-grain)"
     />
 
     <path
@@ -120,7 +75,6 @@
       fill="silver"
       stroke="darkgrey"
       stroke-width="0.5"
-      filter="url(#metallic)"
     />
 
     <path
@@ -131,7 +85,7 @@
         Q 20 18 25 5
         Z
       "
-      fill="url(#blade-edge-gradient)"
+      fill="white"
       clip-path="url(#axe-blade-clip)"
     />
 
@@ -142,7 +96,6 @@
       width="6"
       height="21"
       fill="grey"
-      filter="url(#metallic)"
     />
   </g>
 
