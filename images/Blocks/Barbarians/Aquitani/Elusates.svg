@@ -46,8 +46,8 @@
       stroke-width="0.5"
     />
     <circle cx="50" cy="52" r="3" fill="darkgreen"/>
-    <circle cx="44" cy="52" r="1" fill="darkgreen" stroke-width="0.3" stroke="black"/>
-    <circle cx="56" cy="52" r="1" fill="darkgreen" stroke-width="0.3" stroke="black"/>
+    <polygon points="43,51 44,53 45,51" fill="darkgreen" stroke="black" stroke-width="0.2"/>
+    <polygon points="55,51 56,53 57,51" fill="darkgreen" stroke="black" stroke-width="0.2"/>
     <text x="50" y="74" font-size="8" fill="white">[Tarbelli]</text>
   </g>
 
