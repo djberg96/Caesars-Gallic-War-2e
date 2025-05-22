@@ -34,30 +34,34 @@
     
     <g id="flukes">
       <path
+        id="fluke-border"
         d="
-          M 50 70
+          M 50.5 71
           Q 35 65 30 55
           Q 37 56 34 57
+          M 49.5 71
+          Q 65 65 70 55
+          Q 63 56 66 57
         "
         fill="none"
         stroke="black"
         stroke-width="2.9"
-        
       />
 
       <path
-        id="hook"
+        id="fluke"
         d="
-          M 50 70
+          M 50.5 71
           Q 35 65 30 55
           Q 37 56 34 57
+          M 49.5 71
+          Q 65 65 70 55
+          Q 63 56 66 57
         "
         fill="none"
         stroke="blue"
         stroke-width="2.5"
       />
     </g>
-
-    <use href="#flukes" transform="scale(-1,1) translate(-100,0)"/>
   </g>
 </svg>
