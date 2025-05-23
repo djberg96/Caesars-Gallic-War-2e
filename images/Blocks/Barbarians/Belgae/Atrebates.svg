@@ -89,18 +89,18 @@
         M 47 20
         Q 48 9 50 4
         Q 52 9 53 20
-        L 53.5 72
-        L 46.5 72
+        L 53.5 75
+        L 46.5 75
         Z
       "
       fill="silver"
       stroke="black"
       stroke-width="0.5"
     />
-    <line x1="50" y1="30" x2="50" y2="72" stroke="darkgrey" stroke-width="0.5"/>"
-    <rect x="37" y="70" width="26" height="4" fill="#4f301f" stroke="black" stroke-width="0.5"/>
-    <rect x="47.5" y="74" width="5" height="20" fill="#4f301f" stroke="black" stroke-width="0.5"/>
-    <circle cx="50" cy="93" r="3.7" fill="#6d4d36" stroke="#2c1f16" stroke-width="0.5"/>
+    <line x1="50" y1="25" x2="50" y2="72" stroke="darkgrey" stroke-width="0.5"/>"
+    <rect x="37" y="73" width="26" height="4" fill="#4f301f" stroke="black" stroke-width="0.5"/>
+    <rect x="47.5" y="77" width="5" height="20" fill="#4f301f" stroke="black" stroke-width="0.5"/>
+    <circle cx="50" cy="96" r="3.7" fill="#6d4d36" stroke="#2c1f16" stroke-width="0.5"/>
   </g>
 
   <use href="#sword" transform="scale(-1,1) translate(-100,0)"/>
