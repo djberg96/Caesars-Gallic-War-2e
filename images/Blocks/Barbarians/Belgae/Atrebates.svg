@@ -83,7 +83,7 @@
     <use xlink:href="#anchor" transform="scale(0.20) translate(105,205)"/>
   </g>
 
-   <g id="sword" transform="scale(0.4) translate(68, 34) rotate(35, -34, 80)">
+  <g id="sword" transform="scale(0.4) translate(68, 34) rotate(35, -34, 80)">
     <path
       d="
         M 47 20
