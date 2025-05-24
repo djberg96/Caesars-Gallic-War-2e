@@ -21,7 +21,7 @@
       stroke="black"
     />
 
-    <text x="50" y="36" fill="white">Menapi</text>
+    <text x="50" y="34" fill="white">Menapi</text>
     <ellipse
       id="shield"
       cx="50"
