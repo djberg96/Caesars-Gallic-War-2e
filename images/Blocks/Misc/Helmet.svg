@@ -2,6 +2,18 @@
   <title>Helmet</title>
   <desc>Generic barbarian helmet icon</desc>
 
+  <defs>
+    <clipPath id="helmet-path">
+      <path
+        d="
+          M 20,40
+          A 1 1 0 0 1 80,40
+          Z
+        "
+      />
+    </clipPath>
+  </defs>
+
   <rect
     id="background"
     fill="white"
@@ -51,8 +63,9 @@
         L 50,9
       "
       fill="none"
-      stroke="yellow"
+      stroke="#b87f0d"
       stroke-width="5"
+      clip-path="url(#helmet-path)"
     />
   </g>
 </svg>
