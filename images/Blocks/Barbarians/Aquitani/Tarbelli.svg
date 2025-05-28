@@ -38,19 +38,19 @@
     <ellipse
       id="shield"
       cx="50"
-      cy="52"
+      cy="54"
       rx="10"
       ry="13"
       fill="#996244"
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="52" r="3" fill="darkgreen" stroke="white" stroke-width="0.2"/>
-    <polygon points="43,51 44,53 45,51" fill="darkgreen" stroke="white" stroke-width="0.2"/>
-    <polygon points="55,51 56,53 57,51" fill="darkgreen" stroke="white" stroke-width="0.2"/>
+    <circle cx="50" cy="54" r="3" fill="darkgreen" stroke="white" stroke-width="0.2"/>
+    <polygon points="43,53 44,55 45,53" fill="darkgreen" stroke="white" stroke-width="0.2"/>
+    <polygon points="55,53 56,55 57,53" fill="darkgreen" stroke="white" stroke-width="0.2"/>
   </g>
 
-  <g id="axe" transform="scale(0.35) rotate(-35,250,-46)">
+  <g id="axe" transform="scale(0.35) rotate(-35,264,-46)">
     <rect
       id="axe-handle"
       x="48"
