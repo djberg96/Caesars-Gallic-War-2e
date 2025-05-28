@@ -2,6 +2,19 @@
   <title>German 2</title>
   <desc>German block</desc>
 
+  <defs>
+    <clipPath id="axe-blade-clip">
+      <path
+        d="
+          M 50 6
+          Q 34 8 24 6
+          Q 18 18 24 28
+          Q 34 16 50 25
+        "
+      />
+    </clipPath>
+  </defs>
+
   <rect
     id="background"
     fill="rgb(120,150,160)"
@@ -22,20 +35,85 @@
     />
 
     <text x="50" y="36" fill="white">Germania</text>
+    <text x="50" y="75" font-size="8">2</text>
+
     <ellipse
       id="shield"
       cx="50"
       cy="54"
-      rx="8"
-      ry="11"
-      fill="rgb(160,125,80)"
+      rx="10"
+      ry="13"
+      fill="#996244"
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="54" r="3"/>
-    <line x1="50" y1="46" x2="50" y2="62" stroke="black"/>
-    <text x="34" y="56">2</text>
+
+    <circle cx="50" cy="54" r="3" fill="black" stroke="white" stroke-width="0.2"/>
+
+    <path
+      id="shield_symbol"
+      d="
+        M 43,53
+        C 43,54 44,55 45,56
+        Q 44,55 45,53
+        Z
+      "
+      fill="black"
+      stroke="white"
+      stroke-width="0.2"
+    />
+
+    <use href="#shield_symbol" transform="scale(-1,1) translate(-100,0)"/>
   </g>
+
+  <g id="axe" transform="scale(0.35) rotate(-35,264,-46)">
+    <rect
+      id="axe-handle"
+      x="48"
+      y="4"
+      width="4"
+      height="90"
+      fill="#4f301f"
+      stroke="black"
+      stroke-width="0.5"
+    />
+
+    <path
+      id="axe-blade"
+      d="
+        M 50 6
+        Q 34 8 24 6
+        Q 18 18 24 28
+        Q 34 16 50 25
+      "
+      fill="silver"
+      stroke="darkgrey"
+      stroke-width="0.5"
+    />
+
+    <path
+      id="axe-blade-edge"
+      d="
+        M 24 5
+        Q 17 18 25 29
+        Q 20 18 25 5
+        Z
+      "
+      fill="white"
+      clip-path="url(#axe-blade-clip)"
+    />
+
+    <rect
+      id="blade-base"
+      x="47"
+      y="5"
+      width="6"
+      height="21"
+      fill="grey"
+    />
+  </g>
+
+  <use href="#axe" transform="scale(-1,1) translate(-100,0)"/>
 
   <g id="attributes" text-anchor="middle" font-size="16">
     <rect
