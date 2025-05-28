@@ -2,6 +2,38 @@
   <title>Legion VII</title>
   <desc>Roman Legion VII</desc>
 
+  <defs>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="5"
+      refY="5"
+      markerWidth="3"
+      markerHeight="3"
+      orient="auto-start-reverse"
+      fill="white"
+    >
+    <path d="M 0 0 L 10 5 L 0 10 z"/>
+    </marker>
+
+    <g id="shield_line">
+      <path d="M38 32 L41 35 L38 38 L41 41 L44 38 L47 41 L44 44 L50 50" stroke="white" stroke-width="0.9" fill="none" marker-start="url(#arrow)"/>
+    </g>
+
+    <path
+      id="horn"
+      d="M48.5 50 L50 30 L51.5 50 L48.5 50"
+      fill="yellow"
+      stroke="yellow"
+      stroke-width="0.6"
+      stroke-linejoin="round"
+    />
+
+    <clipPath id="horn-clip">
+      <use href="#horn"/>
+    </clipPath>
+  </defs>
+
   <rect
     id="background"
     fill="salmon"
@@ -11,7 +43,7 @@
     stroke-width="3"
   />
 
-  <g id="tribe" text-anchor="middle" font-size="12" font-family="Papyrus">
+  <g id="legion" text-anchor="middle" font-size="12" font-family="Papyrus">
     <rect
       x="21"
       y="21"
@@ -21,23 +53,35 @@
       stroke="black"
     />
 
-    <text x="50" y="36" fill="white">Legion VII</text>
-    <rect
-      id="shield"
-      x="42"
-      y="44"
-      width="16"
-      height="26"
-      rx="2"
-      ry="2"
-      fill="darkred"
-      stroke="black"
-      stroke-width="0.5"
-    />
+    <text x="50" y="33" fill="white">Legion VII</text>
+    s
+    <g id="unit-symbol" transform="scale(0.75) translate(16,25)">
+      <rect x="35" y="28" width="30" height="44" fill="darkred" stroke="white" stroke-width="1" rx="6"/>
 
-    <line x1="43" y1="45" x2="57" y2="69" stroke="yellow"/>
-    <line x1="57" y1="45" x2="43" y2="69" stroke="yellow"/>
-    <rect x="48" y="55" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.5"/>
+      <line x1="37.5" y1="50" x2="62.5" y2="50" stroke="white" stroke-width="0.9" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    
+      <g id="lightning">
+        <use href="#shield_line" x="0" y="0" transform="rotate(0 50 50)"/>
+        <use href="#shield_line" x="0" y="0" transform="translate(100,100) scale(-1,-1)"/>
+        <use href="#shield_line" x="0" y="0" transform="translate(100,0) scale(-1,1)"/>
+        <use href="#shield_line" x="0" y="0" transform="translate(100,0) scale(-1,1) rotate(180 50 50)"/>
+      </g>
+
+      <g id="horn_group" clip-path="url(#horn-clip)">
+        <use href="#horn"/>
+        <path d="M48 46 Q50 46 52 44" fill="transparent" stroke="black" stroke-width="0.3"/>
+        <path d="M48 42 Q50 42 52 40" fill="transparent" stroke="black" stroke-width="0.3"/>
+        <path d="M48 38 Q50 38 52 36" fill="transparent" stroke="black" stroke-width="0.3"/>
+        <path d="M48 34 Q50 34 52 32" fill="transparent" stroke="black" stroke-width="0.3"/>
+      </g>
+
+      <use href="#horn_group" transform="rotate(180 50 50)"/>
+
+      <g id="center">
+        <rect x="46" y="45.5" width="8" height="9" fill="darkgrey" stroke="white" stroke-width="0.3" rx="1"/>
+        <circle cx="50" cy="50" r="2.2" fill="darkgrey" stroke="white" stroke-width="0.4"/>
+      </g>
+    </g>
   </g>
 
   <g id="attributes" text-anchor="middle" font-size="16">
