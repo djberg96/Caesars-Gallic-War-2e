@@ -40,6 +40,21 @@
     stroke="gold"
   />
 
+  <g id="wings" stroke="black" stroke-width="0.3" fill="yellow">
+    <path
+      id="wing"
+      d="
+        M 50 42
+        C 42,45 32,40 34,21
+        C 12,24 28,58 50,49
+      "
+    />
+
+    <use href="#wing" transform="translate(100,0) scale(-1,1)"/>
+    <use href="#wing" transform="translate(0,100) scale(1,-1)"/>
+    <use href="#wing" transform="translate(100,100) scale(-1,-1)"/>
+  </g>
+
   <g id="bolts">
     <line x1="50" y1="50" x2="50" y2="10" stroke="yellow" marker-end="url(#arrow)"/>
     <line x1="50" y1="50" x2="50" y2="90" stroke="yellow" marker-end="url(#arrow)"/>
