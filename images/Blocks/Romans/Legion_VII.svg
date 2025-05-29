@@ -67,19 +67,9 @@
         <use href="#shield_line" x="0" y="0" transform="translate(100,0) scale(-1,1) rotate(180 50 50)"/>
       </g>
 
-      <g id="horn_group" clip-path="url(#horn-clip)">
-        <use href="#horn"/>
-        <path d="M48 46 Q50 46 52 44" fill="transparent" stroke="black" stroke-width="0.3"/>
-        <path d="M48 42 Q50 42 52 40" fill="transparent" stroke="black" stroke-width="0.3"/>
-        <path d="M48 38 Q50 38 52 36" fill="transparent" stroke="black" stroke-width="0.3"/>
-        <path d="M48 34 Q50 34 52 32" fill="transparent" stroke="black" stroke-width="0.3"/>
-      </g>
-
-      <use href="#horn_group" transform="rotate(180 50 50)"/>
-
       <g id="center">
-        <rect x="46.5" y="45.5" width="7" height="9" fill="grey" stroke="white" stroke-width="0.3" rx="1"/>
-        <circle cx="50" cy="50" r="2" fill="black" stroke="white" stroke-width="0.3"/>
+        <rect x="46.5" y="45.5" width="7" height="9" fill="darkgrey" stroke="white" stroke-width="0.3" rx="2"/>
+        <circle cx="50" cy="50" r="2" fill="grey" stroke="white" stroke-width="0.3"/>
       </g>
     </g>
   </g>
