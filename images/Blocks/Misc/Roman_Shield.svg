@@ -25,18 +25,20 @@
     stroke="black"
     stroke-width="3"
   />
-  
-  <rect
+
+  <path
     id="shield"
-    x="18"
-    y="6"
-    width="64"
-    height="88"
-    fill="darkred"
-    stroke="white"
-    stroke-width="1"
-    rx="12"
-  />  
+    d="
+      M 20,8
+      Q 50,4 80,8
+      Q 84,50 80,92
+      Q 50,96 20,92
+      Q 16,50 20,8
+      Z
+    "
+    fill="red"
+    stroke="gold"
+  />
 
   <g id="bolts">
     <line x1="50" y1="50" x2="50" y2="10" stroke="yellow" marker-end="url(#arrow)"/>
