@@ -48,19 +48,17 @@
     <text x="50" y="33" fill="white">Legion XII</text>
   </g>
 
-  <g id="shield" transform="scale(0.4) translate(75,92)">
-    <path
-      id="shield_outline"
-      d="
-        M 20,10
-        Q 50,2 80,10
-        Q 84,50 80,90
-        Q 50,98 20,90
-        Q 16,50 20,10
-        Z
-      "
+  <g id="shield" transform="scale(0.4) translate(75,94)">
+    <rect id="shield"
+      x="20"
+      y="7"
+      width="60"
+      height="86"
       fill="darkred"
-      stroke="gold"
+      stroke="white"
+      stroke-width="1"
+      rx="10"
+      ry="13"
     />
 
     <g id="wings" stroke="gold" stroke-width="0.3" fill="yellow">
