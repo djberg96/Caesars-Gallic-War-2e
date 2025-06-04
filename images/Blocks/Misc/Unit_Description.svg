@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
-  <title>Legion V</title>
-  <desc>Roman Legion V</desc>
+  <title>Unit Description</title>
+  <desc>An explanation of a typical unit for Caesar's Gallic War</desc>
 
   <defs>
     <marker fill="black" id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
@@ -15,7 +15,7 @@
     fill="white"
   />
 
-  <g id="legion" transform="translate(50,50)">
+  <g id="sample_unit" transform="translate(50,50)">
     <rect
       id="unit_background"
       fill="salmon"
@@ -25,7 +25,7 @@
       stroke-width="3"
     />
 
-    <g id="unit" text-anchor="middle" font-size="12" font-family="Papyrus">
+    <g id="unit" text-anchor="middle" font-size="11" font-family="Papyrus">
       <rect
         x="21"
         y="21"
@@ -35,23 +35,64 @@
         stroke="black"
       />
 
-      <text x="50" y="36" fill="white">Legion V</text>
-      <rect
-        id="shield"
-        x="42"
-        y="44"
-        width="16"
-        height="26"
-        rx="2"
-        ry="2"
+      <text x="50" y="33" fill="white">Legion V</text>
+    </g>
+
+    <g id="shield" transform="scale(0.4) translate(75,92)">
+      <rect id="shield_outline"
+        x="20"
+        y="7"
+        width="60"
+        height="86"
         fill="darkred"
-        stroke="black"
-        stroke-width="0.5"
+        stroke="white"
+        stroke-width="1"
+        rx="10"
+        ry="13"
       />
 
-      <line x1="43" y1="45" x2="57" y2="69" stroke="yellow"/>
-      <line x1="57" y1="45" x2="43" y2="69" stroke="yellow"/>
-      <rect x="48" y="55" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.5"/>
+      <g id="wings" stroke="gold" stroke-width="0.3" fill="yellow">
+        <path
+          id="wing"
+          d="
+            M 50 42
+            C 42,45 32,40 34,21
+            C 12,24 28,58 50,48
+          "
+        />
+
+        <use href="#wing" transform="translate(100,0) scale(-1,1)"/>
+        <use href="#wing" transform="translate(0,100) scale(1,-1)"/>
+        <use href="#wing" transform="translate(100,100) scale(-1,-1)"/>
+      </g>
+
+      <g id="bolts">
+        <line x1="50" y1="50" x2="50" y2="10" stroke="yellow" marker-end="url(#arrow)"/>
+        <line x1="50" y1="50" x2="50" y2="90" stroke="yellow" marker-end="url(#arrow)"/>
+
+        <polyline
+          id="bolt"
+          points="
+            50,50
+            40,35
+            46,30
+            40,22
+            46,17
+            42,11
+          "
+          stroke="yellow"
+          fill="none"
+          marker-end="url(#arrow)"
+        />
+        <use href="#bolt" transform="translate(100,0) scale(-1,1)"/>
+        <use href="#bolt" transform="translate(100,100) scale(-1,-1)"/>
+        <use href="#bolt" transform="translate(0,100) scale(1,-1)"/>
+      </g>
+
+      <g id="center">
+        <rect x="43" y="41" width="14" height="18" fill="grey" stroke="white" stroke-width="0.3" rx="3"/>
+        <circle cx="50" cy="50" r="4" fill="silver" stroke="white" stroke-width="0.3"/>
+      </g>
     </g>
 
     <g id="attributes" text-anchor="middle" font-size="16">
@@ -98,13 +139,16 @@
     marker-end="url(#arrowhead)"
   />
 
-  <text x="84" y="25" font-size="14" font-family="Papyrus">Strength (4,3,2,1)</text>
+  <text x="115" y="15" font-size="14" font-family="Papyrus">
+    <tspan>Current</tspan>
+    <tspan x="115" dy="12">Strength</tspan>
+  </text>
 
   <line
     x1="34"
     y1="58"
-    x2="68"
-    y2="78"
+    x2="70"
+    y2="76"
     stroke="black" 
     stroke-width="1"
     marker-end="url(#arrowhead)"
@@ -125,7 +169,7 @@
     marker-end="url(#arrowhead)"
   />
 
-  <text x="18" y="180" font-size="14" font-family="Papyrus">Initiative</text>
+  <text x="16" y="180" font-size="14" font-family="Papyrus">Initiative</text>
 
   <line
     x1="160"
