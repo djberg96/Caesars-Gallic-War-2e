@@ -48,7 +48,7 @@
     <text x="50" y="33" fill="white">Legion XII</text>
   </g>
 
-  <g id="shield" transform="scale(0.4) translate(75,94)">
+  <g id="shield" transform="scale(0.4) translate(75,92)">
     <rect id="shield_outline"
       x="20"
       y="7"

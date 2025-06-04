@@ -40,9 +40,9 @@
       stroke="black"
     />
 
-    <text x="50" y="32" fill="white">Legion X</text>
+    <text x="50" y="33" fill="white">Legion X</text>
 
-    <g id="shield" transform="scale(0.4) translate(75,90)">
+    <g id="shield" transform="scale(0.4) translate(75,92)">
       <rect id="shield_outline"
         x="20"
         y="7"
