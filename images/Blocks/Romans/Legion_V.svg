@@ -37,30 +37,62 @@
     />
 
     <text id="unit_name" x="50" y="33" fill="white">Legion V</text>
+  </g>
 
-    <g id="shield">
-      <rect
-        id="shield_background"
-        x="40"
-        y="40"
-        width="20"
-        height="32"
-        rx="3"
-        ry="3"
-        fill="darkred"
-        stroke="black"
-        stroke-width="0.5"
+  <g id="shield" transform="scale(0.4) translate(75,92)">
+    <rect id="shield_outline"
+      x="20"
+      y="7"
+      width="60"
+      height="86"
+      fill="darkred"
+      stroke="white"
+      stroke-width="1"
+      rx="10"
+      ry="13"
+    />
+
+    <g id="wings" stroke="gold" stroke-width="0.3" fill="yellow">
+      <path
+        id="wing"
+        d="
+          M 50 42
+          C 42,45 32,40 34,21
+          C 12,24 28,58 50,48
+        "
       />
 
-      <g id="lightning" stroke="yellow" stroke-width="0.6" marker-end="url(#arrow)">
-        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(30,0,6) scale(-1,1)" transform-origin="center"/>
-        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(150,50,56)"/>
-        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(210,0,6) scale(-1,1)" transform-origin="center"/>
-        <polyline id="bolt" points="50,56 50,50 48.5,51 48.5,45 50,46 50,39.5" fill="none" transform="rotate(330,50,56)"/>
-      </g>
+      <use href="#wing" transform="translate(100,0) scale(-1,1)"/>
+      <use href="#wing" transform="translate(0,100) scale(1,-1)"/>
+      <use href="#wing" transform="translate(100,100) scale(-1,-1)"/>
+    </g>
 
-      <rect x="48" y="53.5" rx="1" ry="1" width="4" height="5" fill="lightgrey" stroke="black" stroke-width="0.3"/>
-      <circle cx="50" cy="56" r="1" fill="silver" stroke="black" stroke-width="0.2"/>
+    <g id="bolts">
+      <line x1="50" y1="50" x2="50" y2="10" stroke="yellow" marker-end="url(#arrow)"/>
+      <line x1="50" y1="50" x2="50" y2="90" stroke="yellow" marker-end="url(#arrow)"/>
+
+      <polyline
+        id="bolt"
+        points="
+          50,50
+          40,35
+          46,30
+          40,22
+          46,17
+          42,11
+        "
+        stroke="yellow"
+        fill="none"
+        marker-end="url(#arrow)"
+      />
+      <use href="#bolt" transform="translate(100,0) scale(-1,1)"/>
+      <use href="#bolt" transform="translate(100,100) scale(-1,-1)"/>
+      <use href="#bolt" transform="translate(0,100) scale(1,-1)"/>
+    </g>
+
+    <g id="center">
+      <rect x="43" y="41" width="14" height="18" fill="grey" stroke="white" stroke-width="0.3" rx="3"/>
+      <circle cx="50" cy="50" r="4" fill="silver" stroke="white" stroke-width="0.3"/>
     </g>
   </g>
 
