@@ -11,7 +11,7 @@
     stroke-width="3"
   />
 
-  <g id="tribe" text-anchor="middle" font-size="12" font-family="Papyrus">
+  <g id="legion" text-anchor="middle" font-size="12" font-family="Papyrus">
     <rect
       x="21"
       y="21"
@@ -21,23 +21,64 @@
       stroke="black"
     />
 
-    <text x="50" y="36" fill="white">Legion XIII</text>
-    <rect
-      id="shield"
-      x="42"
-      y="44"
-      width="16"
-      height="26"
-      rx="2"
-      ry="2"
+    <text x="50" y="33" fill="white">Legion XIII</text>
+  </g>
+
+  <g id="shield" transform="scale(0.4) translate(75,92)">
+    <rect id="shield_outline"
+      x="20"
+      y="7"
+      width="60"
+      height="86"
       fill="darkred"
-      stroke="black"
-      stroke-width="0.5"
+      stroke="white"
+      stroke-width="1"
+      rx="10"
+      ry="13"
     />
 
-    <line x1="43" y1="45" x2="57" y2="69" stroke="yellow"/>
-    <line x1="57" y1="45" x2="43" y2="69" stroke="yellow"/>
-    <rect x="48" y="55" width="4" height="4" fill="lightgrey" stroke="black" stroke-width="0.5"/>
+    <g id="wings" stroke="gold" stroke-width="0.3" fill="yellow">
+      <path
+        id="wing"
+        d="
+          M 50 42
+          C 42,45 32,40 34,21
+          C 12,24 28,58 50,48
+        "
+      />
+
+      <use href="#wing" transform="translate(100,0) scale(-1,1)"/>
+      <use href="#wing" transform="translate(0,100) scale(1,-1)"/>
+      <use href="#wing" transform="translate(100,100) scale(-1,-1)"/>
+    </g>
+
+    <g id="bolts">
+      <line x1="50" y1="50" x2="50" y2="10" stroke="yellow" marker-end="url(#arrow)"/>
+      <line x1="50" y1="50" x2="50" y2="90" stroke="yellow" marker-end="url(#arrow)"/>
+
+      <polyline
+        id="bolt"
+        points="
+          50,50
+          40,35
+          46,30
+          40,22
+          46,17
+          42,11
+        "
+        stroke="yellow"
+        fill="none"
+        marker-end="url(#arrow)"
+      />
+      <use href="#bolt" transform="translate(100,0) scale(-1,1)"/>
+      <use href="#bolt" transform="translate(100,100) scale(-1,-1)"/>
+      <use href="#bolt" transform="translate(0,100) scale(1,-1)"/>
+    </g>
+
+    <g id="center">
+      <rect x="43" y="41" width="14" height="18" fill="grey" stroke="white" stroke-width="0.3" rx="3"/>
+      <circle cx="50" cy="50" r="4" fill="silver" stroke="white" stroke-width="0.3"/>
+    </g>
   </g>
 
   <g id="attributes" text-anchor="middle" font-size="16">
