@@ -4,7 +4,7 @@
 
   <rect
     id="background"
-    fill="rgb(90,70,70)"
+    fill="#D27D2D"
     height="100"
     width="100"
     stroke="black"

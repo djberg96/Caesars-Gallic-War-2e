@@ -47,7 +47,7 @@
 
   <rect
     id="background"
-    fill="rgb(90,70,70)"
+    fill="#D27D2D"
     height="100"
     width="100"
     stroke="black"
@@ -76,7 +76,7 @@
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="52" r="3" fill="darkblue"/>
+    <circle cx="50" cy="52" r="3" stroke-width="0.3" stroke="white"fill="darkblue"/>
     <polygon points="43.5,50 42.5,52 43.5,54 44.5,52 43.5,50" fill="darkblue" stroke-width="0.3" stroke="white"/>
     <polygon points="56.5,50 57.5,52 56.5,54 55.5,52 56.5,50" fill="darkblue" stroke-width="0.3" stroke="white"/>
     <use xlink:href="#anchor" transform="scale(0.20) translate(105,205)"/>

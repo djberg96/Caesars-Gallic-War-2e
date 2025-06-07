@@ -4,7 +4,7 @@
 
   <rect
     id="background"
-    fill="rgb(90,70,70)"
+    fill="#D27D2D"
     height="100"
     width="100"
     stroke="black"
@@ -32,7 +32,7 @@
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="48" r="3" fill="darkgreen"/>
+    <circle cx="50" cy="48" r="3" stroke-width="0.3" stroke="white" fill="darkgreen"/>
     <polygon points="43.5,46 42.5,48 43.5,50 44.5,48 43.5,46" fill="darkgreen" stroke-width="0.3" stroke="white"/>
     <polygon points="56.5,46 57.5,48 56.5,50 55.5,48 56.5,46" fill="darkgreen" stroke-width="0.3" stroke="white"/>
     <text x="50" y="74" font-size="8" fill="white">[Menapi]</text>
