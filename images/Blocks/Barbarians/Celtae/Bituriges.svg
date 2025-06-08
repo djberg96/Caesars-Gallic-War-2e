@@ -21,7 +21,7 @@
       stroke="black"
     />
 
-    <text x="50" y="34" fill="white" font-size="10">Bituriges</text>
+    <text x="50" y="34" fill="white" font-size="12">Bituriges</text>
 
     <ellipse
       id="shield"
