@@ -38,34 +38,34 @@
   </g>
 
   <g id="spear" transform="scale(0.6) translate(68, 42) rotate(30, 14, 47)">
-      <path
-        d="
-          M 16 19
-          L 14 30
-          Q 16 33, 15 37
-          L 16 37
-          L 17 37
-          Q 16 33, 18 30
-          Z
-        "
-        fill="grey"
-        stroke="black"
-        stroke-width="0.3"
-      />
+    <path
+      d="
+        M 16 19
+        L 14 30
+        Q 16 33, 15 37
+        L 16 37
+        L 17 37
+        Q 16 33, 18 30
+        Z
+      "
+      fill="grey"
+      stroke="black"
+      stroke-width="0.3"
+    />
 
-      <line 
-        x1="16" y1="74.3"
-        x2="16" y2="37"
-        stroke="black"
-        stroke-width="2"
-      />
+    <line 
+      x1="16" y1="74.3"
+      x2="16" y2="37"
+      stroke="black"
+      stroke-width="2"
+    />
 
-      <line 
-        x1="16" y1="74"
-        x2="16" y2="37"
-        stroke="saddlebrown"
-        stroke-width="1.5"
-      />
+    <line 
+      x1="16" y1="74"
+      x2="16" y2="37"
+      stroke="saddlebrown"
+      stroke-width="1.5"
+    />
   </g>
 
   <use href="#spear" transform="scale(-1,1) translate(-100,0)"/>
