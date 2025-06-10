@@ -33,9 +33,9 @@
       stroke="black"
       stroke-width="0.5"
     />
-    <circle cx="50" cy="54" r="3" fill="chocolate" stroke-width="0.3" stroke="white"/>
-    <circle cx="44" cy="54" r="1" fill="chocolate" stroke-width="0.3" stroke="white"/>
-    <circle cx="56" cy="54" r="1" fill="chocolate" stroke-width="0.3" stroke="white"/>
+    <circle cx="50" cy="54" r="3" fill="indigo" stroke-width="0.3" stroke="white"/>
+    <circle cx="44" cy="54" r="1" fill="indigo" stroke-width="0.3" stroke="white"/>
+    <circle cx="56" cy="54" r="1" fill="indigo" stroke-width="0.3" stroke="white"/>
   </g>
 
   <g id="spear" transform="scale(0.6) translate(68, 42) rotate(30, 14, 47)">
