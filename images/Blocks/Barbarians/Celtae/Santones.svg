@@ -64,7 +64,7 @@
       stroke="black"
     />
 
-    <text x="50" y="36" fill="white" font-size="10">Santones</text>
+    <text x="50" y="36" fill="white">Santones</text>
 
     <ellipse
       id="shield"
