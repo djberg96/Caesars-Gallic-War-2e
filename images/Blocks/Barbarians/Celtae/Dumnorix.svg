@@ -131,8 +131,6 @@
     />
   </g>
 
-  <use href="#spear" transform="scale(-1,1) translate(-120,0)"/>
-
   <g id="attributes" text-anchor="middle" font-size="16">
     <rect
       id="initiative"
