@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="100" height="100" >
   <title>Ariovistus</title>
-  <desc>Ariovistus German leader</desc>
+  <desc>The Ariovistus German leader block for Caesar&amp;s Gallic War</desc>
 
   <defs>
     <clipPath id="helmet-path">
@@ -34,6 +34,7 @@
     />
 
     <text x="50" y="33" fill="white">Ariovistus</text>
+    <text x="50" y="75" fill="white" font-size="8">Suebi</text>
 
     <g transform="translate(10)">
       <ellipse
@@ -119,7 +120,7 @@
       x="48"
       y="4"
       width="4"
-      height="90"
+      height="98"
       fill="#4f301f"
       stroke="black"
       stroke-width="0.5"
