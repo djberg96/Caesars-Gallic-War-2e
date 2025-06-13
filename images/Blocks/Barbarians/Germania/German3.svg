@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" width="100" height="100" >
-  <title>German 3</title>
-  <desc>German block</desc>
+  <title>German - Marcomanni</title>
+  <desc>One of the German blocks for Caesar&amp;s Gallic War</desc>
 
   <defs>
     <clipPath id="axe-blade-clip">
@@ -34,13 +34,13 @@
       stroke="black"
     />
 
-    <text x="50" y="36" fill="white">Germania</text>
-    <text x="50" y="75" font-size="8">3</text>
+    <text x="50" y="34" fill="white">Germania</text>
+    <text x="50" y="74" fill="white" font-size="6.5">Marcomanni</text>
 
     <ellipse
       id="shield"
       cx="50"
-      cy="54"
+      cy="52"
       rx="10"
       ry="13"
       fill="#996244"
@@ -48,14 +48,14 @@
       stroke-width="0.5"
     />
 
-    <circle cx="50" cy="54" r="3" fill="black" stroke="white" stroke-width="0.2"/>
+    <circle cx="50" cy="52" r="3" fill="black" stroke="white" stroke-width="0.2"/>
 
     <path
       id="shield_symbol"
       d="
-        M 43,53
-        C 43,54 44,55 45,56
-        Q 44,55 45,53
+        M 43,51
+        C 43,52 44,53 45,54
+        Q 44,53 45,51
         Z
       "
       fill="black"
@@ -66,13 +66,13 @@
     <use href="#shield_symbol" transform="scale(-1,1) translate(-100,0)"/>
   </g>
 
-  <g id="axe" transform="scale(0.35) rotate(-35,264,-46)">
+  <g id="axe" transform="scale(0.35) rotate(-35,250,-46)">
     <rect
       id="axe-handle"
       x="48"
       y="4"
       width="4"
-      height="90"
+      height="98"
       fill="#4f301f"
       stroke="black"
       stroke-width="0.5"
