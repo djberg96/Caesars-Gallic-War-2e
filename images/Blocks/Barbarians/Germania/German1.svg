@@ -35,7 +35,7 @@
     />
 
     <text x="50" y="34" fill="white">Germania</text>
-    <text x="50" y="75" fill="white" font-size="6">Usipetes</text>
+    <text x="50" y="74" fill="white" font-size="8">Usipetes</text>
 
     <ellipse
       id="shield"
