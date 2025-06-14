@@ -11,3 +11,8 @@ then run the following command on a terminal in the cloned directory:
 `pdflatex main.tex`
 
 You can then view the output file with any PDF file reader.
+
+# License
+All files in this repository are covered by the Creative Commons 4.0 license:
+
+https://creativecommons.org/licenses/by-sa/4.0/
