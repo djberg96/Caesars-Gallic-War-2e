@@ -2,6 +2,12 @@
   <title>Ariovistus</title>
   <desc>The Ariovistus German leader block for Caesar&amp;s Gallic War</desc>
 
+  <metadata>
+    <author>Daniel J. Berger</author>
+    <date>4-Jun-2023</date>
+    <license>CC BY-SA 4.0</license>
+  </metadata>
+
   <defs>
     <clipPath id="helmet-path">
       <path
@@ -23,7 +29,7 @@
     stroke-width="3"
   />
 
-  <g id="tribe" text-anchor="middle" font-size="12" font-family="Papyrus">
+  <g id="leader" text-anchor="middle" font-size="12" font-family="Papyrus">
     <rect
       x="21"
       y="21"
@@ -35,39 +41,9 @@
 
     <text x="50" y="33" fill="white">Ariovistus</text>
     <text x="50" y="75" fill="white" font-size="8">Suebi</text>
-
-    <g transform="translate(10)">
-      <ellipse
-        id="shield"
-        cx="50"
-        cy="54"
-        rx="10"
-        ry="13"
-        fill="#996244"
-        stroke="black"
-        stroke-width="0.5"
-      />
-
-      <circle cx="50" cy="54" r="3" fill="black" stroke="white" stroke-width="0.2"/>
-
-      <path
-        id="shield_symbol"
-        d="
-          M 43,53
-          C 43,54 44,55 45,56
-          Q 44,55 45,53
-          Z
-        "
-        fill="black"
-        stroke="white"
-        stroke-width="0.2"
-      />
-
-      <use href="#shield_symbol" transform="scale(-1,1) translate(-100,0)"/>
-    </g>
   </g>
 
-  <g id="helmet" transform="scale(0.3) translate(74,130)">
+  <g id="helmet" transform="scale(0.4) translate(75,82)">
     <path
       d="
         M 20,40
@@ -112,53 +88,6 @@
         clip-path="url(#helmet-path)"
       />
     </g>
-  </g>
-
-  <g id="axe" transform="scale(0.35) translate(120, 50) rotate(35, -34, 80)">
-    <rect
-      id="axe-handle"
-      x="48"
-      y="4"
-      width="4"
-      height="98"
-      fill="#4f301f"
-      stroke="black"
-      stroke-width="0.5"
-    />
-
-    <path
-      id="axe-blade"
-      d="
-        M 50 6
-        Q 34 8 24 6
-        Q 18 18 24 28
-        Q 34 16 50 25
-      "
-      fill="silver"
-      stroke="darkgrey"
-      stroke-width="0.5"
-    />
-
-    <path
-      id="axe-blade-edge"
-      d="
-        M 24 5
-        Q 17 18 25 29
-        Q 20 18 25 5
-        Z
-      "
-      fill="white"
-      clip-path="url(#axe-blade-clip)"
-    />
-
-    <rect
-      id="blade-base"
-      x="47"
-      y="5"
-      width="6"
-      height="21"
-      fill="grey"
-    />
   </g>
 
   <g id="attributes" text-anchor="middle" font-size="16">
