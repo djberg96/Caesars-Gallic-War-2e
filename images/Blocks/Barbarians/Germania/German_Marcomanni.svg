@@ -2,6 +2,12 @@
   <title>German - Marcomanni</title>
   <desc>One of the German blocks for Caesar&amp;s Gallic War</desc>
 
+  <metadata>
+    <author>Daniel J. Berger</author>
+    <date>4-Jun-2023</date>
+    <license>CC BY-SA 4.0</license>
+  </metadata>
+
   <defs>
     <clipPath id="axe-blade-clip">
       <path
