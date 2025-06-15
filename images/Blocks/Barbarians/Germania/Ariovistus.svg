@@ -40,8 +40,9 @@
     />
 
     <text x="50" y="33" fill="white">Ariovistus</text>
-    <text x="70" y="53" fill="white" font-size="8">1-2</text>
     <text x="50" y="75" fill="white" font-size="8">Suebi</text>
+    <text x="70" y="52" fill="white" font-size="4">Subdue</text>
+    <text x="70" y="56" fill="white" font-size="4">1-2</text>
   </g>
 
   <g id="helmet" transform="scale(0.4) translate(75,82)">
