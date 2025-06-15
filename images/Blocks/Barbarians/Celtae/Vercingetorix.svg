@@ -44,7 +44,7 @@
     />
 
     <text x="50" y="33" fill="white" font-size="9">Vercingetorix</text>
-    <text x="70" y="53" fill="white" font-size="6">Raid</text>
+    <text x="70" y="59" fill="white" font-size="16">*</text>
   </g>
 
   <g id="helmet" transform="scale(0.4) translate(75,88)">
