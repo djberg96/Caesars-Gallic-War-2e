@@ -52,149 +52,149 @@ Whenever the solitaire rules mention the term "adjacent", treat any area with a 
   If the card revealed is a neutral area, and the bot has not yet activated 2 neutral areas, then treat it as a neutral tribe activation. The tribes in the area on the card are now controlled by the bot.
 
   \item POLITICAL ACTION
-  
+
   If the card revealed is a neutral area but the bot has already activated 2 neutral areas (or there aren't any neutral areas), or the area is Roman controlled, then treat it as a political action with the tribe on the card as the target. Roll to resolve the political action as per the standard political action rules, except that a natural "1" is always considered successful.
-  
+
   If the card revealed is a Roman controlled area, but all tribes of that area were eliminated earlier in the turn, then activate Germania instead as per \ref{solitaire:germania}.
-  
+
   If the card revealed is a Barbarian controlled area but all tribes of that area were eliminated earlier in the turn then use the Random Tribe Selection table for the target of a political action. Re-roll if the result happens to match the current card.
-  
+
   \textbf{Exception:} If the card revealed is the Helvetii/Nantuates area and the Helvetii have been eliminated, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, activate the Helvetii as per \ref{solitaire:tribal} if they are controlled by the bot, or attempt a political action on the Nantuates if the Helvetii have been eliminated.
-  
+
   \textbf{Exception:} If the card revealed is the Britannia area and the bot does not control any leaders in a port area on Oceanus Britannicus, then roll a die. On a 4 or less, then activate Germania instead for movement and combat as per \ref{solitaire:germania}. Otherwise, use the Random Tribe Selection table to randomly determine a different target area, re-rolling if the area is already controlled by the bot.
 
   \item MOVEMENT AND ATTACK
 
   \begin{enumerate}[leftmargin=0in]
     \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All bot controlled units in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
-    
+
     If there is more than one area that contains one block, then select one randomly. Roman controlled areas should be prioritized over neutral areas.
-    
+
     If there are no adjacent areas with only one block then skip to \ref{solitaire:attack_two}
-    
+
     If there aren't any Roman controlled or neutral areas adjacent, then activate the Germans instead as per \ref{solitaire:germania}.
 
     \item \label{solitaire:germania}If the card revealed is the Germania card (or Germania is activated by other means), and all German units are in Germania, then the German units in Germania will attack two different adjacent areas with two blocks each if possible, with the composition of the two attacking groups determined randomly. Only German blocks with two or more strength are selected. The rest remain in place.
 
     \item If the Germans have fewer than four blocks with at least two strength, then randomly select two blocks with at least two strength and only attack one adjacent area.
-    
+
     \item If the Germans do not have at least two units of 2 or more strength in Germania, but do have two or more units of 2 or more strength in a tribal area outside of Germania, then activate that area instead. If they have two units of 2 or more strength in two separate areas, then randomly choose one.
 
     \item \label{solitaire:attack_two}If there are no adjacent areas with only one block, and the activated area contains at least two blocks, then instead they will attack an adjacent target area that contains only two blocks. Again, determine one randomly if there is more than one.
-    
+
     \item If the Germans do not have at least two blocks of 2 or more strength anywhere on the board then treat the card as a modified Baggage Train instead, increasing the strength of all German units in Germania by one.
 
     \item If there are no adjacent Roman controlled or neutral units with only one or two blocks, then roll a die.
-    
+
     On a 1-3 use the card for a political action instead. Randomly determine the target, re-rolling until you find an tribal home area that is either neutral or enemy controlled.
-    
+
     On a 4-6 move as many German units as possible into an adjacent bot controlled area. An area adjacent to a Roman controlled or neutral area should be prioritized over other areas, and should not result in overstacking. If there is more than one possible area, or terrain or overstacking prevents all German units from moving to a single area, then select the target areas randomly.
-    
+
     \item When taking losses, bot controlled units not in their home area will take losses prior to units in their home area when they are the same strength. If there are multiple bot controlled barbarian units that could take a point of damage, randomly determine which unit takes the damage.
   \end{enumerate}
-  
+
   If Ariovistus is part of an attacking force, then attempt to use his special ability before battle if possible.
 
   If a river prevents all units from attacking the target area, then only two randomly selected units will attack, and the rest will remain in place.
 
   \item EVENTS
-  
+
   \begin{enumerate}[leftmargin=0in]
     \item If the card revealed is a Baggage Train, then treat it the same as if Germania had been activated as per \ref{solitaire:germania}.
-    
+
     \begin{itemize}
     \item If all German units have been eliminated or withdrawn and Vergingetorix is in play, then treat it as a raid if a raid has not already occurred. If a raid has occurred, then activate Vercingetorix and all units in his area for movement.
-    
+
     \item If all German units have been eliminated have been eliminated or withdrawn and Vercingetorix is not in play, then activate a minor leader if possible. Otherwise, treat this as a political action, randomly selecting a Roman controlled or neutral area. Treat it as though a "3" card has been played.
     \end{itemize}
-    
+
     \item If the card revealed is a Minor Revolt, then roll a die. On a 3 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select a tribe random randomly using the Random Tribe Selection table. Continue to re-roll if the tribe is already controlled by the bot, or was eliminated. Then, activate that tribe as per \ref{solitaire:tribal}.
-  
+
     \item If the card revealed is a Major Revolt, then roll a die. On a 2 or less then activate Germania as per \ref{solitaire:germania}. Otherwise, select one tribe randomly using the Random Tribe Selection table. Continue to re-roll if a tribe is already controlled by the bot or occupied an enemy unit. Then randomly select a second, adjacent tribal area. An area that is not occupied by an enemy unit, or already controlled by the bot, should be prioritized over other areas. Both areas are now controlled by the bot.
-  
+
     In addition, add one minor leader to the first tribal area that was selected: Dumnorix in a Celtae area or Ambiorix in a Belgic area. Treat that area as that leader's home area.
-  
+
     Both areas are then activated for movement and each area will attack using the same rules as per \ref{solitaire:tribal}, if possible.
-  
+
     \item If the card reveals is a Massive Revolt, then the behavior is dependent on the turn.
     \begin{itemize}
       \item If it is 54 BC or earlier (i.e. turns 1-5), then treat the card as a Major Revolt.
       \item \label{:solitaire:massive_revolt}If it is 53 BC or later (turn 6 or later), then randomly select one neutral or Roman controlled area using the Vercingetorix Home Area table and place Vercingetorix in that area, and mark it as his home area. Re-roll if the area is already controlled by the bot.
-      
+
       After the first area is selected, randomly select 2 adjacent tribal areas to join the revolt. If possible, neutral or Roman controlled areas should be prioritized over areas already controlled by the bot.
-      
+
       Once selected, all selected areas are activated for movement.
     \end{itemize}
   \end{enumerate}
 \end{enumerate}
-  
+
 MASSIVE REVOLT
 
 If, at the start of turn 7 (52 BC) the Massive Revolt has not already been played as an event, then set it aside before reshuffling the deck and drawing cards.
-  
+
 The normal play order this turn (only) will be reversed, i.e. the bot will play the first card, then you, and so on. The first card played by the bot will be the Massive Revolt. Resolve it as per \ref{:solitaire:massive_revolt}.
-  
+
 \label{solitaire:regrouping}REGROUPING
 
 All bot units that conquer another area will remain in their newly conquered area if the tribes of the area they attacked from were already controlled by the bot, as well as German units that attacked from Germania.
-    
+
 If the bot attacked or reinforced from an area where not all of that area's tribes are controlled by the bot, i.e. the area was conquered earlier in the turn, and it successfully conquers another adjacent area later, then one unit will regroup back to that area after combat. If there is more than one, select one randomly.
-    
+
 In short, the bot will try to conquer and hold as much territory as possible so that the tribes it attacks come under its control at the end of the turn.
-  
+
 \label{solitaire:reinforcing_battles}REINFORCING BATTLES
-  
+
 Because card play is not simultaneous in solitaire mode, the normal Reserves rules do not apply. Instead, both you and the bot may potentially move to reinforce an area in response to an attack.
-  
+
 You, the Roman player, may move up to two Roman legions (only) from the same area to reinforce an adjacent friendly controlled area that is under attack. It costs 1 supply point per legion that reacts. Normal pinning restrictions apply, i.e. you cannot leave if your units are pinned.
-    
+
 The bot will potentially reinforce a bot controlled area with up to two friendly Gallic and/or German units from a single area that is adjacent and not itself under attack, unless the original defending units are outnumbered by 2-1 strength or more. Otherwise, roll a die. On a 1-3 the bot attempts to reinforce the area. On a 4-6 it does not respond.
 
 If a leader is present, either from a possible reinforcement area or in the area already under attack, then substract 1 from the reinforcement die roll.
 
 \begin{itemize}
   \item If there is more than one area from which the bot could reinforce, then randomly determine which area the reinforcements come from.
-    
+
   \item If there happen to be more than two blocks in the reinforcing area, then randomly determine which two units reinforce the battle while leaving the others behind, except that German units should be prioritized over Gallic units if the area being reinforced also contains a German unit.
-    
+
   \item If there is more than one are under attack, then randomly determine reinforcement for each area. You may choose the order in which these are resolved.
-    
+
   \item Neither you nor the bot can reinforce an area that was neutral immediately prior to being attacked.
 \end{itemize}
-  
+
 \label{solitaire:attack_and_retreat}ATTACK AND RETREAT
- 
+
 Attacking barbarian units will retreat instead of firing in a field battle if, at the start of a battle round, the strength of the defending units is greater than their own.
 
 Attacking barbarian units will retreat instead of firing in a siege if, at the start of a battle round, the strength of the defending units is equal to or greater than their own.
 
 If the bot is attacking more than one area, resolve the area with the most units attacking (including reinforcements) first. If there is a tie, resolve the order randomly.
-  
+
 \label{solitaire:defense_and_retreat}DEFENSE AND RETREAT
 
 Barbarian units in their home area will fight to the death, except German units in Germania, which might strategically withdraw (see below).
 
 At the start of a battle round, if the total strength of the attacker is at least 2-1, any defending Barbarian units not in their home area will, as their first action, retreat to an adjacent barbarian controlled area if possible. German unit will retreat into Germania if possible.
-    
+
 \textbf{Exception:} Barbarian units outnumbered by 2-1 strength or more in their home area will retreat into a fortress if a fortress exists in that area. If there is more than one, the strongest unit goes into the fortress. If they are the same strength, select one randomly.
-    
+
 \textbf{Exception:} German units in Germania will strategically withdraw at the start of each battle round (before any dice are rolled) if the attacking units have a 2-1 or greater strength advantage. This supersedes the normal rule that they only have one chance to withdraw before battle begins.
 
 Barbarian units that can retreat will retreat to an area with a Barbarian leader first, if possible. A Barbarian leader will retreat to his home area if possible. If there is no Barbarian leader, but more than one possible retreat option, then select the retreat location randomly.
 
 If the total strength of the attacking units is less than 2-1, then all Barbarian units will fight, outside a fortress if present.
 
-  
+\newpage
 \label{solitaire:vercingetorix}VERCINGETORIX
 
 If Vercingetorix is on the board, i.e. the Massive Event has already occurred, then whenever Germania would normally be activated, roll a die. On a 1-3 Vercingetorix and all tribes in his area are activated instead.
-    
+
 \textit{Note: If all German units have been eliminated or withdrawn, then skip the die roll and automatically activate Vercingetorix.}
-    
+
 If the Romans have at least 1 supply point, and there has not already been a raid this turn, treat the card as a raid, and reduce the Roman supply by the value of the card as per the \textit{Supply Action} rules.
-    
+
 If activated, Vercingetorix and as many units in his area as possible attack the nearest enemy (first priority) or neutral (second priority) location where he can muster at least equal strength.
-    
+
 If the terrain prevents all units from attacking the same area, then any gallic units in their home area should be left behind first, randomly determined if necessary.
 
 \label{solitaire:minor_leaders}MINOR LEADERS
@@ -208,9 +208,11 @@ At the start of turn 6 if Ambiorix is not already on the board, prior to playing
 German and Gallic units controlled by the bot always take replacements if possible.
 
 If there was a poor harvest, or if Ariovistus wintered outside of Germania on the previous turn, then Ariovistus and all German units outside of Germania return home.
-    
+
 If Ariovistus did not winter on the previous turn then roll a die. On a 1-3 Ariovistus and any German units with him remain in their current area for the winter. Otherwise they return to Germania.
 
+\begingroup
+\footnotesize
 \begin{samepage}
 RANDOM TRIBE SELECTION
 
@@ -298,3 +300,4 @@ Once you have determined the region, roll 1d6 to determine the specific tribal a
 12: & Sequani \\
 \end{tabular}
 \end{samepage}
+\endgroup
