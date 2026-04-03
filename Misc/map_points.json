@@ -192,5 +192,39 @@
     "port": true,
     "fort": null,
     "special": null
+  },
+  {
+    "point": "bellovaci",
+    "connections": [
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atuatuci", "type": "regular"},
+      {"area": "atrebates", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "caletes",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": {"name": "bratuspantium", "level": 1},
+    "special": null
+  },
+  {
+    "point": "mandubii",
+    "connections": [
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "esuvii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "treveri", "type": "regular"},
+      {"area": "leuci", "type": "regular"},
+      {"area": "sequani", "type": "regular"},
+      {"area": "aedui", "type": "regular"}
+    ],
+    "second_tribe": "senones",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "alesia", "level": 1},
+    "special": null
   }
 ]
