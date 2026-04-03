@@ -226,5 +226,36 @@
     "port": false,
     "fort": {"name": "alesia", "level": 1},
     "special": null
-  }
+  },
+  {
+    "point": "atuatuci",
+    "connections": [
+      {"area": "bellovaci", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atrebates", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "menapi", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "remi",
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "atrebates",
+    "connections": [
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "leuci", "type": "minor_river"},
+      {"area": "sequani", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "morini",
+    "port": true,
+    "fort": null,
+    "special": null
+   }
 ]
