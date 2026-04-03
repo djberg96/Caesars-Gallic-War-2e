@@ -1,5 +1,20 @@
 [
   {
+    "point": "allobroges",
+    "connections": [
+      {"area": "transalpine_gaul", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "sequani", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
     "point": "andes",
     "connections": [
       {"area": "osismi", "type": "regular"},
