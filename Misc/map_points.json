@@ -106,5 +106,20 @@
     "alternate_tribe": null,
     "port": false,
     "fort": {"name": "narbo", "level": 1}
+  },
+  {
+    "point": "arverni",
+    "connections": [
+      {"area": "santones", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "gergovia", "level": 1}
   }
 ]
