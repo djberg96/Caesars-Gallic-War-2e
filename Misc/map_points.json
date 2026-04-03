@@ -158,6 +158,20 @@
     "special": null
   },
   {
+    "point": "menapi",
+    "connections": [
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "atrebates", "type": "minor_river"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "nervii",
+    "port": false,
+    "fort": null,
+    "special": "rhine_crossing"
+  },
+  {
     "point": "osismi",
     "connections": [
       {"area": "veneti", "type": "regular"},
