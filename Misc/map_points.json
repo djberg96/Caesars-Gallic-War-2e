@@ -1,0 +1,41 @@
+{
+  [
+    {
+      "point": "osismi",
+      "connections": [
+        "veneti",
+        "andes",
+        "oceanus_britannicus",
+        "mare_cantrabricum"
+      ],
+      "second_tribe": "false",
+      "alternate_tribe": "false",
+      "port": "true"
+    },
+    {
+      "point": "veneti",
+      "connections": [
+        "osismi",
+        "andes",
+        "mare_cantrabricum"
+      ],
+      "second_tribe": "false",
+      "alternate_tribe": "false",
+      "port": "true"
+    },
+    {
+      "point": "pictones",
+      "connections": [
+        "veneti",
+        "andes",
+        "carnutes",
+        "bituriges",
+        "santones",
+        "mare_cantrabricum"
+      ],
+      "second_tribe": "false",
+      "alternate_tribe": "namnetes",
+      "port": "true"
+    }
+  ]
+}
