@@ -92,5 +92,19 @@
     "alternate_tribe": null,
     "port": false,
     "fort": {"name": "uxellodunum", "level": 1}
+  },
+  {
+    "point": "volcae",
+    "connections": [
+      {"area": "tolosates", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "boii", "type": "regular"},
+      {"area": "transalpine_gaul", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "narbo", "level": 1}
   }
 ]
