@@ -1,5 +1,21 @@
 [
   {
+    "point": "aedui",
+    "connections": [
+      {"area": "allobroges", "type": "minor_river"},
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "boii", "type": "regular"},
+      {"area": "sequani", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
     "point": "allobroges",
     "connections": [
       {"area": "transalpine_gaul", "type": "regular"},
@@ -241,7 +257,7 @@
     "port": false,
     "fort": null,
     "special": "Roman home area, Barbarians may not enter."
-  }
+  },
   {
     "point": "santones",
     "connections": [
