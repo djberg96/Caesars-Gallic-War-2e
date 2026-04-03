@@ -54,5 +54,43 @@
     "alternate_tribe": null,
     "port": true,
     "fort": null
+  },
+  {
+    "point": "tarbelli",
+    "connections": [
+      {"area": "santones", "type": "minor_river"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "tolosates", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "elusates",
+    "port": false,
+    "fort": null
+  },
+  {
+    "point": "tolosates",
+    "connections": [
+      {"area": "tarbelli", "type": "regular"}
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "volcae", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "sotiates",
+    "port": false,
+    "fort": null
+  },
+  {
+    "point": "cadurci",
+    "connections": [
+      {"area": "santones", "type": "regular"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "tarbelli", "type": "minor_river"},
+      {"area": "tolosates", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "uxellodunum", "level": 1}
   }
 ]
