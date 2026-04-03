@@ -219,6 +219,20 @@
     "special": null
   },
   {
+    "point": "mediomatrici",
+    "connections": [
+      {"area": "leuci", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "mandubii", "type": "minor_river"}
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  },
+  {
     "point": "menapi",
     "connections": [
       {"area": "atuatuci", "type": "minor_river"},
