@@ -169,10 +169,26 @@
       {"area": "osismi", "type": "regular"},
       {"area": "pictones", "type": "minor_river"},
       {"area": "veneti", "type": "regular"},
-      {"area": "esuvii", "type": "regular"}
+      {"area": "esuvii", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"}
     ],
     "second_tribe": "venelli",
     "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "esuvii",
+    "connections": [
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "andes", "type": "regular"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "luxovii",
     "port": true,
     "fort": null,
     "special": null
