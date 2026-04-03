@@ -248,6 +248,21 @@
     "special": null
   },
   {
+    "point": "sequani",
+    "connections": [
+      {"area": "allobroges", "type": "regular"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "leuci", "type": "regular"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "helvetii", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "bibracte", "level": 1},
+    "special": null
+  },
+  {
     "point": "tarbelli",
     "connections": [
       {"area": "santones", "type": "minor_river"},
