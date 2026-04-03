@@ -10,7 +10,8 @@
       ],
       "second_tribe": "false",
       "alternate_tribe": "false",
-      "port": "true"
+      "port": "true",
+      "fort": "false"
     },
     {
       "point": "veneti",
@@ -21,7 +22,8 @@
       ],
       "second_tribe": "false",
       "alternate_tribe": "false",
-      "port": "true"
+      "port": "true",
+      "fort": "false"
     },
     {
       "point": "pictones",
@@ -35,7 +37,23 @@
       ],
       "second_tribe": "false",
       "alternate_tribe": "namnetes",
-      "port": "true"
+      "port": "true",
+      "fort": "false"
+    },
+    {
+      "point": "santones",
+      "connections": [
+        "pictones",
+        "bituriges",
+        "arverni",
+        "cadurci",
+        "tarbelli",
+        "mare_cantrabricum"
+      ],
+      "second_tribe": "lemovicii",
+      "alternate_tribe": "false",
+      "port": "true",
+      "fort": "false"
     }
   ]
 }
