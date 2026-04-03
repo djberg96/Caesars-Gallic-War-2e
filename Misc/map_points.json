@@ -232,6 +232,17 @@
     "special": null
   },
   {
+    "point": "roman_off_map",
+    "connections": [
+      {"area": "transalpine_gaul", "type": "limited"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Roman home area, Barbarians may not enter."
+  }
+  {
     "point": "santones",
     "connections": [
       {"area": "pictones", "type": "minor_river"},
@@ -301,7 +312,7 @@
     "alternate_tribe": null,
     "port": false,
     "fort": {"name": "aquae_sextiae", "level": 2},
-    "special": "roman_home_area"
+    "special": "Roman Staging Area."
   },
   {
     "point": "veneti",
