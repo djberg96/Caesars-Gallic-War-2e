@@ -145,7 +145,22 @@
     "second_tribe": null,
     "alternate_tribe": null,
     "port": false,
-    "fort": {"name": "avaricum", "level": 1},
+    "fort": {"name": "avaricum", "level": 2},
+    "special": null
+  },
+  {
+    "point": "carnutes",
+    "connections": [
+      {"area": "pictones", "type": "regular"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "andes", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "cenabum", "level": 1},
     "special": null
   }
 ]
