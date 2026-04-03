@@ -142,7 +142,7 @@
       {"area": "carnutes", "type": "regular"},
       {"area": "mandubii", "type": "minor_river"}
     ],
-    "second_tribe": null,
+    "second_tribe": "arvii",
     "alternate_tribe": null,
     "port": false,
     "fort": {"name": "avaricum", "level": 2},
@@ -158,9 +158,23 @@
       {"area": "andes", "type": "minor_river"}
     ],
     "second_tribe": null,
-    "alternate_tribe": null,
+    "alternate_tribe": "cenomani",
     "port": false,
     "fort": {"name": "cenabum", "level": 1},
+    "special": null
+  },
+  {
+    "point": "andes",
+    "connections": [
+      {"area": "osismi", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "veneti", "type": "regular"},
+      {"area": "esuvii", "type": "regular"}
+    ],
+    "second_tribe": "venelli",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
     "special": null
   }
 ]
