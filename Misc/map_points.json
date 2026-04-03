@@ -185,6 +185,21 @@
     "special": null
   },
   {
+    "point": "leuci",
+    "connections": [
+      {"area": "mandubii", "type": "regular"},
+      {"area": "mediomatrici", "type": "regular"},
+      {"area": "sequani", "type": "regular"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  }
+  {
     "point": "mandubii",
     "connections": [
       {"area": "bituriges", "type": "minor_river"},
@@ -215,7 +230,7 @@
     "alternate_tribe": "nervii",
     "port": false,
     "fort": null,
-    "special": "rhine_crossing"
+    "special": "Rhine Crossing"
   },
   {
     "point": "osismi",
