@@ -109,6 +109,21 @@
     "special": null
   },
   {
+    "point": "boii",
+    "connections": [
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "volcae", "type": "regular"},
+      {"area": "transalpine_gaul", "type": "regular"},
+      {"area": "allobroges", "type": "minor_river"},
+      {"area": "aedui", "type": "regular"}
+    ],
+    "second_tribe": "helvii",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
     "point": "cadurci",
     "connections": [
       {"area": "santones", "type": "regular"},
