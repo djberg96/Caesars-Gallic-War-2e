@@ -198,7 +198,7 @@
     "port": false,
     "fort": null,
     "special": "Rhine Crossing"
-  }
+  },
   {
     "point": "mandubii",
     "connections": [
@@ -344,6 +344,21 @@
     "port": false,
     "fort": {"name": "aquae_sextiae", "level": 2},
     "special": "Roman Staging Area."
+  },
+  {
+    "point": "treveri",
+    "connections": [
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "menapi", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "mediomatrici", "type": "minor_river"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": "eburones",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
   },
   {
     "point": "veneti",
