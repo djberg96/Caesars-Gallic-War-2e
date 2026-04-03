@@ -1,24 +1,168 @@
 [
   {
-    "point": "osismi",
+    "point": "andes",
     "connections": [
+      {"area": "osismi", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
       {"area": "veneti", "type": "regular"},
-      {"area": "andes", "type": "regular"},
-      {"area": "oceanus_britannicus", "type": "naval"},
-      {"area": "mare_cantrabricum", "type": "naval"}
+      {"area": "esuvii", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"}
     ],
-    "second_tribe": null,
+    "second_tribe": "venelli",
     "alternate_tribe": null,
     "port": true,
     "fort": null,
     "special": null
   },
   {
-    "point": "veneti",
+    "point": "arverni",
     "connections": [
-      {"area": "osismi", "type": "regular"},
+      {"area": "santones", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "gergovia", "level": 1},
+    "special": null
+  },
+  {
+    "point": "atrebates",
+    "connections": [
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "leuci", "type": "minor_river"},
+      {"area": "sequani", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "morini",
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "atuatuci",
+    "connections": [
+      {"area": "bellovaci", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atrebates", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "menapi", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "remi",
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "bellovaci",
+    "connections": [
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atuatuci", "type": "regular"},
+      {"area": "atrebates", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "caletes",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": {"name": "bratuspantium", "level": 1},
+    "special": null
+  },
+  {
+    "point": "bituriges",
+    "connections": [
+      {"area": "pictones", "type": "regular"},
+      {"area": "santones", "type": "minor_river"},
+      {"area": "arverni", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "carnutes", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"}
+    ],
+    "second_tribe": "arvii",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "avaricum", "level": 2},
+    "special": null
+  },
+  {
+    "point": "cadurci",
+    "connections": [
+      {"area": "santones", "type": "regular"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "tarbelli", "type": "minor_river"},
+      {"area": "tolosates", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "uxellodunum", "level": 1},
+    "special": null
+  },
+  {
+    "point": "carnutes",
+    "connections": [
+      {"area": "pictones", "type": "regular"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "andes", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "cenomani",
+    "port": false,
+    "fort": {"name": "cenabum", "level": 1},
+    "special": null
+  },
+  {
+    "point": "esuvii",
+    "connections": [
+      {"area": "carnutes", "type": "minor_river"},
       {"area": "andes", "type": "regular"},
-      {"area": "pictones", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "luxovii",
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "mandubii",
+    "connections": [
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "esuvii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "treveri", "type": "regular"},
+      {"area": "leuci", "type": "regular"},
+      {"area": "sequani", "type": "regular"},
+      {"area": "aedui", "type": "regular"}
+    ],
+    "second_tribe": "senones",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "alesia", "level": 1},
+    "special": null
+  },
+  {
+    "point": "osismi",
+    "connections": [
+      {"area": "veneti", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"},
       {"area": "mare_cantrabricum", "type": "naval"}
     ],
     "second_tribe": null,
@@ -75,7 +219,7 @@
   {
     "point": "tolosates",
     "connections": [
-      {"area": "tarbelli", "type": "regular"}
+      {"area": "tarbelli", "type": "regular"},
       {"area": "cadurci", "type": "minor_river"},
       {"area": "volcae", "type": "regular"}
     ],
@@ -86,18 +230,17 @@
     "special": null
   },
   {
-    "point": "cadurci",
+    "point": "veneti",
     "connections": [
-      {"area": "santones", "type": "regular"},
-      {"area": "arverni", "type": "minor_river"},
-      {"area": "tarbelli", "type": "minor_river"},
-      {"area": "tolosates", "type": "minor_river"},
-      {"area": "volcae", "type": "minor_river"}
+      {"area": "osismi", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
     ],
     "second_tribe": null,
     "alternate_tribe": null,
-    "port": false,
-    "fort": {"name": "uxellodunum", "level": 1},
+    "port": true,
+    "fort": null,
     "special": null
   },
   {
@@ -114,148 +257,5 @@
     "port": false,
     "fort": {"name": "narbo", "level": 1},
     "special": null
-  },
-  {
-    "point": "arverni",
-    "connections": [
-      {"area": "santones", "type": "regular"},
-      {"area": "cadurci", "type": "minor_river"},
-      {"area": "volcae", "type": "minor_river"},
-      {"area": "bituriges", "type": "regular"},
-      {"area": "boii", "type": "minor_river"},
-      {"area": "aedui", "type": "minor_river"}
-    ],
-    "second_tribe": null,
-    "alternate_tribe": null,
-    "port": false,
-    "fort": {"name": "gergovia", "level": 1},
-    "special": null
-  },
-  {
-    "point": "bituriges",
-    "connections": [
-      {"area": "pictones", "type": "regular"},
-      {"area": "santones", "type": "minor_river"},
-      {"area": "arverni", "type": "regular"},
-      {"area": "boii", "type": "minor_river"},
-      {"area": "aedui", "type": "minor_river"},
-      {"area": "carnutes", "type": "regular"},
-      {"area": "mandubii", "type": "minor_river"}
-    ],
-    "second_tribe": "arvii",
-    "alternate_tribe": null,
-    "port": false,
-    "fort": {"name": "avaricum", "level": 2},
-    "special": null
-  },
-  {
-    "point": "carnutes",
-    "connections": [
-      {"area": "pictones", "type": "regular"},
-      {"area": "bituriges", "type": "regular"},
-      {"area": "mandubii", "type": "minor_river"},
-      {"area": "esuvii", "type": "minor_river"},
-      {"area": "andes", "type": "minor_river"}
-    ],
-    "second_tribe": null,
-    "alternate_tribe": "cenomani",
-    "port": false,
-    "fort": {"name": "cenabum", "level": 1},
-    "special": null
-  },
-  {
-    "point": "andes",
-    "connections": [
-      {"area": "osismi", "type": "regular"},
-      {"area": "pictones", "type": "minor_river"},
-      {"area": "veneti", "type": "regular"},
-      {"area": "esuvii", "type": "regular"},
-      {"area": "oceanus_britannicus", "type": "naval"}
-    ],
-    "second_tribe": "venelli",
-    "alternate_tribe": null,
-    "port": true,
-    "fort": null,
-    "special": null
-  },
-  {
-    "point": "esuvii",
-    "connections": [
-      {"area": "carnutes", "type": "minor_river"},
-      {"area": "andes", "type": "regular"},
-      {"area": "mandubii", "type": "regular"},
-      {"area": "bellovaci", "type": "minor_river"},
-      {"area": "oceanus_britannicus", "type": "naval"}
-    ],
-    "second_tribe": null,
-    "alternate_tribe": "luxovii",
-    "port": true,
-    "fort": null,
-    "special": null
-  },
-  {
-    "point": "bellovaci",
-    "connections": [
-      {"area": "esuvii", "type": "minor_river"},
-      {"area": "mandubii", "type": "minor_river"},
-      {"area": "atuatuci", "type": "regular"},
-      {"area": "atrebates", "type": "minor_river"},
-      {"area": "oceanus_britannicus", "type": "naval"}
-    ],
-    "second_tribe": "caletes",
-    "alternate_tribe": null,
-    "port": true,
-    "fort": {"name": "bratuspantium", "level": 1},
-    "special": null
-  },
-  {
-    "point": "mandubii",
-    "connections": [
-      {"area": "bituriges", "type": "minor_river"},
-      {"area": "carnutes", "type": "minor_river"},
-      {"area": "esuvii", "type": "regular"},
-      {"area": "bellovaci", "type": "minor_river"},
-      {"area": "atuatuci", "type": "minor_river"},
-      {"area": "treveri", "type": "regular"},
-      {"area": "leuci", "type": "regular"},
-      {"area": "sequani", "type": "regular"},
-      {"area": "aedui", "type": "regular"}
-    ],
-    "second_tribe": "senones",
-    "alternate_tribe": null,
-    "port": false,
-    "fort": {"name": "alesia", "level": 1},
-    "special": null
-  },
-  {
-    "point": "atuatuci",
-    "connections": [
-      {"area": "bellovaci", "type": "regular"},
-      {"area": "mandubii", "type": "minor_river"},
-      {"area": "atrebates", "type": "regular"},
-      {"area": "treveri", "type": "minor_river"},
-      {"area": "menapi", "type": "minor_river"}
-    ],
-    "second_tribe": null,
-    "alternate_tribe": "remi",
-    "port": false,
-    "fort": null,
-    "special": null
-  },
-  {
-    "point": "atrebates",
-    "connections": [
-      {"area": "bellovaci", "type": "minor_river"},
-      {"area": "atuatuci", "type": "regular"},
-      {"area": "treveri", "type": "minor_river"},
-      {"area": "leuci", "type": "minor_river"},
-      {"area": "sequani", "type": "minor_river"},
-      {"area": "oceanus_britannicus", "type": "naval"}
-    ],
-    "second_tribe": null,
-    "alternate_tribe": "morini",
-    "port": true,
-    "fort": null,
-    "special": null
-   }
+  }
 ]
