@@ -244,6 +244,21 @@
     "special": null
   },
   {
+    "point": "transalpine_gaul",
+    "connections": [
+      {"area": "volcae", "type": "regular"},
+      {"area": "boii", "type": "regular"},
+      {"area": "allobroges", "type": "regular"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "off_map", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "aquae_sextiae", "level": 2},
+    "special": "roman_home_area"
+  },
+  {
     "point": "veneti",
     "connections": [
       {"area": "osismi", "type": "regular"},
