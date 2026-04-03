@@ -1,60 +1,58 @@
-{
-  [
-    {
-      "point": "osismi",
-      "connections": [
-        {"veneti", "regular"},
-        {"andes", "regular"},
-        {"oceanus_britannicus", "naval"},
-        {"mare_cantrabricum", "naval"}
-      ],
-      "second_tribe": "false",
-      "alternate_tribe": "false",
-      "port": "true",
-      "fort": "false"
-    },
-    {
-      "point": "veneti",
-      "connections": [
-        {"osismi", "regular"},
-        {"andes", "regular"},
-        {"pictones", "minor_river"},
-        {"mare_cantrabricum", "naval"}
-      ],
-      "second_tribe": "false",
-      "alternate_tribe": "false",
-      "port": "true",
-      "fort": "false"
-    },
-    {
-      "point": "pictones",
-      "connections": [
-        {"veneti", "minor_river"},
-        {"andes", "minor_river"},
-        {"carnutes", "regular"},
-        {"bituriges", "regular"},
-        {"santones", "minor_river"},
-        {"mare_cantrabricum", "naval"}
-      ],
-      "second_tribe": "false",
-      "alternate_tribe": "namnetes",
-      "port": "true",
-      "fort": "false"
-    },
-    {
-      "point": "santones",
-      "connections": [
-        {"pictones", "minor_river"},
-        {"bituriges", "minor_river"},
-        {"arverni", "regular"},
-        {"cadurci", "regular"},
-        {"tarbelli", "minor_river"},
-        {"mare_cantrabricum", "naval"}
-      ],
-      "second_tribe": "lemovicii",
-      "alternate_tribe": "false",
-      "port": "true",
-      "fort": "false"
-    }
-  ]
-}
+[
+  {
+    "point": "osismi",
+    "connections": [
+      {"area": "veneti", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null
+  },
+  {
+    "point": "veneti",
+    "connections": [
+      {"area": "osismi", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null
+  },
+  {
+    "point": "pictones",
+    "connections": [
+      {"area": "veneti", "type": "minor_river"},
+      {"area": "andes", "type": "minor_river"},
+      {"area": "carnutes", "type": "regular"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "santones", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "namnetes",
+    "port": true,
+    "fort": null
+  },
+  {
+    "point": "santones",
+    "connections": [
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "arverni", "type": "regular"},
+      {"area": "cadurci", "type": "regular"},
+      {"area": "tarbelli", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": "lemovicii",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null
+  }
+]
