@@ -222,7 +222,7 @@
   <text x="700" y="550" class="label">Sequani</text>
   <text x="810" y="448" class="label">Leuci</text>
   <text x="750" y="708" class="label">Helvetii</text>
-  <text x="660" y="660" class="label-small">(Nantuates)</text>
+  <text x="750" y="720" class="label-small">(Nantuates)</text>
   <text x="660" y="648" class="label">Allobroges</text>
 
   <!-- Belgica -->
