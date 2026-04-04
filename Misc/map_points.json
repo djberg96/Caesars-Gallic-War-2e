@@ -264,7 +264,8 @@
       {"area": "treveri", "type": "regular"},
       {"area": "leuci", "type": "regular"},
       {"area": "sequani", "type": "regular"},
-      {"area": "aedui", "type": "regular"}
+      {"area": "aedui", "type": "regular"},
+      {"area": "mediomatrici", "type": "regular"}
     ],
     "second_tribe": "senones",
     "alternate_tribe": null,
