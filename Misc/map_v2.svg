@@ -152,46 +152,46 @@
   <!-- === AREA SHAPES (octagons, ~80x56, on top of connections) === -->
 
   <!-- Celtae -->
-  <polygon points="60,265 75,252 125,252 140,265 140,295 125,308 75,308 60,295" class="area-shape region-celtae" /><!-- osismi -->
-  <polygon points="90,455 105,442 155,442 170,455 170,485 155,498 105,498 90,485" class="area-shape region-celtae" /><!-- veneti -->
-  <polygon points="180,355 195,342 245,342 260,355 260,385 245,398 195,398 180,385" class="area-shape region-celtae" /><!-- andes -->
-  <polygon points="220,525 235,512 285,512 300,525 300,555 285,568 235,568 220,555" class="area-shape region-celtae" /><!-- pictones -->
-  <polygon points="330,285 345,272 395,272 410,285 410,315 395,328 345,328 330,315" class="area-shape region-celtae" /><!-- esuvii -->
-  <polygon points="330,425 345,412 395,412 410,425 410,455 395,468 345,468 330,455" class="area-shape region-celtae" /><!-- carnutes -->
-  <polygon points="360,555 375,542 425,542 440,555 440,585 425,598 375,598 360,585" class="area-shape region-celtae" /><!-- bituriges -->
-  <polygon points="530,455 545,442 595,442 610,455 610,485 595,498 545,498 530,485" class="area-shape region-celtae" /><!-- mandubii -->
-  <polygon points="540,555 555,542 605,542 620,555 620,585 605,598 555,598 540,585" class="area-shape region-celtae" /><!-- aedui -->
-  <polygon points="390,655 405,642 455,642 470,655 470,685 455,698 405,698 390,685" class="area-shape region-celtae" /><!-- arverni -->
-  <polygon points="480,725 495,712 545,712 560,725 560,755 545,768 495,768 480,755" class="area-shape region-celtae" /><!-- boii -->
-  <polygon points="460,865 475,852 525,852 540,865 540,895 525,908 475,908 460,895" class="area-shape region-celtae" /><!-- volcae -->
-  <polygon points="320,745 335,732 385,732 400,745 400,775 385,788 335,788 320,775" class="area-shape region-celtae" /><!-- cadurci -->
-  <polygon points="210,635 225,622 275,622 290,635 290,665 275,678 225,678 210,665" class="area-shape region-celtae" /><!-- santones -->
-  <polygon points="690,545 705,532 755,532 770,545 770,575 755,588 705,588 690,575" class="area-shape region-celtae" /><!-- sequani -->
-  <polygon points="770,435 785,422 835,422 850,435 850,465 835,478 785,478 770,465" class="area-shape region-celtae" /><!-- leuci -->
-  <polygon points="710,695 725,682 775,682 790,695 790,725 775,738 725,738 710,725" class="area-shape region-celtae" /><!-- helvetii -->
-  <polygon points="620,635 635,622 685,622 700,635 700,665 685,678 635,678 620,665" class="area-shape region-celtae" /><!-- allobroges -->
+  <polygon points="54,266 75,247 125,247 146,266 146,294 125,313 75,313 54,294" class="area-shape region-celtae" /><!-- osismi -->
+  <polygon points="86,456 105,438 155,438 174,456 174,484 155,502 105,502 86,484" class="area-shape region-celtae" /><!-- veneti -->
+  <polygon points="176,356 195,338 245,338 264,356 264,384 245,402 195,402 176,384" class="area-shape region-celtae" /><!-- andes -->
+  <polygon points="216,526 235,508 285,508 304,526 304,554 285,572 235,572 216,554" class="area-shape region-celtae" /><!-- pictones -->
+  <polygon points="326,286 345,268 395,268 414,286 414,314 395,332 345,332 326,314" class="area-shape region-celtae" /><!-- esuvii -->
+  <polygon points="326,426 345,408 395,408 414,426 414,454 395,472 345,472 326,454" class="area-shape region-celtae" /><!-- carnutes -->
+  <polygon points="356,556 375,538 425,538 444,556 444,584 425,602 375,602 356,584" class="area-shape region-celtae" /><!-- bituriges -->
+  <polygon points="526,456 545,438 595,438 614,456 614,484 595,502 545,502 526,484" class="area-shape region-celtae" /><!-- mandubii -->
+  <polygon points="536,556 555,538 605,538 624,556 624,584 605,602 555,602 536,584" class="area-shape region-celtae" /><!-- aedui -->
+  <polygon points="386,656 405,638 455,638 474,656 474,684 455,702 405,702 386,684" class="area-shape region-celtae" /><!-- arverni -->
+  <polygon points="476,726 495,708 545,708 564,726 564,754 545,772 495,772 476,754" class="area-shape region-celtae" /><!-- boii -->
+  <polygon points="456,866 475,848 525,848 544,866 544,894 525,912 475,912 456,894" class="area-shape region-celtae" /><!-- volcae -->
+  <polygon points="316,746 335,728 385,728 404,746 404,774 385,792 335,792 316,774" class="area-shape region-celtae" /><!-- cadurci -->
+  <polygon points="206,636 225,618 275,618 294,636 294,664 275,682 225,682 206,664" class="area-shape region-celtae" /><!-- santones -->
+  <polygon points="686,546 705,528 755,528 774,546 774,574 755,592 705,592 686,574" class="area-shape region-celtae" /><!-- sequani -->
+  <polygon points="766,436 785,418 835,418 854,436 854,464 835,482 785,482 766,464" class="area-shape region-celtae" /><!-- leuci -->
+  <polygon points="706,696 725,678 775,678 794,696 794,724 775,742 725,742 706,724" class="area-shape region-celtae" /><!-- helvetii -->
+  <polygon points="616,636 635,618 685,618 704,636 704,664 685,682 635,682 616,664" class="area-shape region-celtae" /><!-- allobroges -->
 
   <!-- Belgica -->
-  <polygon points="450,275 465,262 515,262 530,275 530,305 515,318 465,318 450,305" class="area-shape region-belgica" /><!-- bellovaci -->
-  <polygon points="550,320 565,307 615,307 630,320 630,350 615,363 565,363 550,350" class="area-shape region-belgica" /><!-- atuatuci -->
-  <polygon points="540,235 555,222 605,222 620,235 620,265 605,278 555,278 540,265" class="area-shape region-belgica" /><!-- atrebates -->
-  <polygon points="680,155 695,142 745,142 760,155 760,185 745,198 695,198 680,185" class="area-shape region-belgica" /><!-- menapi -->
-  <polygon points="680,275 695,262 745,262 760,275 760,305 745,318 695,318 680,305" class="area-shape region-belgica" /><!-- treveri -->
-  <polygon points="740,335 755,322 805,322 820,335 820,365 805,378 755,378 740,365" class="area-shape region-belgica" /><!-- mediomatrici -->
+  <polygon points="447,277 465,259 515,259 533,277 533,303 515,321 465,321 447,303" class="area-shape region-belgica" /><!-- bellovaci -->
+  <polygon points="547,322 565,304 615,304 633,322 633,348 615,366 565,366 547,348" class="area-shape region-belgica" /><!-- atuatuci -->
+  <polygon points="537,237 555,219 605,219 623,237 623,263 605,281 555,281 537,263" class="area-shape region-belgica" /><!-- atrebates -->
+  <polygon points="677,157 695,139 745,139 763,157 763,183 745,201 695,201 677,183" class="area-shape region-belgica" /><!-- menapi -->
+  <polygon points="677,277 695,259 745,259 763,277 763,303 745,321 695,321 677,303" class="area-shape region-belgica" /><!-- treveri -->
+  <polygon points="747,347 765,329 815,329 833,347 833,373 815,391 765,391 747,373" class="area-shape region-belgica" /><!-- mediomatrici -->
 
   <!-- Aquitania -->
-  <polygon points="180,815 195,802 245,802 260,815 260,845 245,858 195,858 180,845" class="area-shape region-aquitania" /><!-- tarbelli -->
-  <polygon points="320,865 335,852 385,852 400,865 400,895 385,908 335,908 320,895" class="area-shape region-aquitania" /><!-- tolosates -->
+  <polygon points="176,816 195,798 245,798 264,816 264,844 245,862 195,862 176,844" class="area-shape region-aquitania" /><!-- tarbelli -->
+  <polygon points="316,866 335,848 385,848 404,866 404,894 385,912 335,912 316,894" class="area-shape region-aquitania" /><!-- tolosates -->
 
   <!-- Britannia -->
-  <polygon points="210,50 225,37 275,37 290,50 290,80 275,93 225,93 210,80" class="area-shape region-britannia" /><!-- belgae -->
+  <polygon points="206,51 225,33 275,33 294,51 294,79 275,97 225,97 206,79" class="area-shape region-britannia" /><!-- belgae -->
 
   <!-- Germania -->
-  <polygon points="915,215 935,195 985,195 1005,215 1005,325 985,345 935,345 915,325" class="area-shape region-germania" /><!-- germania -->
+  <polygon points="911,216 935,191 985,191 1009,216 1009,324 985,349 935,349 911,324" class="area-shape region-germania" /><!-- germania -->
 
   <!-- Roman -->
-  <polygon points="630,845 645,832 695,832 710,845 710,875 695,888 645,888 630,875" class="area-shape region-roman" /><!-- transalpine_gaul -->
-  <polygon points="810,875 825,862 875,862 890,875 890,905 875,918 825,918 810,905" class="area-shape region-roman" /><!-- roman_off_map -->
+  <polygon points="626,846 645,828 695,828 714,846 714,874 695,892 645,892 626,874" class="area-shape region-roman" /><!-- transalpine_gaul -->
+  <polygon points="806,876 825,858 875,858 894,876 894,904 875,922 825,922 806,904" class="area-shape region-roman" /><!-- roman_off_map -->
 
   <!-- === LABELS === -->
 
@@ -236,7 +236,7 @@
   <text x="720" y="180" class="label-small">/ Nervii</text>
   <text x="720" y="288" class="label">Treveri</text>
   <text x="720" y="300" class="label-small">+ Eburones</text>
-  <text x="780" y="348" class="label">Mediomatrici</text>
+  <text x="790" y="358" class="label">Mediomatrici</text>
 
   <!-- Aquitania -->
   <text x="220" y="828" class="label">Tarbelli</text>
@@ -326,36 +326,36 @@
 
   <!-- === PORT ICONS === -->
   <g>
-    <circle cx="82" cy="284" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="82" y1="280" x2="82" y2="288" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="66" cy="284" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="66" y1="280" x2="66" y2="288" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- osismi -->
   <g>
-    <circle cx="112" cy="474" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="112" y1="470" x2="112" y2="478" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="96" cy="474" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="96" y1="470" x2="96" y2="478" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- veneti -->
   <g>
-    <circle cx="202" cy="374" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="202" y1="370" x2="202" y2="378" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="186" cy="374" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="186" y1="370" x2="186" y2="378" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- andes -->
   <g>
-    <circle cx="242" cy="544" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="242" y1="540" x2="242" y2="548" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="226" cy="544" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="226" y1="540" x2="226" y2="548" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- pictones -->
   <g>
-    <circle cx="352" cy="304" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="352" y1="300" x2="352" y2="308" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="336" cy="304" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="336" y1="300" x2="336" y2="308" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- esuvii -->
   <g>
-    <circle cx="472" cy="294" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="472" y1="290" x2="472" y2="298" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="456" cy="294" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="456" y1="290" x2="456" y2="298" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- bellovaci -->
   <g>
-    <circle cx="512" cy="204" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="512" y1="200" x2="512" y2="208" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="548" cy="242" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="548" y1="238" x2="548" y2="246" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- atrebates -->
   <g>
-    <circle cx="232" cy="654" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="232" y1="650" x2="232" y2="658" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="216" cy="654" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="216" y1="650" x2="216" y2="658" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- santones -->
   <g>
     <circle cx="232" cy="69" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
