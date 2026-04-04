@@ -36,6 +36,7 @@
     "point": "andes",
     "region": "celtae",
     "connections": [
+      {"area": "carnutes", "type": "minor_river"},
       {"area": "osismi", "type": "regular"},
       {"area": "pictones", "type": "minor_river"},
       {"area": "veneti", "type": "regular"},
