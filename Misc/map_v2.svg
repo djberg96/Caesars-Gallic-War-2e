@@ -161,7 +161,7 @@
   <polygon points="356,556 375,538 425,538 444,556 444,584 425,602 375,602 356,584" class="area-shape region-celtae" /><!-- bituriges -->
   <polygon points="520,463 545,434 596,434 621,463 621,484 596,513 545,513 520,484" class="area-shape region-celtae" /><!-- mandubii -->
   <polygon points="536,556 555,538 605,538 624,556 624,584 605,602 555,602 536,584" class="area-shape region-celtae" /><!-- aedui -->
-  <polygon points="386,656 405,638 455,638 474,656 474,684 455,702 405,702 386,684" class="area-shape region-celtae" /><!-- arverni -->
+  <polygon points="376,655 398,631 462,631 484,655 484,685 462,709 398,709 376,685" class="area-shape region-celtae" /><!-- arverni (enlarged 25%, moved up) -->
   <polygon points="476,726 495,708 545,708 564,726 564,754 545,772 495,772 476,754" class="area-shape region-celtae" /><!-- boii -->
   <polygon points="442,858 467,835 533,835 558,858 558,902 533,925 467,925 442,902" class="area-shape region-celtae" /><!-- volcae (enlarged 25%) -->
   <polygon points="304,739 327,717 393,717 416,739 416,781 393,803 327,803 304,781" class="area-shape region-celtae" /><!-- cadurci (enlarged 25%) -->
@@ -211,7 +211,7 @@
   <text x="570" y="480" class="label">Mandubii</text>
   <text x="570" y="492" class="label-small">+ Senones</text>
   <text x="580" y="568" class="label">Aedui</text>
-  <text x="430" y="668" class="label">Arverni</text>
+  <text x="430" y="663" class="label">Arverni</text>
   <text x="520" y="738" class="label">Boii</text>
   <text x="520" y="750" class="label-small">+ Helvii</text>
   <text x="500" y="910" class="label">Volcae</text>
@@ -258,7 +258,7 @@
   <text x="850" y="900" class="label-small">Off-Map</text>
 
   <!-- === FORT ICONS === -->
-  <g transform="translate(448, 660)">
+  <g transform="translate(448, 690)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
