@@ -209,6 +209,21 @@
     "special": null
   },
   {
+    "point": "germania",
+    "region": "germania",
+    "connections": [
+      {"area": "leuci", "type": "major_river"},
+      {"area": "mediomatrici", "type": "major_river"},
+      {"area": "treveri", "type": "major_river"},
+      {"area": "menapi", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing. Home area of Germanic tribes, Barbarians may not winter here."
+  },
+  {
     "point": "helvetii",
     "region": "celtae",
     "connections": [
