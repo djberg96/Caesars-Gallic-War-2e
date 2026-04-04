@@ -399,14 +399,14 @@
     <line x1="457.5" y1="273.5" x2="456.5" y2="275.5" stroke="#2a5a8a" stroke-width="0.6" />
   </g><!-- bellovaci -->
   <g>
-    <path d="M558 229 Q559 231 563 231 Q567 231 568 229 Q567 230 563 230 Q559 230 558 229 Z" fill="#b8d8ef" stroke="#2a5a8a" stroke-width="1.2" />
-    <path d="M558 229 Q560 226 563 227 Q566 226 568 229" fill="none" stroke="#2a5a8a" stroke-width="1.2" />
-    <rect x="562.7" y="223" width="0.7" height="7" fill="#2a5a8a" />
-    <rect x="561.2" y="224.5" width="3.6" height="3" fill="#e8e0c0" stroke="#2a5a8a" stroke-width="0.5" />
-    <line x1="559.5" y1="230.5" x2="560.5" y2="232.5" stroke="#2a5a8a" stroke-width="0.6" />
-    <line x1="561.5" y1="230.7" x2="561.7" y2="232.7" stroke="#2a5a8a" stroke-width="0.6" />
-    <line x1="563.5" y1="230.7" x2="563.7" y2="232.7" stroke="#2a5a8a" stroke-width="0.6" />
-    <line x1="565.5" y1="230.5" x2="564.5" y2="232.5" stroke="#2a5a8a" stroke-width="0.6" />
+    <path d="M558 224 Q559 226 563 226 Q567 226 568 224 Q567 225 563 225 Q559 225 558 224 Z" fill="#b8d8ef" stroke="#2a5a8a" stroke-width="1.2" />
+    <path d="M558 224 Q560 221 563 222 Q566 221 568 224" fill="none" stroke="#2a5a8a" stroke-width="1.2" />
+    <rect x="562.7" y="218" width="0.7" height="7" fill="#2a5a8a" />
+    <rect x="561.2" y="219.5" width="3.6" height="3" fill="#e8e0c0" stroke="#2a5a8a" stroke-width="0.5" />
+    <line x1="559.5" y1="225.5" x2="560.5" y2="227.5" stroke="#2a5a8a" stroke-width="0.6" />
+    <line x1="561.5" y1="225.7" x2="561.7" y2="227.7" stroke="#2a5a8a" stroke-width="0.6" />
+    <line x1="563.5" y1="225.7" x2="563.7" y2="227.7" stroke="#2a5a8a" stroke-width="0.6" />
+    <line x1="565.5" y1="225.5" x2="564.5" y2="227.5" stroke="#2a5a8a" stroke-width="0.6" />
   </g><!-- atrebates -->
   <g>
     <path d="M211 661 Q212 663 216 663 Q220 663 221 661 Q220 662 216 662 Q212 662 211 661 Z" fill="#b8d8ef" stroke="#2a5a8a" stroke-width="1.2" />
