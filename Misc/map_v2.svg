@@ -37,9 +37,9 @@
   <ellipse cx="60" cy="650" rx="55" ry="100" class="region-sea" opacity="0.35" />
   <ellipse cx="330" cy="170" rx="280" ry="55" class="region-sea" opacity="0.35" />
 
-  <text x="60" y="645" class="label-sea" font-size="10">Mare</text>
-  <text x="60" y="660" class="label-sea" font-size="10">Cantabricum</text>
-  <text x="300" y="175" class="label-sea">Oceanus Britannicus</text>
+  <text x="60" y="665" class="label-sea" font-size="10">Mare</text>
+  <text x="60" y="680" class="label-sea" font-size="10">Cantabricum</text>
+  <text x="220" y="175" class="label-sea">Oceanus Britannicus</text>
 
   <!-- Region background labels -->
   <text x="420" y="510" class="label-region" transform="rotate(-5, 420, 510)">CELTAE</text>
