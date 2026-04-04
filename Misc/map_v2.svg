@@ -446,11 +446,11 @@
     <text x="8" y="14" class="legend-text" font-weight="bold">Regions</text>
     <rect x="8" y="22" width="10" height="10" class="region-celtae" />
     <text x="22" y="31" class="legend-text">Celtae</text>
-    <rect x="65" y="22" width="10" height="10" class="region-belgica" />
-    <text x="79" y="31" class="legend-text">Belgica</text>
+    <rect x="90" y="22" width="10" height="10" class="region-belgica" />
+    <text x="104" y="31" class="legend-text">Belgica</text>
     <rect x="8" y="38" width="10" height="10" class="region-aquitania" />
     <text x="22" y="47" class="legend-text">Aquitania</text>
-    <rect x="80" y="38" width="10" height="10" class="region-roman" />
-    <text x="94" y="47" class="legend-text">Roman</text>
+    <rect x="90" y="38" width="10" height="10" class="region-roman" />
+    <text x="104" y="47" class="legend-text">Roman</text>
   </g>
 </svg>
