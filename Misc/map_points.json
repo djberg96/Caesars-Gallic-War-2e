@@ -18,7 +18,7 @@
   },
   {
     "point": "allobroges",
-    "region": "belgica",
+    "region": "celtae",
     "connections": [
       {"area": "transalpine_gaul", "type": "regular"},
       {"area": "boii", "type": "minor_river"},
@@ -290,7 +290,7 @@
   },
   {
     "point": "mediomatrici",
-    "region": "celtae",
+    "region": "belgae",
     "connections": [
       {"area": "leuci", "type": "regular"},
       {"area": "treveri", "type": "minor_river"},
