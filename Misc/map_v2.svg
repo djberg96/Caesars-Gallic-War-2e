@@ -3,7 +3,7 @@
     <style>
       .region-celtae { fill: #c8dba5; stroke: #5a7a3a; }
       .region-belgica { fill: #f0d48a; stroke: #b8952e; }
-      .region-aquitania { fill: #e8b88a; stroke: #a06830; }
+      .region-aquitania { fill: #bbbbbb; stroke: #666666; }
       .region-britannia { fill: #a8c8e8; stroke: #4878a8; }
       .region-germania { fill: #d4b8a0; stroke: #8a6848; }
       .region-roman { fill: #e8a8a8; stroke: #b04040; }
