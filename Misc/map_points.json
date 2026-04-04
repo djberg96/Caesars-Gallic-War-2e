@@ -119,7 +119,6 @@
       {"area": "pictones", "type": "regular"},
       {"area": "santones", "type": "minor_river"},
       {"area": "arverni", "type": "regular"},
-      {"area": "boii", "type": "minor_river"},
       {"area": "aedui", "type": "minor_river"},
       {"area": "carnutes", "type": "regular"},
       {"area": "mandubii", "type": "minor_river"}
