@@ -172,9 +172,9 @@
   <polygon points="616,636 635,618 685,618 704,636 704,664 685,682 635,682 616,664" class="area-shape region-celtae" /><!-- allobroges -->
 
   <!-- Belgica -->
-  <polygon points="447,277 465,259 515,259 533,277 533,303 515,321 465,321 447,303" class="area-shape region-belgica" /><!-- bellovaci -->
+  <polygon points="438.25,270.75 461.25,246.25 518.75,246.25 541.75,270.75 541.75,309.25 518.75,333.75 461.25,333.75 438.25,309.25" class="area-shape region-belgica" /><!-- bellovaci (enlarged 25%) -->
   <polygon points="547,322 565,304 615,304 633,322 633,348 615,366 565,366 547,348" class="area-shape region-belgica" /><!-- atuatuci -->
-  <polygon points="537,237 555,219 605,219 623,237 623,263 605,281 555,281 537,263" class="area-shape region-belgica" /><!-- atrebates -->
+  <polygon points="552,222 570,204 620,204 638,222 638,248 620,266 570,266 552,248" class="area-shape region-belgica" /><!-- atrebates (moved up/right) -->
   <polygon points="677,157 695,139 745,139 763,157 763,183 745,201 695,201 677,183" class="area-shape region-belgica" /><!-- menapi -->
   <polygon points="677,277 695,259 745,259 763,277 763,303 745,321 695,321 677,303" class="area-shape region-belgica" /><!-- treveri -->
   <polygon points="747,347 765,329 815,329 833,347 833,373 815,391 765,391 747,373" class="area-shape region-belgica" /><!-- mediomatrici -->
@@ -226,12 +226,12 @@
   <text x="660" y="648" class="label">Allobroges</text>
 
   <!-- Belgica -->
-  <text x="490" y="288" class="label">Bellovaci</text>
-  <text x="490" y="300" class="label-small">+ Caletes</text>
+  <text x="490" y="310" class="label">Bellovaci</text>
+  <text x="490" y="324" class="label-small">+ Caletes</text>
   <text x="590" y="333" class="label">Atuatuci</text>
   <text x="590" y="345" class="label-small">/ Remi</text>
-  <text x="580" y="248" class="label">Atrebates</text>
-  <text x="580" y="260" class="label-small">/ Morini</text>
+  <text x="595" y="233" class="label">Atrebates</text>
+  <text x="595" y="245" class="label-small">/ Morini</text>
   <text x="720" y="168" class="label">Menapi</text>
   <text x="720" y="180" class="label-small">/ Nervii</text>
   <text x="720" y="288" class="label">Treveri</text>
@@ -287,7 +287,7 @@
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
     <text x="0" y="7" class="label-small" font-size="7">Alesia ★</text>
   </g>
-  <g transform="translate(508, 282)">
+  <g transform="translate(495, 282)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
@@ -346,12 +346,12 @@
     <line x1="321" y1="315" x2="321" y2="323" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- esuvii -->
   <g>
-    <circle cx="456" cy="294" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="456" y1="290" x2="456" y2="298" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="455" cy="265" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="455" y1="261" x2="455" y2="269" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- bellovaci -->
   <g>
-    <circle cx="548" cy="242" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
-    <line x1="548" y1="238" x2="548" y2="246" stroke="#2a5a8a" stroke-width="1.5" />
+    <circle cx="563" cy="227" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
+    <line x1="563" y1="223" x2="563" y2="231" stroke="#2a5a8a" stroke-width="1.5" />
   </g><!-- atrebates -->
   <g>
     <circle cx="216" cy="654" r="4" fill="none" stroke="#2a5a8a" stroke-width="1.5" />
