@@ -215,17 +215,15 @@
   <text x="520" y="738" class="label">Boii</text>
   <text x="520" y="750" class="label-small">+ Helvii</text>
   <g transform="translate(500, 895)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Narbo ★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Narbo</text>
   </g>
   <text x="360" y="748" class="label">Cadurci</text>
   <text x="360" y="760" class="label-small">+ Ruteni</text>
   <text x="250" y="648" class="label">Santones</text>
   <text x="250" y="660" class="label-small">+ Lemovicii</text>
-  <text x="700" y="550" class="label">Sequani</text>
+  <text x="700" y="560" class="label">Sequani</text>
   <text x="810" y="448" class="label">Leuci</text>
   <text x="750" y="708" class="label">Helvetii</text>
   <text x="750" y="720" class="label-small">(Nantuates)</text>
@@ -265,63 +263,45 @@
 
   <!-- === FORT ICONS === -->
   <g transform="translate(448, 690)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Gergovia ★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Gergovia</text>
   </g>
   <g transform="translate(398, 590)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-7" y="-15" width="14" height="2" fill="#4a2a0a" />
-    <text x="0" y="7" class="label-small" font-size="7">Avaricum ★★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">2</text>
+    <text x="0" y="12" class="label-small" font-size="7">Avaricum</text>
   </g>
-  <g transform="translate(388, 432)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Cenabum ★</text>
+  <g transform="translate(388, 422)">
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Cenabum</text>
   </g>
-  <g transform="translate(588, 462)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Alesia ★</text>
+  <g transform="translate(588, 452)">
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Alesia</text>
   </g>
   <g transform="translate(495, 282)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Bratuspantium ★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Bratuspantium</text>
   </g>
   <g transform="translate(362, 780)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Uxellodunum ★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Uxellodunum</text>
   </g>
   <text x="500" y="865" class="label">Volcae</text>
     <g transform="translate(718, 530)">
-    <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
-    <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
-    <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Bibracte ★</text>
+    <rect x="-7" y="-10" width="14" height="14" fill="#6a3a1a" />
+    <text x="0" y="-2" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">1</text>
+    <text x="0" y="12" class="label-small" font-size="7">Bibracte</text>
   </g>
   <g transform="translate(688, 852)">
-    <rect x="-15" y="22" width="10" height="8" class="fort-icon" />
-    <rect x="-17" y="18" width="3" height="4" class="fort-icon" />
-    <rect x="-11" y="18" width="3" height="4" class="fort-icon" />
-    <rect x="-6" y="18" width="3" height="4" class="fort-icon" />
-    <rect x="-17" y="15" width="14" height="2" fill="#4a2a0a" />
-    <text x="-10" y="37" class="label-small" font-size="7">Aquae Sextiae ★★</text>
+    <rect x="-17" y="17" width="14" height="14" fill="#6a3a1a" />
+    <text x="-10" y="25" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">2</text>
+    <text x="-10" y="39" class="label-small" font-size="7">Aquae Sextiae</text>
   </g>
 
   <!-- === PORT ICONS === -->
