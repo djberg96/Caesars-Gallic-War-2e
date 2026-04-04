@@ -54,7 +54,7 @@
     atrebates:530,200  menapi:720,170  treveri:720,290  mediomatrici:780,350
     mandubii:570,470  leuci:750,450  pictones:260,540  bituriges:400,570
     aedui:580,570  sequani:730,560  santones:250,650  arverni:430,670
-    helvetii:660,650  allobroges:750,710  cadurci:360,760  boii:520,740
+    helvetii:750,710  allobroges:660,650  cadurci:360,760  boii:520,740
     volcae:500,880  tarbelli:220,830  tolosates:360,880
     transalpine_gaul:670,860  roman_off_map:850,890
     germania:960,270  mare_cantrabricum:60,650  oceanus_britannicus:330,140
@@ -82,8 +82,8 @@
   <line x1="500" y1="880" x2="360" y2="880" class="conn-regular" /><!-- volcae-tolosates -->
   <line x1="500" y1="880" x2="670" y2="860" class="conn-regular" /><!-- volcae-transalpine_gaul -->
   <line x1="220" y1="830" x2="360" y2="880" class="conn-regular" /><!-- tarbelli-tolosates -->
-  <line x1="750" y1="710" x2="730" y2="560" class="conn-regular" /><!-- allobroges-sequani -->
-  <line x1="750" y1="710" x2="670" y2="860" class="conn-regular" /><!-- allobroges-transalpine_gaul -->
+  <line x1="660" y1="650" x2="730" y2="560" class="conn-regular" /><!-- allobroges-sequani -->
+  <line x1="660" y1="650" x2="670" y2="860" class="conn-regular" /><!-- allobroges-transalpine_gaul -->
   <line x1="730" y1="560" x2="570" y2="470" class="conn-regular" /><!-- sequani-mandubii -->
   <line x1="730" y1="560" x2="810" y2="450" class="conn-regular" /><!-- sequani-leuci -->
   <line x1="810" y1="450" x2="570" y2="470" class="conn-regular" /><!-- leuci-mandubii -->
@@ -115,13 +115,13 @@
   <line x1="430" y1="670" x2="500" y2="880" class="conn-minor_river" /><!-- arverni-volcae -->
   <line x1="430" y1="670" x2="520" y2="740" class="conn-minor_river" /><!-- arverni-boii -->
   <line x1="430" y1="670" x2="580" y2="570" class="conn-minor_river" /><!-- arverni-aedui -->
-  <line x1="580" y1="570" x2="750" y2="710" class="conn-minor_river" /><!-- aedui-allobroges -->
+  <line x1="580" y1="570" x2="660" y2="650" class="conn-minor_river" /><!-- aedui-allobroges -->
   <line x1="580" y1="570" x2="730" y2="560" class="conn-minor_river" /><!-- aedui-sequani -->
-  <line x1="520" y1="740" x2="750" y2="710" class="conn-minor_river" /><!-- boii-allobroges -->
-  <line x1="750" y1="710" x2="660" y2="650" class="conn-minor_river" /><!-- allobroges-helvetii -->
-  <line x1="660" y1="650" x2="730" y2="560" class="conn-minor_river" /><!-- helvetii-sequani -->
-  <line x1="660" y1="650" x2="810" y2="450" class="conn-minor_river" /><!-- helvetii-leuci -->
-  <line x1="660" y1="650" x2="670" y2="860" class="conn-minor_river" /><!-- helvetii-transalpine_gaul -->
+  <line x1="520" y1="740" x2="660" y2="650" class="conn-minor_river" /><!-- boii-allobroges -->
+  <line x1="660" y1="650" x2="750" y2="710" class="conn-minor_river" /><!-- allobroges-helvetii -->
+  <line x1="750" y1="710" x2="730" y2="560" class="conn-minor_river" /><!-- helvetii-sequani -->
+  <line x1="750" y1="710" x2="810" y2="450" class="conn-minor_river" /><!-- helvetii-leuci -->
+  <line x1="750" y1="710" x2="670" y2="860" class="conn-minor_river" /><!-- helvetii-transalpine_gaul -->
   <line x1="360" y1="760" x2="220" y2="830" class="conn-minor_river" /><!-- cadurci-tarbelli -->
   <line x1="360" y1="760" x2="360" y2="880" class="conn-minor_river" /><!-- cadurci-tolosates -->
   <line x1="360" y1="760" x2="500" y2="880" class="conn-minor_river" /><!-- cadurci-volcae -->
@@ -168,8 +168,8 @@
   <polygon points="210,635 225,622 275,622 290,635 290,665 275,678 225,678 210,665" class="area-shape region-celtae" /><!-- santones -->
   <polygon points="690,545 705,532 755,532 770,545 770,575 755,588 705,588 690,575" class="area-shape region-celtae" /><!-- sequani -->
   <polygon points="770,435 785,422 835,422 850,435 850,465 835,478 785,478 770,465" class="area-shape region-celtae" /><!-- leuci -->
-  <polygon points="620,635 635,622 685,622 700,635 700,665 685,678 635,678 620,665" class="area-shape region-celtae" /><!-- helvetii -->
-  <polygon points="710,695 725,682 775,682 790,695 790,725 775,738 725,738 710,725" class="area-shape region-celtae" /><!-- allobroges -->
+  <polygon points="710,695 725,682 775,682 790,695 790,725 775,738 725,738 710,725" class="area-shape region-celtae" /><!-- helvetii -->
+  <polygon points="620,635 635,622 685,622 700,635 700,665 685,678 635,678 620,665" class="area-shape region-celtae" /><!-- allobroges -->
 
   <!-- Belgica -->
   <polygon points="450,275 465,262 515,262 530,275 530,305 515,318 465,318 450,305" class="area-shape region-belgica" /><!-- bellovaci -->
@@ -221,9 +221,9 @@
   <text x="250" y="660" class="label-small">+ Lemovicii</text>
   <text x="730" y="558" class="label">Sequani</text>
   <text x="810" y="448" class="label">Leuci</text>
-  <text x="660" y="648" class="label">Helvetii</text>
+  <text x="750" y="708" class="label">Helvetii</text>
   <text x="660" y="660" class="label-small">(Nantuates)</text>
-  <text x="750" y="708" class="label">Allobroges</text>
+  <text x="660" y="648" class="label">Allobroges</text>
 
   <!-- Belgica -->
   <text x="490" y="288" class="label">Bellovaci</text>
