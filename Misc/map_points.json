@@ -149,6 +149,18 @@
     "special": null
   },
   {
+    "point": "belgae",
+    "region": "britannia",
+    "connections": [
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "cantiaci",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": "Political Action restrictions."
+  },
+  {
     "point": "cadurci",
     "region": "celtae",
     "connections": [
