@@ -263,7 +263,7 @@
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Gergovia</text>
+    <text x="0" y="7" class="label-small" font-size="7">Gergovia ★</text>
   </g>
   <g transform="translate(418, 560)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
@@ -278,42 +278,42 @@
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Cenabum</text>
+    <text x="0" y="7" class="label-small" font-size="7">Cenabum ★</text>
   </g>
   <g transform="translate(588, 462)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Alesia</text>
+    <text x="0" y="7" class="label-small" font-size="7">Alesia ★</text>
   </g>
   <g transform="translate(508, 282)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Bratuspantium</text>
+    <text x="0" y="7" class="label-small" font-size="7">Bratuspantium ★</text>
   </g>
   <g transform="translate(378, 752)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Uxellodunum</text>
+    <text x="0" y="7" class="label-small" font-size="7">Uxellodunum ★</text>
   </g>
   <g transform="translate(518, 870)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Narbo</text>
+    <text x="0" y="7" class="label-small" font-size="7">Narbo ★</text>
   </g>
-  <g transform="translate(808, 550)">
+  <g transform="translate(748, 550)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
-    <text x="0" y="7" class="label-small" font-size="7">Bibracte</text>
+    <text x="0" y="7" class="label-small" font-size="7">Bibracte ★</text>
   </g>
   <g transform="translate(688, 852)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
