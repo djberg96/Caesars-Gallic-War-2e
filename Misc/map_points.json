@@ -309,7 +309,7 @@
     "connections": [
       {"area": "atuatuci", "type": "minor_river"},
       {"area": "treveri", "type": "minor_river"},
-      {"area": "atrebates", "type": "minor_river"},
+      {"area": "atrebates", "type": "regular"},
       {"area": "germania", "type": "major_river"}
     ],
     "second_tribe": null,
