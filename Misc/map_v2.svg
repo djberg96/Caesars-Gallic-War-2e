@@ -158,7 +158,7 @@
   <polygon points="216,526 235,508 285,508 304,526 304,554 285,572 235,572 216,554" class="area-shape region-celtae" /><!-- pictones -->
   <polygon points="311,301 330,283 380,283 399,301 399,329 380,347 330,347 311,329" class="area-shape region-celtae" /><!-- esuvii -->
   <polygon points="320,432 344,404 396,404 420,432 420,454 396,480 344,480 320,454" class="area-shape region-celtae" /><!-- carnutes -->
-  <polygon points="356,556 375,538 425,538 444,556 444,584 425,602 375,602 356,584" class="area-shape region-celtae" /><!-- bituriges -->
+  <polygon points="349,545 370,520 430,520 451,545 451,585 430,610 370,610 349,585" class="area-shape region-celtae" /><!-- bituriges (enlarged 25%, moved up more) -->
   <polygon points="520,463 545,434 596,434 621,463 621,484 596,513 545,513 520,484" class="area-shape region-celtae" /><!-- mandubii -->
   <polygon points="536,556 555,538 605,538 624,556 624,584 605,602 555,602 536,584" class="area-shape region-celtae" /><!-- aedui -->
   <polygon points="376,655 398,631 462,631 484,655 484,685 462,709 398,709 376,685" class="area-shape region-celtae" /><!-- arverni (enlarged 25%, moved up) -->
@@ -206,8 +206,8 @@
   <text x="355" y="325" class="label-small">/ Luxovii</text>
   <text x="370" y="455" class="label">Carnutes</text>
   <text x="370" y="467" class="label-small">/ Cenomani</text>
-  <text x="400" y="568" class="label">Bituriges</text>
-  <text x="400" y="580" class="label-small">+ Arvii</text>
+  <text x="400" y="548" class="label">Bituriges</text>
+  <text x="400" y="560" class="label-small">+ Arvii</text>
   <text x="570" y="480" class="label">Mandubii</text>
   <text x="570" y="492" class="label-small">+ Senones</text>
   <text x="580" y="568" class="label">Aedui</text>
@@ -265,7 +265,7 @@
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
     <text x="0" y="7" class="label-small" font-size="7">Gergovia ★</text>
   </g>
-  <g transform="translate(418, 560)">
+  <g transform="translate(398, 590)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
