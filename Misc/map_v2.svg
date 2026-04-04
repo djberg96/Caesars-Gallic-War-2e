@@ -50,8 +50,8 @@
   <!--
     Center coordinates:
     belgae:250,65  osismi:100,280  andes:220,370  veneti:130,470
-    esuvii:370,300  carnutes:370,440  bellovaci:490,290  atuatuci:555,375
-    atrebates:530,200  menapi:720,170  treveri:720,290  mediomatrici:840,370
+    esuvii:370,300  carnutes:370,440  bellovaci:490,290  atuatuci:590,335
+    atrebates:530,200  menapi:720,170  treveri:720,290  mediomatrici:780,350
     mandubii:570,470  leuci:750,450  pictones:260,540  bituriges:400,570
     aedui:580,570  sequani:730,560  santones:250,650  arverni:430,670
     helvetii:660,650  allobroges:750,710  cadurci:360,760  boii:520,740
@@ -71,7 +71,7 @@
   <line x1="260" y1="540" x2="400" y2="570" class="conn-regular" /><!-- pictones-bituriges -->
   <line x1="370" y1="440" x2="400" y2="570" class="conn-regular" /><!-- carnutes-bituriges -->
   <line x1="370" y1="300" x2="570" y2="470" class="conn-regular" /><!-- esuvii-mandubii -->
-  <line x1="490" y1="290" x2="555" y2="375" class="conn-regular" /><!-- bellovaci-atuatuci -->
+  <line x1="490" y1="290" x2="590" y2="335" class="conn-regular" /><!-- bellovaci-atuatuci -->
   <line x1="400" y1="570" x2="430" y2="670" class="conn-regular" /><!-- bituriges-arverni -->
   <line x1="250" y1="650" x2="430" y2="670" class="conn-regular" /><!-- santones-arverni -->
   <line x1="250" y1="650" x2="360" y2="760" class="conn-regular" /><!-- santones-cadurci -->
@@ -85,11 +85,11 @@
   <line x1="750" y1="710" x2="730" y2="560" class="conn-regular" /><!-- allobroges-sequani -->
   <line x1="750" y1="710" x2="670" y2="860" class="conn-regular" /><!-- allobroges-transalpine_gaul -->
   <line x1="730" y1="560" x2="570" y2="470" class="conn-regular" /><!-- sequani-mandubii -->
-  <line x1="730" y1="560" x2="750" y2="450" class="conn-regular" /><!-- sequani-leuci -->
-  <line x1="750" y1="450" x2="570" y2="470" class="conn-regular" /><!-- leuci-mandubii -->
-  <line x1="750" y1="450" x2="840" y2="370" class="conn-regular" /><!-- leuci-mediomatrici -->
+  <line x1="730" y1="560" x2="810" y2="450" class="conn-regular" /><!-- sequani-leuci -->
+  <line x1="810" y1="450" x2="570" y2="470" class="conn-regular" /><!-- leuci-mandubii -->
+  <line x1="810" y1="450" x2="780" y2="350" class="conn-regular" /><!-- leuci-mediomatrici -->
   <line x1="720" y1="290" x2="570" y2="470" class="conn-regular" /><!-- treveri-mandubii -->
-  <line x1="570" y1="470" x2="840" y2="370" class="conn-regular" /><!-- mandubii-mediomatrici -->
+  <line x1="570" y1="470" x2="780" y2="350" class="conn-regular" /><!-- mandubii-mediomatrici -->
   <line x1="530" y1="200" x2="720" y2="170" class="conn-regular" /><!-- atrebates-menapi -->
 
   <!-- Minor river connections (blue) -->
@@ -102,12 +102,12 @@
   <line x1="370" y1="300" x2="490" y2="290" class="conn-minor_river" /><!-- esuvii-bellovaci -->
   <line x1="490" y1="290" x2="570" y2="470" class="conn-minor_river" /><!-- bellovaci-mandubii -->
   <line x1="490" y1="290" x2="530" y2="200" class="conn-minor_river" /><!-- bellovaci-atrebates -->
-  <line x1="555" y1="375" x2="570" y2="470" class="conn-minor_river" /><!-- atuatuci-mandubii -->
-  <line x1="555" y1="375" x2="530" y2="200" class="conn-minor_river" /><!-- atuatuci-atrebates -->
-  <line x1="555" y1="375" x2="720" y2="290" class="conn-minor_river" /><!-- atuatuci-treveri -->
-  <line x1="555" y1="375" x2="720" y2="170" class="conn-minor_river" /><!-- atuatuci-menapi -->
+  <line x1="590" y1="335" x2="570" y2="470" class="conn-minor_river" /><!-- atuatuci-mandubii -->
+  <line x1="590" y1="335" x2="530" y2="200" class="conn-minor_river" /><!-- atuatuci-atrebates -->
+  <line x1="590" y1="335" x2="720" y2="290" class="conn-minor_river" /><!-- atuatuci-treveri -->
+  <line x1="590" y1="335" x2="720" y2="170" class="conn-minor_river" /><!-- atuatuci-menapi -->
   <line x1="720" y1="170" x2="720" y2="290" class="conn-minor_river" /><!-- menapi-treveri -->
-  <line x1="720" y1="290" x2="840" y2="370" class="conn-minor_river" /><!-- treveri-mediomatrici -->
+  <line x1="720" y1="290" x2="780" y2="350" class="conn-minor_river" /><!-- treveri-mediomatrici -->
   <line x1="400" y1="570" x2="250" y2="650" class="conn-minor_river" /><!-- bituriges-santones -->
   <line x1="400" y1="570" x2="580" y2="570" class="conn-minor_river" /><!-- bituriges-aedui -->
   <line x1="400" y1="570" x2="570" y2="470" class="conn-minor_river" /><!-- bituriges-mandubii -->
@@ -120,7 +120,7 @@
   <line x1="520" y1="740" x2="750" y2="710" class="conn-minor_river" /><!-- boii-allobroges -->
   <line x1="750" y1="710" x2="660" y2="650" class="conn-minor_river" /><!-- allobroges-helvetii -->
   <line x1="660" y1="650" x2="730" y2="560" class="conn-minor_river" /><!-- helvetii-sequani -->
-  <line x1="660" y1="650" x2="750" y2="450" class="conn-minor_river" /><!-- helvetii-leuci -->
+  <line x1="660" y1="650" x2="810" y2="450" class="conn-minor_river" /><!-- helvetii-leuci -->
   <line x1="660" y1="650" x2="670" y2="860" class="conn-minor_river" /><!-- helvetii-transalpine_gaul -->
   <line x1="360" y1="760" x2="220" y2="830" class="conn-minor_river" /><!-- cadurci-tarbelli -->
   <line x1="360" y1="760" x2="360" y2="880" class="conn-minor_river" /><!-- cadurci-tolosates -->
@@ -129,8 +129,8 @@
   <line x1="580" y1="570" x2="400" y2="570" class="conn-minor_river" opacity="0" /><!-- already drawn -->
 
   <!-- Major river connections (Rhine) -->
-  <line x1="750" y1="450" x2="960" y2="270" class="conn-major_river" /><!-- leuci-germania -->
-  <line x1="840" y1="370" x2="960" y2="270" class="conn-major_river" /><!-- mediomatrici-germania -->
+  <line x1="810" y1="450" x2="960" y2="270" class="conn-major_river" /><!-- leuci-germania -->
+  <line x1="780" y1="350" x2="960" y2="270" class="conn-major_river" /><!-- mediomatrici-germania -->
   <line x1="720" y1="290" x2="960" y2="270" class="conn-major_river" /><!-- treveri-germania -->
   <line x1="720" y1="170" x2="960" y2="270" class="conn-major_river" /><!-- menapi-germania -->
 
@@ -167,17 +167,17 @@
   <polygon points="320,745 335,732 385,732 400,745 400,775 385,788 335,788 320,775" class="area-shape region-celtae" /><!-- cadurci -->
   <polygon points="210,635 225,622 275,622 290,635 290,665 275,678 225,678 210,665" class="area-shape region-celtae" /><!-- santones -->
   <polygon points="690,545 705,532 755,532 770,545 770,575 755,588 705,588 690,575" class="area-shape region-celtae" /><!-- sequani -->
-  <polygon points="710,435 725,422 775,422 790,435 790,465 775,478 725,478 710,465" class="area-shape region-celtae" /><!-- leuci -->
+  <polygon points="770,435 785,422 835,422 850,435 850,465 835,478 785,478 770,465" class="area-shape region-celtae" /><!-- leuci -->
   <polygon points="620,635 635,622 685,622 700,635 700,665 685,678 635,678 620,665" class="area-shape region-celtae" /><!-- helvetii -->
   <polygon points="710,695 725,682 775,682 790,695 790,725 775,738 725,738 710,725" class="area-shape region-celtae" /><!-- allobroges -->
 
   <!-- Belgica -->
   <polygon points="450,275 465,262 515,262 530,275 530,305 515,318 465,318 450,305" class="area-shape region-belgica" /><!-- bellovaci -->
-  <polygon points="515,360 530,347 580,347 595,360 595,390 580,403 530,403 515,390" class="area-shape region-belgica" /><!-- atuatuci -->
+  <polygon points="550,320 565,307 615,307 630,320 630,350 615,363 565,363 550,350" class="area-shape region-belgica" /><!-- atuatuci -->
   <polygon points="490,185 505,172 555,172 570,185 570,215 555,228 505,228 490,215" class="area-shape region-belgica" /><!-- atrebates -->
   <polygon points="680,155 695,142 745,142 760,155 760,185 745,198 695,198 680,185" class="area-shape region-belgica" /><!-- menapi -->
   <polygon points="680,275 695,262 745,262 760,275 760,305 745,318 695,318 680,305" class="area-shape region-belgica" /><!-- treveri -->
-  <polygon points="800,355 815,342 865,342 880,355 880,385 865,398 815,398 800,385" class="area-shape region-belgica" /><!-- mediomatrici -->
+  <polygon points="740,335 755,322 805,322 820,335 820,365 805,378 755,378 740,365" class="area-shape region-belgica" /><!-- mediomatrici -->
 
   <!-- Aquitania -->
   <polygon points="180,815 195,802 245,802 260,815 260,845 245,858 195,858 180,845" class="area-shape region-aquitania" /><!-- tarbelli -->
@@ -220,7 +220,7 @@
   <text x="250" y="648" class="label">Santones</text>
   <text x="250" y="660" class="label-small">+ Lemovicii</text>
   <text x="730" y="558" class="label">Sequani</text>
-  <text x="750" y="448" class="label">Leuci</text>
+  <text x="810" y="448" class="label">Leuci</text>
   <text x="660" y="648" class="label">Helvetii</text>
   <text x="660" y="660" class="label-small">(Nantuates)</text>
   <text x="750" y="708" class="label">Allobroges</text>
@@ -228,15 +228,15 @@
   <!-- Belgica -->
   <text x="490" y="288" class="label">Bellovaci</text>
   <text x="490" y="300" class="label-small">+ Caletes</text>
-  <text x="555" y="373" class="label">Atuatuci</text>
-  <text x="555" y="385" class="label-small">/ Remi</text>
+  <text x="590" y="333" class="label">Atuatuci</text>
+  <text x="590" y="345" class="label-small">/ Remi</text>
   <text x="530" y="198" class="label">Atrebates</text>
   <text x="530" y="210" class="label-small">/ Morini</text>
   <text x="720" y="168" class="label">Menapi</text>
   <text x="720" y="180" class="label-small">/ Nervii</text>
   <text x="720" y="288" class="label">Treveri</text>
   <text x="720" y="300" class="label-small">+ Eburones</text>
-  <text x="840" y="368" class="label">Mediomatrici</text>
+  <text x="780" y="348" class="label">Mediomatrici</text>
 
   <!-- Aquitania -->
   <text x="220" y="828" class="label">Tarbelli</text>
@@ -308,7 +308,7 @@
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
     <text x="0" y="7" class="label-small" font-size="7">Narbo</text>
   </g>
-  <g transform="translate(748, 550)">
+  <g transform="translate(808, 550)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
