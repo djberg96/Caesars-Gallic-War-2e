@@ -290,6 +290,23 @@
     "special": "Rhine Crossing"
   },
   {
+    "point": "oceanus_britannicus",
+    "region": "celtae",
+    "connections": [
+      {"area": "osismi", "type": "naval"},
+      {"area": "andes", "type": "naval"},
+      {"area": "esuvii", "type": "naval"},
+      {"area": "atrebates", "type": "naval"},
+      {"area": "bellovaci", "type": "naval"},
+      {"area": "belgae", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Naval point. Only Romans may enter. Units may not end here."
+  },
+  {
     "point": "osismi",
     "region": "celtae",
     "connections": [
