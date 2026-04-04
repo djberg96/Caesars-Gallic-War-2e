@@ -448,7 +448,7 @@
       {"area": "boii", "type": "regular"},
       {"area": "allobroges", "type": "regular"},
       {"area": "helvetii", "type": "minor_river"},
-      {"area": "off_map", "type": "regular"}
+      {"area": "roman_off_map", "type": "regular"}
     ],
     "second_tribe": null,
     "alternate_tribe": null,
