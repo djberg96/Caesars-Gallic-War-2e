@@ -164,7 +164,7 @@
   <polygon points="386,656 405,638 455,638 474,656 474,684 455,702 405,702 386,684" class="area-shape region-celtae" /><!-- arverni -->
   <polygon points="476,726 495,708 545,708 564,726 564,754 545,772 495,772 476,754" class="area-shape region-celtae" /><!-- boii -->
   <polygon points="442,858 467,835 533,835 558,858 558,902 533,925 467,925 442,902" class="area-shape region-celtae" /><!-- volcae (enlarged 25%) -->
-  <polygon points="316,746 335,728 385,728 404,746 404,774 385,792 335,792 316,774" class="area-shape region-celtae" /><!-- cadurci -->
+  <polygon points="304,739 327,717 393,717 416,739 416,781 393,803 327,803 304,781" class="area-shape region-celtae" /><!-- cadurci (enlarged 25%) -->
   <polygon points="206,636 225,618 275,618 294,636 294,664 275,682 225,682 206,664" class="area-shape region-celtae" /><!-- santones -->
   <polygon points="651,532 675,504 725,504 749,532 749,554 725,582 675,582 651,554" class="area-shape region-celtae" /><!-- sequani -->
   <polygon points="766,436 785,418 835,418 854,436 854,464 835,482 785,482 766,464" class="area-shape region-celtae" /><!-- leuci -->
@@ -215,8 +215,8 @@
   <text x="520" y="738" class="label">Boii</text>
   <text x="520" y="750" class="label-small">+ Helvii</text>
   <text x="500" y="910" class="label">Volcae</text>
-  <text x="360" y="758" class="label">Cadurci</text>
-  <text x="360" y="770" class="label-small">+ Ruteni</text>
+  <text x="360" y="748" class="label">Cadurci</text>
+  <text x="360" y="760" class="label-small">+ Ruteni</text>
   <text x="250" y="648" class="label">Santones</text>
   <text x="250" y="660" class="label-small">+ Lemovicii</text>
   <text x="700" y="550" class="label">Sequani</text>
@@ -294,7 +294,7 @@
     <rect x="4" y="-12" width="3" height="4" class="fort-icon" />
     <text x="0" y="7" class="label-small" font-size="7">Bratuspantium ★</text>
   </g>
-  <g transform="translate(378, 752)">
+  <g transform="translate(362, 780)">
     <rect x="-5" y="-8" width="10" height="8" class="fort-icon" />
     <rect x="-7" y="-12" width="3" height="4" class="fort-icon" />
     <rect x="-1" y="-12" width="3" height="4" class="fort-icon" />
