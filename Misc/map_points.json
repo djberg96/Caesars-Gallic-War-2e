@@ -170,7 +170,7 @@
       {"area": "tolosates", "type": "minor_river"},
       {"area": "volcae", "type": "minor_river"}
     ],
-    "second_tribe": null,
+    "second_tribe": "ruteni",
     "alternate_tribe": null,
     "port": false,
     "fort": {"name": "uxellodunum", "level": 1},
