@@ -35,11 +35,11 @@
 
   <!-- Sea zone backgrounds -->
   <ellipse cx="60" cy="650" rx="55" ry="100" class="region-sea" opacity="0.35" />
-  <ellipse cx="330" cy="140" rx="280" ry="55" class="region-sea" opacity="0.35" />
+  <ellipse cx="330" cy="170" rx="280" ry="55" class="region-sea" opacity="0.35" />
 
   <text x="60" y="645" class="label-sea" font-size="10">Mare</text>
   <text x="60" y="660" class="label-sea" font-size="10">Cantabricum</text>
-  <text x="300" y="145" class="label-sea">Oceanus Britannicus</text>
+  <text x="300" y="175" class="label-sea">Oceanus Britannicus</text>
 
   <!-- Region background labels -->
   <text x="420" y="510" class="label-region" transform="rotate(-5, 420, 510)">CELTAE</text>
@@ -139,12 +139,12 @@
   <line x1="130" y1="470" x2="60" y2="650" class="conn-naval" /><!-- veneti-mare_cantrabricum -->
   <line x1="260" y1="540" x2="60" y2="650" class="conn-naval" /><!-- pictones-mare_cantrabricum -->
   <line x1="250" y1="650" x2="60" y2="650" class="conn-naval" /><!-- santones-mare_cantrabricum -->
-  <line x1="100" y1="280" x2="330" y2="140" class="conn-naval" /><!-- osismi-oceanus_britannicus -->
-  <line x1="220" y1="370" x2="330" y2="140" class="conn-naval" /><!-- andes-oceanus_britannicus -->
-  <line x1="355" y1="313" x2="330" y2="140" class="conn-naval" /><!-- esuvii-oceanus_britannicus -->
-  <line x1="490" y1="290" x2="330" y2="140" class="conn-naval" /><!-- bellovaci-oceanus_britannicus -->
-  <line x1="580" y1="250" x2="330" y2="140" class="conn-naval" /><!-- atrebates-oceanus_britannicus -->
-  <line x1="250" y1="65" x2="330" y2="140" class="conn-naval" /><!-- belgae-oceanus_britannicus -->
+  <line x1="100" y1="280" x2="330" y2="170" class="conn-naval" /><!-- osismi-oceanus_britannicus -->
+  <line x1="220" y1="370" x2="330" y2="170" class="conn-naval" /><!-- andes-oceanus_britannicus -->
+  <line x1="355" y1="313" x2="330" y2="170" class="conn-naval" /><!-- esuvii-oceanus_britannicus -->
+  <line x1="490" y1="290" x2="330" y2="170" class="conn-naval" /><!-- bellovaci-oceanus_britannicus -->
+  <line x1="580" y1="250" x2="330" y2="170" class="conn-naval" /><!-- atrebates-oceanus_britannicus -->
+  <line x1="250" y1="65" x2="330" y2="170" class="conn-naval" /><!-- belgae-oceanus_britannicus -->
 
   <!-- Limited connection -->
   <line x1="670" y1="860" x2="850" y2="890" class="conn-limited" /><!-- transalpine_gaul-roman_off_map -->
