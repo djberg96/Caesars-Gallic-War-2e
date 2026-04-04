@@ -87,7 +87,7 @@
     "connections": [
       {"area": "bellovaci", "type": "regular"},
       {"area": "mandubii", "type": "minor_river"},
-      {"area": "atrebates", "type": "regular"},
+      {"area": "atrebates", "type": "minor_river"},
       {"area": "treveri", "type": "minor_river"},
       {"area": "menapi", "type": "minor_river"}
     ],
@@ -294,7 +294,7 @@
     "connections": [
       {"area": "leuci", "type": "regular"},
       {"area": "treveri", "type": "minor_river"},
-      {"area": "mandubii", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"},
       {"area": "germania", "type": "major_river"}
     ],
     "second_tribe": null,
@@ -448,7 +448,7 @@
       {"area": "boii", "type": "regular"},
       {"area": "allobroges", "type": "regular"},
       {"area": "helvetii", "type": "minor_river"},
-      {"area": "roman_off_map", "type": "regular"}
+      {"area": "roman_off_map", "type": "limited"}
     ],
     "second_tribe": null,
     "alternate_tribe": null,
