@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
+  let dragState = null;
+  let suppressNextPieceClick = false;
 
   function makeUnit(id) {
     const spec = specs[id];
@@ -82,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
       botNeutralActivations: 0,
       currentAction: null,
       movement: null,
+      dragArea: null,
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -175,10 +178,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
       activateMovementArea(unit.location);
     }
+    markUnitSelected(id);
+    render();
+  }
+
+  function markUnitSelected(id) {
+    const unit = state.units[id];
     state.selectedUnit = id;
     state.selectedArea = unit.location;
     els.selection.textContent = `${unit.name}: ${unit.owner}, strength ${currentStrength(unit)}, ${unit.initiative}${unit.fire}, in ${areaName(unit.location)}.`;
-    render();
   }
 
   function selectArea(id) {
@@ -209,18 +217,30 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!areas[target] || areas[target].sea) return null;
     if (unit.location === "offboard" || unit.location === "eliminated") return null;
     if (!legalAreaForUnit(unit, target)) return null;
+    if (!canUnitMoveThisCard(unit)) return null;
+
+    const directBorder = borderType(unit.location, target);
+    if (directBorder) return { force: false, via: null, border: directBorder };
 
     const forceRoute = forceMarchRoute(unit, target);
     if (forceRoute) return { force: true, via: forceRoute };
 
-    const from = unit.location;
-    if (areas[from]?.links.includes(target)) return { force: false, via: null };
-
     return null;
+  }
+
+  function canUnitMoveThisCard(unit) {
+    if (!state.movement) return true;
+    state.movement.units ||= {};
+    const moved = state.movement.units[unit.id];
+    if (!moved) return movementAreaActivated(unit.location);
+    if (moved.stopped || moved.steps >= 2) return false;
+    return unit.owner === "roman" && unit.type === "roman" && state.supply > 0;
   }
 
   function forceMarchRoute(unit, target) {
     if (unit.owner !== "roman" || unit.type !== "roman" || state.supply <= 0) return null;
+    if (state.movement) state.movement.units ||= {};
+    if (state.movement?.units[unit.id]?.steps) return null;
 
     const from = unit.location;
     return areas[from].links.find((middle) => {
@@ -230,6 +250,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const blockers = areaUnits(middle).some((other) => isEnemy(other.owner, unit.owner) || other.owner === "neutral");
       return !blockers;
     }) || null;
+  }
+
+  function borderType(from, target) {
+    return areas[from]?.borders?.[target] || (areas[from]?.links.includes(target) ? "regular" : null);
+  }
+
+  function restrictedBorder(type) {
+    return type && type !== "regular";
   }
 
   function legalAreaForUnit(unit, target) {
@@ -244,7 +272,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const unit = state.units[state.selectedUnit];
+    moveUnitTo(state.selectedUnit, target);
+  }
+
+  function moveUnitTo(unitId, target) {
+    const unit = state.units[unitId];
     if (unit.owner !== state.active) {
       log(`${unit.name} is not controlled by the active player.`);
       render();
@@ -266,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const from = unit.location;
     unit.location = target;
-    if (plan.force) state.supply -= 1;
+    recordUnitMovement(unit, from, target, plan);
 
     areaUnits(target).forEach((other) => {
       if (other.owner === "neutral") {
@@ -278,6 +310,35 @@ document.addEventListener("DOMContentLoaded", () => {
     log(`${unit.name} moved to ${areaName(target)}${plan.force ? ` by forced march through ${areaName(plan.via)}` : ""}.`);
     state.selectedUnit = null;
     render();
+  }
+
+  function recordUnitMovement(unit, from, target, plan) {
+    if (!state.movement) return;
+    state.movement.units ||= {};
+
+    state.movement.units[unit.id] ||= {
+      origin: from,
+      steps: 0,
+      stopped: false
+    };
+    const moved = state.movement.units[unit.id];
+
+    if (plan.force) {
+      moved.steps = 2;
+      moved.stopped = true;
+      state.supply -= 1;
+      return;
+    }
+
+    moved.steps += 1;
+    if (unit.type !== "roman" || unit.owner !== "roman" || restrictedBorder(plan.border) || areaHasStopper(target, unit.owner) || moved.steps >= 2) {
+      moved.stopped = true;
+    }
+    if (moved.steps === 2) state.supply -= 1;
+  }
+
+  function areaHasStopper(areaId, owner) {
+    return areaUnits(areaId).some((unit) => isEnemy(unit.owner, owner) || unit.owner === "neutral");
   }
 
   function playAction(action) {
@@ -350,7 +411,8 @@ document.addEventListener("DOMContentLoaded", () => {
       player: state.active,
       cardId: card.id,
       remaining: card.ap,
-      areas: []
+      areas: [],
+      units: {}
     };
     log(`${playerName(state.active)} is using ${card.title} for movement: activate up to ${card.ap} group${card.ap === 1 ? "" : "s"}. Click a group area, then move its units.`);
   }
@@ -798,12 +860,17 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.add("area-hotspot");
       marker.classList.toggle("is-selected", state.selectedArea === area.id);
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
+      marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
   }
 
   function areaFromMapClick(event) {
-    const point = mapEventPoint(event);
+    return areaFromClientPoint(event.clientX, event.clientY);
+  }
+
+  function areaFromClientPoint(clientX, clientY) {
+    const point = mapClientPoint(clientX, clientY);
     if (!point) return null;
     if (!areaHitMap) return nearestArea(point.x, point.y);
 
@@ -821,12 +888,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return seeds.sort((left, right) => distance2(left, lowX, lowY) - distance2(right, lowX, lowY))[0].areaId;
   }
 
-  function mapEventPoint(event) {
+  function mapClientPoint(clientX, clientY) {
     const bounds = els.areaLayer.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return null;
     return {
-      x: ((event.clientX - bounds.left) / bounds.width) * 100,
-      y: ((event.clientY - bounds.top) / bounds.height) * 100
+      x: ((clientX - bounds.left) / bounds.width) * 100,
+      y: ((clientY - bounds.top) / bounds.height) * 100
     };
   }
 
@@ -983,11 +1050,86 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.innerHTML = `<img src="${unit.image}" alt="${unit.name}"><span class="strength-badge">${currentStrength(unit)}</span>`;
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
+          if (suppressNextPieceClick) {
+            suppressNextPieceClick = false;
+            return;
+          }
           selectUnit(unit.id);
         });
+        piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
         els.pieceLayer.append(piece);
       });
     });
+  }
+
+  function beginPieceDrag(event, unitId) {
+    if (event.button !== 0) return;
+    const unit = state.units[unitId];
+    if (unit.owner !== state.active) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
+      activateMovementArea(unit.location);
+    }
+    markUnitSelected(unitId);
+    renderAreas();
+    dragState = {
+      unitId,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      dragged: false
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.classList.add("is-dragging");
+    event.currentTarget.addEventListener("pointermove", updatePieceDrag);
+    event.currentTarget.addEventListener("pointerup", endPieceDrag);
+    event.currentTarget.addEventListener("pointercancel", cancelPieceDrag);
+  }
+
+  function updatePieceDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+    if (distance > 4) dragState.dragged = true;
+    if (!dragState.dragged) return;
+
+    const areaId = areaFromClientPoint(event.clientX, event.clientY);
+    if (state.dragArea !== areaId) {
+      state.dragArea = areaId;
+      renderAreas();
+    }
+  }
+
+  function endPieceDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const target = state.dragArea || areaFromClientPoint(event.clientX, event.clientY);
+    const dragged = dragState.dragged;
+    const unitId = dragState.unitId;
+    cleanupPieceDrag(event.currentTarget);
+    if (dragged) suppressNextPieceClick = true;
+    if (dragged && target) {
+      moveUnitTo(unitId, target);
+    } else {
+      renderAreas();
+    }
+    dragState = null;
+  }
+
+  function cancelPieceDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    cleanupPieceDrag(event.currentTarget);
+    dragState = null;
+    renderAreas();
+  }
+
+  function cleanupPieceDrag(piece) {
+    if (dragState && piece.hasPointerCapture?.(dragState.pointerId)) piece.releasePointerCapture(dragState.pointerId);
+    piece.classList.remove("is-dragging");
+    piece.removeEventListener("pointermove", updatePieceDrag);
+    piece.removeEventListener("pointerup", endPieceDrag);
+    piece.removeEventListener("pointercancel", cancelPieceDrag);
+    state.dragArea = null;
   }
 
   function renderHands() {
@@ -1091,6 +1233,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     state = JSON.parse(saved);
+    if (state.movement) state.movement.units ||= {};
+    state.dragArea = null;
     log("Saved game loaded.");
     render();
   }

@@ -175,6 +175,11 @@ h3 {
   stroke: rgba(255, 230, 140, 0.8);
 }
 
+.area-hotspot.is-drag-target {
+  fill: rgba(255, 230, 140, 0.26);
+  stroke: rgba(255, 230, 140, 0.95);
+}
+
 .area-click-catcher {
   pointer-events: auto;
   cursor: pointer;
@@ -197,6 +202,8 @@ h3 {
   transform: translate(-50%, -50%);
   cursor: pointer;
   pointer-events: auto;
+  touch-action: none;
+  user-select: none;
 }
 
 .piece img {
@@ -211,6 +218,11 @@ h3 {
 .piece.is-selected {
   outline: 3px solid var(--accent);
   z-index: 50;
+}
+
+.piece.is-dragging {
+  opacity: 0.72;
+  z-index: 80;
 }
 
 .piece.owner-roman {

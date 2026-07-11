@@ -1,0 +1,506 @@
+[
+  {
+    "point": "aedui",
+    "region": "celtae",
+    "connections": [
+      {"area": "allobroges", "type": "minor_river"},
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "boii", "type": "regular"},
+      {"area": "sequani", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "allobroges",
+    "region": "celtae",
+    "connections": [
+      {"area": "transalpine_gaul", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "sequani", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "andes",
+    "region": "celtae",
+    "connections": [
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "osismi", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "veneti", "type": "regular"},
+      {"area": "esuvii", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "venelli",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "arverni",
+    "region": "celtae",
+    "connections": [
+      {"area": "santones", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "boii", "type": "minor_river"},
+      {"area": "aedui", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "gergovia", "level": 1},
+    "special": null
+  },
+  {
+    "point": "atrebates",
+    "region": "belgica",
+    "connections": [
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "menapi", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "morini",
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "atuatuci",
+    "region": "belgica",
+    "connections": [
+      {"area": "bellovaci", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atrebates", "type": "minor_river"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "menapi", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "remi",
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "bellovaci",
+    "region": "belgica",
+    "connections": [
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "atuatuci", "type": "regular"},
+      {"area": "atrebates", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "caletes",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": {"name": "bratuspantium", "level": 1},
+    "special": null
+  },
+  {
+    "point": "bituriges",
+    "region": "celtae",
+    "connections": [
+      {"area": "pictones", "type": "regular"},
+      {"area": "santones", "type": "minor_river"},
+      {"area": "arverni", "type": "regular"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "carnutes", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"}
+    ],
+    "second_tribe": "arvii",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "avaricum", "level": 2},
+    "special": null
+  },
+  {
+    "point": "boii",
+    "region": "celtae",
+    "connections": [
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "volcae", "type": "regular"},
+      {"area": "transalpine_gaul", "type": "regular"},
+      {"area": "allobroges", "type": "minor_river"},
+      {"area": "aedui", "type": "regular"}
+    ],
+    "second_tribe": "helvii",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "belgae",
+    "region": "britannia",
+    "connections": [
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": "cantiaci",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": "Political Action restrictions."
+  },
+  {
+    "point": "cadurci",
+    "region": "celtae",
+    "connections": [
+      {"area": "santones", "type": "regular"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "tarbelli", "type": "minor_river"},
+      {"area": "tolosates", "type": "minor_river"},
+      {"area": "volcae", "type": "minor_river"}
+    ],
+    "second_tribe": "ruteni",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "uxellodunum", "level": 1},
+    "special": null
+  },
+  {
+    "point": "carnutes",
+    "region": "celtae",
+    "connections": [
+      {"area": "pictones", "type": "regular"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "mandubii", "type": "minor_river"},
+      {"area": "esuvii", "type": "minor_river"},
+      {"area": "andes", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "cenomani",
+    "port": false,
+    "fort": {"name": "cenabum", "level": 1},
+    "special": null
+  },
+  {
+    "point": "esuvii",
+    "region": "celtae",
+    "connections": [
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "andes", "type": "regular"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "oceanus_britannicus", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "luxovii",
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "germania",
+    "region": "germania",
+    "connections": [
+      {"area": "leuci", "type": "major_river"},
+      {"area": "mediomatrici", "type": "major_river"},
+      {"area": "treveri", "type": "major_river"},
+      {"area": "menapi", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing. Home area of Germanic tribes, Barbarians may not winter here."
+  },
+  {
+    "point": "helvetii",
+    "region": "celtae",
+    "connections": [
+      {"area": "leuci", "type": "minor_river"},
+      {"area": "sequani", "type": "minor_river"},
+      {"area": "allobroges", "type": "minor_river"},
+      {"area": "transalpine_gaul", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Mountains. Replace with Nantuates if eliminated."
+  },
+  {
+    "point": "leuci",
+    "region": "celtae",
+    "connections": [
+      {"area": "mandubii", "type": "regular"},
+      {"area": "mediomatrici", "type": "regular"},
+      {"area": "sequani", "type": "regular"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  },
+  {
+    "point": "mandubii",
+    "region": "celtae",
+    "connections": [
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "carnutes", "type": "minor_river"},
+      {"area": "esuvii", "type": "regular"},
+      {"area": "bellovaci", "type": "minor_river"},
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "treveri", "type": "regular"},
+      {"area": "leuci", "type": "regular"},
+      {"area": "sequani", "type": "regular"},
+      {"area": "aedui", "type": "regular"},
+      {"area": "mediomatrici", "type": "regular"}
+    ],
+    "second_tribe": "senones",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "alesia", "level": 1},
+    "special": null
+  },
+  {
+    "point": "mare_cantrabricum",
+    "region": null,
+    "connections": [
+      {"area": "osismi", "type": "naval"},
+      {"area": "veneti", "type": "naval"},
+      {"area": "pictones", "type": "naval"},
+      {"area": "santones", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Naval point. Units may not end here."
+  },
+  {
+    "point": "mediomatrici",
+    "region": "belgae",
+    "connections": [
+      {"area": "leuci", "type": "regular"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  },
+  {
+    "point": "menapi",
+    "region": "belgica",
+    "connections": [
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "treveri", "type": "minor_river"},
+      {"area": "atrebates", "type": "regular"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "nervii",
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  },
+  {
+    "point": "oceanus_britannicus",
+    "region": null,
+    "connections": [
+      {"area": "osismi", "type": "naval"},
+      {"area": "andes", "type": "naval"},
+      {"area": "esuvii", "type": "naval"},
+      {"area": "atrebates", "type": "naval"},
+      {"area": "bellovaci", "type": "naval"},
+      {"area": "belgae", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Naval point. Units may not end here."
+  },
+  {
+    "point": "osismi",
+    "region": "celtae",
+    "connections": [
+      {"area": "veneti", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "oceanus_britannicus", "type": "naval"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "pictones",
+    "region": "celtae",
+    "connections": [
+      {"area": "veneti", "type": "minor_river"},
+      {"area": "andes", "type": "minor_river"},
+      {"area": "carnutes", "type": "regular"},
+      {"area": "bituriges", "type": "regular"},
+      {"area": "santones", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "namnetes",
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "roman_off_map",
+    "region": "roman",
+    "connections": [
+      {"area": "transalpine_gaul", "type": "limited"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Roman home area, Barbarians may not enter."
+  },
+  {
+    "point": "santones",
+    "region": "celtae",
+    "connections": [
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "bituriges", "type": "minor_river"},
+      {"area": "arverni", "type": "regular"},
+      {"area": "cadurci", "type": "regular"},
+      {"area": "tarbelli", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": "lemovicii",
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "sequani",
+    "region": "celtae",
+    "connections": [
+      {"area": "allobroges", "type": "regular"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "leuci", "type": "regular"},
+      {"area": "aedui", "type": "minor_river"},
+      {"area": "helvetii", "type": "minor_river"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "bibracte", "level": 1},
+    "special": null
+  },
+  {
+    "point": "tarbelli",
+    "region": "aquitania",
+    "connections": [
+      {"area": "santones", "type": "minor_river"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "tolosates", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "elusates",
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "tolosates",
+    "region": "aquitania",
+    "connections": [
+      {"area": "tarbelli", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "volcae", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": "sotiates",
+    "port": false,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "transalpine_gaul",
+    "region": "roman",
+    "connections": [
+      {"area": "volcae", "type": "regular"},
+      {"area": "boii", "type": "regular"},
+      {"area": "allobroges", "type": "regular"},
+      {"area": "helvetii", "type": "minor_river"},
+      {"area": "roman_off_map", "type": "limited"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "aquae_sextiae", "level": 2},
+    "special": "Roman Staging Area."
+  },
+  {
+    "point": "treveri",
+    "region": "belgica",
+    "connections": [
+      {"area": "atuatuci", "type": "minor_river"},
+      {"area": "menapi", "type": "minor_river"},
+      {"area": "mandubii", "type": "regular"},
+      {"area": "mediomatrici", "type": "minor_river"},
+      {"area": "germania", "type": "major_river"}
+    ],
+    "second_tribe": "eburones",
+    "alternate_tribe": null,
+    "port": false,
+    "fort": null,
+    "special": "Rhine Crossing"
+  },
+  {
+    "point": "veneti",
+    "region": "celtae",
+    "connections": [
+      {"area": "osismi", "type": "regular"},
+      {"area": "andes", "type": "regular"},
+      {"area": "pictones", "type": "minor_river"},
+      {"area": "mare_cantrabricum", "type": "naval"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": true,
+    "fort": null,
+    "special": null
+  },
+  {
+    "point": "volcae",
+    "region": "celtae",
+    "connections": [
+      {"area": "tolosates", "type": "regular"},
+      {"area": "cadurci", "type": "minor_river"},
+      {"area": "arverni", "type": "minor_river"},
+      {"area": "boii", "type": "regular"},
+      {"area": "transalpine_gaul", "type": "regular"}
+    ],
+    "second_tribe": null,
+    "alternate_tribe": null,
+    "port": false,
+    "fort": {"name": "narbo", "level": 1},
+    "special": null
+  }
+]

@@ -14,9 +14,9 @@ bundle exec rails server
 
 Then open `http://localhost:3000`.
 
-The current version is a hotseat playable board prototype. It uses the rulebook
-repository's own `Misc/map_points.json`, `images/Map/CGW_Map.jpg`, and counter
-SVGs as source assets.
+The current version is a hotseat playable board prototype. It uses
+`config/data/map_points.json`, `images/Map/CGW_Map.jpg`, and counter SVGs as
+source assets.
 
 ## AI config
 

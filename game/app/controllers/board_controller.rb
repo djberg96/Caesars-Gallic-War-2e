@@ -89,7 +89,8 @@ class BoardController < ApplicationController
         fort: point["fort"],
         tribes: [id, normalize(point["second_tribe"])].compact,
         alternate: normalize(point["alternate_tribe"]),
-        links: point.fetch("connections").map { |connection| normalize(connection.fetch("area")) }
+        links: point.fetch("connections").map { |connection| normalize(connection.fetch("area")) },
+        borders: point.fetch("connections").to_h { |connection| [normalize(connection.fetch("area")), connection.fetch("type")] }
       }
     end
   end
@@ -142,7 +143,7 @@ class BoardController < ApplicationController
   end
 
   def map_points
-    @map_points ||= JSON.parse(Rails.root.join("..", "Misc", "map_points.json").read)
+    @map_points ||= JSON.parse(Rails.root.join("config", "data", "map_points.json").read)
   end
 
   def images_path
