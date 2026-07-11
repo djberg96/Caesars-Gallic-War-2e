@@ -1,0 +1,93 @@
+<% content_for :title, "Caesar's Gallic War" %>
+
+<script type="application/json" id="game-data">
+  <%= raw JSON.pretty_generate(@game_data) %>
+</script>
+
+<header class="topbar">
+  <div>
+    <h1>Caesar's Gallic War</h1>
+    <p>Second edition hotseat prototype</p>
+  </div>
+  <div class="status-strip" aria-live="polite">
+    <span id="turn-label">58 BC</span>
+    <span id="phase-label">Card Phase</span>
+    <span id="active-label">Roman</span>
+    <span id="supply-label">Supply 15</span>
+    <span id="vp-label">VP 0</span>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="board-panel" aria-label="Game board">
+    <div class="board-toolbar">
+      <button id="new-game" type="button">New</button>
+      <button id="deal-cards" type="button">Deal</button>
+      <button id="end-turn" type="button">End Turn</button>
+      <button id="save-game" type="button">Save</button>
+      <button id="load-game" type="button">Load</button>
+      <button id="export-game" type="button">Export</button>
+      <label class="toggle"><input id="force-march" type="checkbox"> Force march</label>
+    </div>
+
+    <div id="board" class="board">
+      <img src="<%= @game_data[:map] %>" alt="Caesar's Gallic War map">
+      <svg id="area-layer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div id="piece-layer" class="piece-layer"></div>
+    </div>
+  </section>
+
+  <aside class="side-panel">
+    <section class="panel-block">
+      <h2>Action</h2>
+      <div class="segmented" role="group" aria-label="Active player">
+        <button type="button" data-player="roman" class="player-button is-active">Roman</button>
+        <button type="button" data-player="barbarian" class="player-button">Barbarian</button>
+      </div>
+      <div id="selected-card" class="selected-card">No card selected.</div>
+      <div class="action-grid">
+        <button type="button" data-action="supply">Supply</button>
+        <button type="button" data-action="activate">Activate</button>
+        <button type="button" data-action="political">Political</button>
+        <button type="button" data-action="movement">Movement</button>
+        <button type="button" data-action="event">Event</button>
+        <button type="button" id="resolve-battles">Battles</button>
+      </div>
+    </section>
+
+    <section class="panel-block">
+      <h2>Cards</h2>
+      <div class="hands">
+        <div>
+          <h3>Roman Hand</h3>
+          <div id="roman-hand" class="hand"></div>
+        </div>
+        <div>
+          <h3>Barbarian Hand</h3>
+          <div id="barbarian-hand" class="hand"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-block">
+      <h2>Selection</h2>
+      <div id="selection" class="selection">Select a unit or area.</div>
+      <div id="area-detail" class="area-detail"></div>
+    </section>
+
+    <section class="panel-block">
+      <h2>Log</h2>
+      <ol id="log" class="log"></ol>
+    </section>
+  </aside>
+</main>
+
+<dialog id="export-dialog">
+  <form method="dialog">
+    <h2>Export Save</h2>
+    <textarea id="export-text" spellcheck="false"></textarea>
+    <div class="dialog-actions">
+      <button type="submit">Close</button>
+    </div>
+  </form>
+</dialog>
