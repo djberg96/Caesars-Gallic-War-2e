@@ -69,10 +69,12 @@ document.addEventListener("DOMContentLoaded", () => {
       supply: 15,
       vp: 0,
       units,
-      selectedUnit: null,
-      selectedArea: null,
-      selectedCard: null,
-      currentAction: "movement",
+    selectedUnit: null,
+    selectedArea: null,
+    selectedCard: null,
+    committed: { roman: null, barbarian: null },
+    revealed: false,
+    currentAction: "movement",
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -117,6 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state.hands.roman = deck.splice(0, count);
     state.hands.barbarian = deck.splice(0, count);
     state.selectedCard = null;
+    state.committed = { roman: null, barbarian: null };
+    state.revealed = false;
     log(`Dealt ${count} cards to each player.`);
     render();
   }
@@ -235,9 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function playAction(action) {
     state.currentAction = action;
-    const card = state.selectedCard;
+    const card = state.revealed ? state.committed[state.active] : state.selectedCard;
     if (!card) {
-      log("Select a card first.");
+      log(state.revealed ? "This player has no revealed card to resolve." : "Select and commit a card first.");
       render();
       return;
     }
@@ -337,9 +341,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function discardSelectedCard() {
     const hand = state.hands[state.active];
-    const index = hand.findIndex((card) => card.id === state.selectedCard.id);
+    const played = state.revealed ? state.committed[state.active] : state.selectedCard;
+    const index = hand.findIndex((card) => card.id === played.id);
     if (index >= 0) state.discard.push(hand.splice(index, 1)[0]);
+    state.committed[state.active] = null;
+    state.revealed = Boolean(state.committed.roman || state.committed.barbarian);
     state.selectedCard = null;
+  }
+
+  function commitCard() {
+    if (state.revealed) {
+      log("Resolve the revealed cards before committing new cards.");
+      render();
+      return;
+    }
+    if (!state.selectedCard) {
+      log("Select a card from your hand before committing.");
+      render();
+      return;
+    }
+    state.committed[state.active] = state.selectedCard;
+    state.selectedCard = null;
+    log(`${playerName(state.active)} committed a card face down.`);
+    render();
+  }
+
+  function revealCards() {
+    if (!state.committed.roman || !state.committed.barbarian) {
+      log("Both players must commit a card before reveal.");
+      render();
+      return;
+    }
+    state.revealed = true;
+    log(`Cards revealed: Roman ${state.committed.roman.title}; Barbarian ${state.committed.barbarian.title}.`);
+    render();
   }
 
   function contestedAreas() {
@@ -483,6 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
     els.selectedCard.textContent = state.selectedCard ? `${state.selectedCard.title}, AP ${state.selectedCard.ap}.` : "No card selected.";
+    renderCommittedCards();
   }
 
   function renderStatus() {
@@ -552,10 +588,17 @@ document.addEventListener("DOMContentLoaded", () => {
     state.hands[player].forEach((card) => {
       const button = document.createElement("button");
       const currentPlayer = player === state.active;
+      const committed = state.committed[player]?.id === card.id;
       button.className = `card${currentPlayer ? "" : " is-hidden"}`;
-      button.disabled = !currentPlayer;
+      button.disabled = !currentPlayer || state.revealed || committed;
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
-      button.innerHTML = currentPlayer ? `<strong>${card.title}</strong><small>AP ${card.ap} ${card.type}</small>` : "<span>Hidden card</span>";
+      if (!currentPlayer) {
+        button.innerHTML = "<span>Hidden card</span>";
+      } else if (committed) {
+        button.innerHTML = "<strong>Committed</strong><small>Face down</small>";
+      } else {
+        button.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap} ${card.type}</small>`;
+      }
       button.addEventListener("click", () => {
         if (player !== state.active) return;
         state.selectedCard = card;
@@ -563,6 +606,16 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       container.append(button);
     });
+  }
+
+  function renderCommittedCards() {
+    const container = document.querySelector("#committed-cards");
+    const line = (player) => {
+      const card = state.committed[player];
+      if (!card) return `${playerName(player)}: no committed card`;
+      return state.revealed ? `${playerName(player)}: ${card.title}, AP ${card.ap}` : `${playerName(player)}: committed face down`;
+    };
+    container.innerHTML = `<div>${line("roman")}</div><div>${line("barbarian")}</div>`;
   }
 
   function renderLog() {
@@ -594,6 +647,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelector("#new-game").addEventListener("click", newGame);
   document.querySelector("#deal-cards").addEventListener("click", dealCards);
+  document.querySelector("#commit-card").addEventListener("click", commitCard);
+  document.querySelector("#reveal-cards").addEventListener("click", revealCards);
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);

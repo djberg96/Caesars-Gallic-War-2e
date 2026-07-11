@@ -255,19 +255,30 @@ h3 {
 }
 
 .segmented,
-.action-grid {
+.action-grid,
+.planning-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
 }
 
+.planning-grid {
+  margin: 0.65rem 0;
+}
+
 .selected-card,
 .selection,
-.area-detail {
+.area-detail,
+.committed-cards {
   color: var(--muted);
   line-height: 1.35;
   margin-top: 0.65rem;
   font-size: 0.88rem;
+}
+
+.committed-cards {
+  display: grid;
+  gap: 0.2rem;
 }
 
 .hands {
