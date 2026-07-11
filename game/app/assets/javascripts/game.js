@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function dealCards() {
     const deck = buildDeck();
-    const count = state.turn === 0 ? 4 : 5;
+    const count = 5;
     state.hands.roman = deck.splice(0, count);
     state.hands.barbarian = deck.splice(0, count);
     state.selectedCard = null;
@@ -136,7 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function setActive(player) {
     state.active = player;
     state.selectedUnit = null;
-    log(`${playerName(player)} player is active.`);
+    state.selectedCard = null;
+    log(`${playerName(player)} player is active. Only that player's hand is visible.`);
     render();
   }
 
@@ -550,11 +551,13 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = "";
     state.hands[player].forEach((card) => {
       const button = document.createElement("button");
-      button.className = "card";
-      button.classList.toggle("is-active", state.selectedCard?.id === card.id);
-      button.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap} ${card.type}</small>`;
+      const currentPlayer = player === state.active;
+      button.className = `card${currentPlayer ? "" : " is-hidden"}`;
+      button.disabled = !currentPlayer;
+      button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
+      button.innerHTML = currentPlayer ? `<strong>${card.title}</strong><small>AP ${card.ap} ${card.type}</small>` : "<span>Hidden card</span>";
       button.addEventListener("click", () => {
-        state.active = player;
+        if (player !== state.active) return;
         state.selectedCard = card;
         render();
       });

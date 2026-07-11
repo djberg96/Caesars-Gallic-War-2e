@@ -24,7 +24,7 @@ Implemented now:
 - production map image displayed as the board
 - counter data scanned from the SVG assets
 - second edition initial setup, including random variable tribes
-- hands, basic card actions, movement helpers, political rolls, dice battles,
+- current-player hand visibility, basic card actions, movement helpers, political rolls, dice battles,
   strength reduction, save/load, and JSON export
 
 Still to refine:
