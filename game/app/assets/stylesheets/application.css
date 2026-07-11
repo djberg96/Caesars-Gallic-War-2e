@@ -221,8 +221,18 @@ h3 {
 }
 
 .piece.is-dragging {
-  opacity: 0.72;
+  opacity: 0.35;
   z-index: 80;
+}
+
+.piece-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  opacity: 0.9;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
 }
 
 .piece.owner-roman {

@@ -1127,7 +1127,8 @@ document.addEventListener("DOMContentLoaded", () => {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      dragged: false
+      dragged: false,
+      ghost: createDragGhost(event.currentTarget, event.clientX, event.clientY)
     };
     event.currentTarget.setPointerCapture(event.pointerId);
     event.currentTarget.classList.add("is-dragging");
@@ -1140,6 +1141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
     if (distance > 4) dragState.dragged = true;
+    moveDragGhost(event.clientX, event.clientY);
     if (!dragState.dragged) return;
 
     const areaId = areaFromClientPoint(event.clientX, event.clientY);
@@ -1173,11 +1175,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function cleanupPieceDrag(piece) {
     if (dragState && piece.hasPointerCapture?.(dragState.pointerId)) piece.releasePointerCapture(dragState.pointerId);
+    dragState?.ghost?.remove();
     piece.classList.remove("is-dragging");
     piece.removeEventListener("pointermove", updatePieceDrag);
     piece.removeEventListener("pointerup", endPieceDrag);
     piece.removeEventListener("pointercancel", cancelPieceDrag);
     state.dragArea = null;
+  }
+
+  function createDragGhost(piece, clientX, clientY) {
+    const ghost = piece.cloneNode(true);
+    const bounds = piece.getBoundingClientRect();
+    ghost.classList.add("piece-drag-ghost");
+    ghost.style.width = `${bounds.width}px`;
+    ghost.style.height = `${bounds.height}px`;
+    document.body.append(ghost);
+    moveDragGhost(clientX, clientY, ghost);
+    return ghost;
+  }
+
+  function moveDragGhost(clientX, clientY, ghost = dragState?.ghost) {
+    if (!ghost) return;
+    ghost.style.left = `${clientX}px`;
+    ghost.style.top = `${clientY}px`;
   }
 
   function renderHands() {
