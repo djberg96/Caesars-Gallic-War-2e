@@ -10,6 +10,7 @@
     <p>Second edition hotseat prototype</p>
   </div>
   <div class="status-strip" aria-live="polite">
+    <span id="mode-label">Hotseat</span>
     <span id="turn-label">58 BC</span>
     <span id="phase-label">Card Phase</span>
     <span id="active-label">Roman</span>
@@ -28,6 +29,12 @@
       <button id="load-game" type="button">Load</button>
       <button id="export-game" type="button">Export</button>
       <label class="toggle"><input id="force-march" type="checkbox"> Force march</label>
+      <label class="select-label" for="play-mode">Mode</label>
+      <select id="play-mode">
+        <option value="hotseat">Hotseat</option>
+        <option value="solitaire">Solitaire Roman</option>
+        <option value="ai">AI Opponent</option>
+      </select>
     </div>
 
     <div id="board" class="board">
@@ -45,9 +52,11 @@
         <button type="button" data-player="barbarian" class="player-button">Barbarian</button>
       </div>
       <div id="selected-card" class="selected-card">No card selected.</div>
+      <div id="mode-help" class="mode-help"></div>
       <div class="planning-grid">
         <button type="button" id="commit-card">Commit Face Down</button>
         <button type="button" id="reveal-cards">Reveal Cards</button>
+        <button type="button" id="bot-card">Bot Card</button>
       </div>
       <div id="committed-cards" class="committed-cards"></div>
       <div class="action-grid">

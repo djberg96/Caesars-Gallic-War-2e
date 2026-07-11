@@ -26,3 +26,5 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# Local AI opponent credentials.
+/config/ai.yml

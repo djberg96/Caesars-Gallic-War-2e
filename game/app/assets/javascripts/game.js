@@ -69,12 +69,15 @@ document.addEventListener("DOMContentLoaded", () => {
       supply: 15,
       vp: 0,
       units,
-    selectedUnit: null,
-    selectedArea: null,
-    selectedCard: null,
-    committed: { roman: null, barbarian: null },
-    revealed: false,
-    currentAction: "movement",
+      selectedUnit: null,
+      selectedArea: null,
+      selectedCard: null,
+      committed: { roman: null, barbarian: null },
+      revealed: false,
+      mode: document.querySelector("#play-mode")?.value || "hotseat",
+      botDeck: [],
+      botNeutralActivations: 0,
+      currentAction: "movement",
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -117,11 +120,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const deck = buildDeck();
     const count = 5;
     state.hands.roman = deck.splice(0, count);
-    state.hands.barbarian = deck.splice(0, count);
+    if (state.mode === "hotseat") {
+      state.hands.barbarian = deck.splice(0, count);
+      state.botDeck = [];
+    } else {
+      state.hands.barbarian = [];
+      state.botDeck = deck;
+    }
+    state.botNeutralActivations = 0;
     state.selectedCard = null;
     state.committed = { roman: null, barbarian: null };
     state.revealed = false;
-    log(`Dealt ${count} cards to each player.`);
+    log(state.mode === "hotseat" ? `Dealt ${count} cards to each player.` : `Dealt ${count} cards to the Roman player. The opponent uses the draw deck.`);
     render();
   }
 
@@ -138,6 +148,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setActive(player) {
+    if (state.mode !== "hotseat" && player === "barbarian") {
+      log("In solitaire or AI mode, the Barbarian side is controlled by the opponent system.");
+      render();
+      return;
+    }
     state.active = player;
     state.selectedUnit = null;
     state.selectedCard = null;
@@ -239,9 +254,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function playAction(action) {
     state.currentAction = action;
-    const card = state.revealed ? state.committed[state.active] : state.selectedCard;
+    const card = actionCard();
     if (!card) {
-      log(state.revealed ? "This player has no revealed card to resolve." : "Select and commit a card first.");
+      log(state.mode === "hotseat" ? "Select and commit a card first." : "Select a Roman card first.");
       render();
       return;
     }
@@ -276,6 +291,11 @@ document.addEventListener("DOMContentLoaded", () => {
       log(`${playerName(state.active)} is using ${card.title} for movement. Select units on the map.`);
     }
     render();
+  }
+
+  function actionCard() {
+    if (state.mode === "hotseat") return state.revealed ? state.committed[state.active] : state.selectedCard;
+    return state.active === "roman" ? state.selectedCard : null;
   }
 
   function activateArea(areaId, owner) {
@@ -341,15 +361,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function discardSelectedCard() {
     const hand = state.hands[state.active];
-    const played = state.revealed ? state.committed[state.active] : state.selectedCard;
+    const played = actionCard();
     const index = hand.findIndex((card) => card.id === played.id);
     if (index >= 0) state.discard.push(hand.splice(index, 1)[0]);
-    state.committed[state.active] = null;
-    state.revealed = Boolean(state.committed.roman || state.committed.barbarian);
+    if (state.mode === "hotseat") {
+      state.committed[state.active] = null;
+      state.revealed = Boolean(state.committed.roman || state.committed.barbarian);
+    } else {
+      drawBotCard();
+    }
     state.selectedCard = null;
   }
 
   function commitCard() {
+    if (state.mode !== "hotseat") {
+      log("Face-down simultaneous commit is only used in hotseat mode. In solitaire mode, play a Roman card, then draw the bot card.");
+      render();
+      return;
+    }
     if (state.revealed) {
       log("Resolve the revealed cards before committing new cards.");
       render();
@@ -367,6 +396,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function revealCards() {
+    if (state.mode !== "hotseat") {
+      log("Reveal is only used in hotseat mode.");
+      render();
+      return;
+    }
     if (!state.committed.roman || !state.committed.barbarian) {
       log("Both players must commit a card before reveal.");
       render();
@@ -375,6 +409,114 @@ document.addEventListener("DOMContentLoaded", () => {
     state.revealed = true;
     log(`Cards revealed: Roman ${state.committed.roman.title}; Barbarian ${state.committed.barbarian.title}.`);
     render();
+  }
+
+  function drawBotCard() {
+    if (state.mode === "ai") {
+      log(gameData.ai.configured ? `AI opponent placeholder: ${gameData.ai.model || "configured model"} would choose the Barbarian response here.` : "AI opponent is not configured. Copy config/ai.yml.example to config/ai.yml and add a local API key.");
+      return;
+    }
+
+    const card = state.botDeck.shift();
+    if (!card) {
+      log("Bot deck is empty.");
+      return;
+    }
+
+    log(`Bot reveals ${card.title}.`);
+    resolveBotCard(card);
+    state.discard.push(card);
+  }
+
+  function resolveBotCard(card) {
+    if (card.area && isNeutralArea(card.area) && state.botNeutralActivations < 2) {
+      activateArea(card.area, "barbarian");
+      state.botNeutralActivations += 1;
+      return;
+    }
+
+    if (card.area && (isNeutralArea(card.area) || isRomanControlledArea(card.area))) {
+      botPoliticalAction(card.area, card);
+      return;
+    }
+
+    if (card.area && botMoveFrom(card.area)) return;
+
+    resolveBotEvent(card);
+  }
+
+  function isNeutralArea(areaId) {
+    return areaUnits(areaId).some((unit) => unit.owner === "neutral");
+  }
+
+  function isRomanControlledArea(areaId) {
+    return areaUnits(areaId).some((unit) => unit.owner === "roman" && unit.type !== "roman");
+  }
+
+  function botPoliticalAction(areaId, card) {
+    const area = areas[areaId];
+    if (!area || area.region === "roman" || area.region === "germania") {
+      log("Bot political action had no valid target.");
+      return;
+    }
+
+    const roll = d6();
+    if (roll === 1 || roll <= card.ap) {
+      areaUnits(areaId).forEach((unit) => {
+        if (unit.type !== "roman" && unit.type !== "german") unit.owner = "barbarian";
+      });
+      log(`Bot political action succeeds in ${areaName(areaId)} on roll ${roll}.`);
+    } else {
+      log(`Bot political action fails in ${areaName(areaId)} on roll ${roll}.`);
+    }
+  }
+
+  function botMoveFrom(areaId) {
+    const attackers = areaUnits(areaId).filter((unit) => unit.owner === "barbarian" && currentStrength(unit) >= 1);
+    if (!attackers.length) return false;
+
+    const targets = areas[areaId].links.filter((target) => !areas[target]?.sea && areaUnits(target).filter((unit) => unit.owner !== "barbarian").length === 1);
+    const target = targets.find(isRomanControlledArea) || targets[0];
+    if (!target) return false;
+
+    attackers.slice(0, 2).forEach((unit) => {
+      unit.location = target;
+    });
+    log(`Bot moves ${attackers.slice(0, 2).map((unit) => unit.name).join(", ")} from ${areaName(areaId)} to ${areaName(target)}.`);
+    resolveBattles();
+    return true;
+  }
+
+  function resolveBotEvent(card) {
+    if (card.title === "Baggage Train") {
+      if (botMoveFrom("germania")) return;
+      state.supply = Math.max(0, state.supply - 2);
+      log("Bot Baggage Train reduces Roman supply by 2.");
+      return;
+    }
+
+    const target = randomBotTarget();
+    if (!target) {
+      log(`Bot ${card.title} found no valid revolt target.`);
+      return;
+    }
+
+    activateArea(target, "barbarian");
+    if (card.title === "Massive Revolt" && state.turn >= 5) {
+      const v = state.units.vercingetorix;
+      v.location = target;
+      v.owner = "barbarian";
+      log(`Vercingetorix enters at ${areaName(target)}.`);
+    }
+    botMoveFrom(target);
+  }
+
+  function randomBotTarget() {
+    const candidates = Object.keys(areas).filter((areaId) => {
+      const area = areas[areaId];
+      return area.region && area.region !== "roman" && area.region !== "germania" && (isNeutralArea(areaId) || isRomanControlledArea(areaId));
+    });
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   function contestedAreas() {
@@ -514,6 +656,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPieces();
     renderHands();
     renderLog();
+    renderModeHelp();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -522,11 +665,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderStatus() {
+    document.querySelector("#mode-label").textContent = modeName();
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
     document.querySelector("#phase-label").textContent = state.phase;
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = `Supply ${state.supply}`;
     document.querySelector("#vp-label").textContent = `VP ${state.vp}`;
+  }
+
+  function modeName() {
+    if (state.mode === "solitaire") return "Solitaire";
+    if (state.mode === "ai") return "AI Opponent";
+    return "Hotseat";
   }
 
   function renderAreas() {
@@ -589,10 +739,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const button = document.createElement("button");
       const currentPlayer = player === state.active;
       const committed = state.committed[player]?.id === card.id;
-      button.className = `card${currentPlayer ? "" : " is-hidden"}`;
-      button.disabled = !currentPlayer || state.revealed || committed;
+      const hidden = state.mode === "hotseat" && !currentPlayer;
+      button.className = `card${hidden ? " is-hidden" : ""}`;
+      button.disabled = hidden || (state.mode === "hotseat" && (state.revealed || committed));
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
-      if (!currentPlayer) {
+      if (hidden) {
         button.innerHTML = "<span>Hidden card</span>";
       } else if (committed) {
         button.innerHTML = "<strong>Committed</strong><small>Face down</small>";
@@ -606,6 +757,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       container.append(button);
     });
+    if (player === "barbarian" && state.mode !== "hotseat") {
+      const marker = document.createElement("button");
+      marker.className = "card is-hidden";
+      marker.disabled = true;
+      marker.innerHTML = state.mode === "ai" ? "<span>AI controlled</span>" : `<span>Bot deck: ${state.botDeck.length}</span>`;
+      container.append(marker);
+    }
   }
 
   function renderCommittedCards() {
@@ -616,6 +774,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return state.revealed ? `${playerName(player)}: ${card.title}, AP ${card.ap}` : `${playerName(player)}: committed face down`;
     };
     container.innerHTML = `<div>${line("roman")}</div><div>${line("barbarian")}</div>`;
+  }
+
+  function renderModeHelp() {
+    const help = document.querySelector("#mode-help");
+    const commitButton = document.querySelector("#commit-card");
+    const revealButton = document.querySelector("#reveal-cards");
+    const botButton = document.querySelector("#bot-card");
+    const barbarianButton = document.querySelector("[data-player='barbarian']");
+
+    if (state.mode === "hotseat") {
+      help.textContent = "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
+      commitButton.hidden = false;
+      revealButton.hidden = false;
+      botButton.hidden = true;
+      barbarianButton.disabled = false;
+    } else if (state.mode === "solitaire") {
+      help.textContent = "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
+      commitButton.hidden = true;
+      revealButton.hidden = true;
+      botButton.hidden = false;
+      barbarianButton.disabled = true;
+    } else {
+      help.textContent = gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
+      commitButton.hidden = true;
+      revealButton.hidden = true;
+      botButton.hidden = false;
+      barbarianButton.disabled = true;
+    }
   }
 
   function renderLog() {
@@ -640,6 +826,16 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
+  function setMode(mode) {
+    state.mode = mode;
+    state.active = "roman";
+    state.selectedCard = null;
+    state.committed = { roman: null, barbarian: null };
+    state.revealed = false;
+    log(`Mode changed to ${modeName()}. Dealing a fresh hand for this mode.`);
+    dealCards();
+  }
+
   function exportGame() {
     document.querySelector("#export-text").value = JSON.stringify(state, null, 2);
     document.querySelector("#export-dialog").showModal();
@@ -649,6 +845,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#deal-cards").addEventListener("click", dealCards);
   document.querySelector("#commit-card").addEventListener("click", commitCard);
   document.querySelector("#reveal-cards").addEventListener("click", revealCards);
+  document.querySelector("#bot-card").addEventListener("click", drawBotCard);
+  document.querySelector("#play-mode").addEventListener("change", (event) => setMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);

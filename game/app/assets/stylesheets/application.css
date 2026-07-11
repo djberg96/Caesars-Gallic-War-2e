@@ -25,11 +25,13 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
 
-button {
+button,
+select {
   border: 1px solid var(--line);
   background: #30352d;
   color: var(--text);
@@ -39,7 +41,8 @@ button {
 }
 
 button:hover,
-button.is-active {
+button.is-active,
+select:hover {
   border-color: var(--accent);
   background: #3c402f;
 }
@@ -126,6 +129,11 @@ h3 {
   gap: 0.35rem;
   color: var(--muted);
   padding-left: 0.4rem;
+}
+
+.select-label {
+  color: var(--muted);
+  margin-left: 0.4rem;
 }
 
 .board {
@@ -269,7 +277,8 @@ h3 {
 .selected-card,
 .selection,
 .area-detail,
-.committed-cards {
+.committed-cards,
+.mode-help {
   color: var(--muted);
   line-height: 1.35;
   margin-top: 0.65rem;

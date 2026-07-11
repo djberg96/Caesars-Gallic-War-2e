@@ -1,0 +1,11 @@
+default:
+  provider: openai
+  model: gpt-5
+  api_key: "replace-me"
+  base_url: "https://api.openai.com/v1"
+
+development:
+  provider: openai
+  model: gpt-5
+  api_key: "replace-me"
+  base_url: "https://api.openai.com/v1"

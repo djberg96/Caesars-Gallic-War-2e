@@ -66,6 +66,7 @@ class BoardController < ApplicationController
     @game_data = {
       map: helpers.asset_path("Map/CGW_Map.jpg"),
       years: ["58 BC", "57 BC", "56 BC", "55 BC", "54 BC", "53 BC", "52 BC", "51 BC"],
+      ai: ai_config,
       areas: areas,
       units: units,
       variable_areas: %w[atrebates carnutes esuvii menapi pictones atuatuci tarbelli tolosates]
@@ -164,5 +165,16 @@ class BoardController < ApplicationController
 
   def normalize(value)
     value&.to_s&.underscore
+  end
+
+  def ai_config
+    path = Rails.root.join("config", "ai.yml")
+    return { configured: false, model: nil } unless path.exist?
+
+    config = YAML.load_file(path)
+    env_config = config.fetch(Rails.env, config.fetch("default", {}))
+    { configured: env_config["api_key"].present?, model: env_config["model"] }
+  rescue Psych::Exception
+    { configured: false, model: nil }
   end
 end
