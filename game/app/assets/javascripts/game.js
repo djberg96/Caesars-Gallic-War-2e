@@ -77,7 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
       mode: document.querySelector("#play-mode")?.value || "hotseat",
       botDeck: [],
       botNeutralActivations: 0,
-      currentAction: "movement",
+      currentAction: null,
+      movement: null,
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -131,6 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state.selectedCard = null;
     state.committed = { roman: null, barbarian: null };
     state.revealed = false;
+    state.movement = null;
+    state.currentAction = null;
     log(state.mode === "hotseat" ? `Dealt ${count} cards to each player.` : `Dealt ${count} cards to the Roman player. The opponent uses the draw deck.`);
     render();
   }
@@ -166,6 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function selectUnit(id) {
     const unit = state.units[id];
+    if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
+      activateMovementArea(unit.location);
+    }
     state.selectedUnit = id;
     state.selectedArea = unit.location;
     els.selection.textContent = `${unit.name}: ${unit.owner}, strength ${currentStrength(unit)}, ${unit.initiative}${unit.fire}, in ${areaName(unit.location)}.`;
@@ -176,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.selectedArea = id;
     state.selectedUnit = null;
     describeArea(id);
+    if (state.movement) activateMovementArea(id);
     render();
   }
 
@@ -229,6 +236,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (state.movement && !movementAreaActivated(unit.location)) {
+      log(`Activate ${areaName(unit.location)} for movement before moving ${unit.name}.`);
+      render();
+      return;
+    }
+
     if (!canMove(unit, target)) {
       log(`${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`);
       render();
@@ -253,6 +266,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function playAction(action) {
+    if (state.movement) {
+      log("End the current movement action before choosing another card action.");
+      render();
+      return;
+    }
+
     state.currentAction = action;
     const card = actionCard();
     if (!card) {
@@ -288,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
       eventAction(card);
       discardSelectedCard();
     } else {
-      log(`${playerName(state.active)} is using ${card.title} for movement. Select units on the map.`);
+      startMovement(card);
     }
     render();
   }
@@ -309,6 +328,55 @@ document.addEventListener("DOMContentLoaded", () => {
       unit.step = 0;
     });
     log(`${playerName(owner)} activates ${areaName(areaId)}.`);
+  }
+
+  function startMovement(card) {
+    state.movement = {
+      player: state.active,
+      cardId: card.id,
+      remaining: card.ap,
+      areas: []
+    };
+    log(`${playerName(state.active)} is using ${card.title} for movement: activate up to ${card.ap} group${card.ap === 1 ? "" : "s"}. Click a group area, then move its units.`);
+  }
+
+  function movementAreaActivated(areaId) {
+    return state.movement?.areas.includes(areaId);
+  }
+
+  function activateMovementArea(areaId) {
+    if (!state.movement) return false;
+    if (movementAreaActivated(areaId)) return true;
+
+    const movableUnits = areaUnits(areaId).filter((unit) => unit.owner === state.active);
+    if (!movableUnits.length) {
+      log(`${areaName(areaId)} has no ${playerName(state.active)} units to activate for movement.`);
+      return false;
+    }
+
+    if (state.movement.remaining <= 0) {
+      log(`No movement group activations remain for this card.`);
+      return false;
+    }
+
+    state.movement.areas.push(areaId);
+    state.movement.remaining -= 1;
+    log(`${areaName(areaId)} activated for movement. ${state.movement.remaining} group activation${state.movement.remaining === 1 ? "" : "s"} remaining.`);
+    return true;
+  }
+
+  function completeMovementAction() {
+    if (!state.movement) {
+      log("No movement action is in progress.");
+      render();
+      return;
+    }
+
+    const movedFrom = state.movement.areas.map(areaName).join(", ") || "no areas";
+    log(`Movement action finished after activating ${movedFrom}.`);
+    state.movement = null;
+    discardSelectedCard();
+    render();
   }
 
   function politicalAction(areaId, card) {
@@ -364,6 +432,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const played = actionCard();
     const index = hand.findIndex((card) => card.id === played.id);
     if (index >= 0) state.discard.push(hand.splice(index, 1)[0]);
+    state.movement = null;
+    state.currentAction = null;
     if (state.mode === "hotseat") {
       state.committed[state.active] = null;
       state.revealed = Boolean(state.committed.roman || state.committed.barbarian);
@@ -610,6 +680,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function endTurn() {
+    if (state.movement) {
+      completeMovementAction();
+      return;
+    }
+
     const harvest = d6();
     if (harvest === 1) state.supply = Math.max(0, state.supply - 2);
     if (harvest === 6) state.supply = Math.min(19, state.supply + 2);
@@ -657,6 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHands();
     renderLog();
     renderModeHelp();
+    renderActionButtons();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -693,6 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
       rect.setAttribute("rx", 1);
       rect.classList.add("area-hotspot");
       rect.classList.toggle("is-selected", state.selectedArea === area.id);
+      rect.classList.toggle("is-movement", movementAreaActivated(area.id));
       rect.addEventListener("click", () => moveSelectedTo(area.id));
       els.areaLayer.append(rect);
     });
@@ -742,7 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const committed = state.committed[player]?.id === card.id;
       const hidden = state.mode === "hotseat" && !currentPlayer;
       button.className = `card${hidden ? " is-hidden" : ""}`;
-      button.disabled = hidden || (state.mode === "hotseat" && (state.revealed || committed));
+      button.disabled = hidden || Boolean(state.movement) || (state.mode === "hotseat" && (state.revealed || committed));
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
       if (hidden) {
         button.innerHTML = "<span>Hidden card</span>";
@@ -783,26 +860,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const revealButton = document.querySelector("#reveal-cards");
     const botButton = document.querySelector("#bot-card");
     const barbarianButton = document.querySelector("[data-player='barbarian']");
+    botButton.disabled = Boolean(state.movement);
 
     if (state.mode === "hotseat") {
-      help.textContent = "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
+      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
       commitButton.hidden = false;
       revealButton.hidden = false;
       botButton.hidden = true;
       barbarianButton.disabled = false;
     } else if (state.mode === "solitaire") {
-      help.textContent = "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
+      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play and reveal the bot card." : "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
       commitButton.hidden = true;
       revealButton.hidden = true;
       botButton.hidden = false;
       barbarianButton.disabled = true;
     } else {
-      help.textContent = gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
+      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
       commitButton.hidden = true;
       revealButton.hidden = true;
       botButton.hidden = false;
       barbarianButton.disabled = true;
     }
+  }
+
+  function renderActionButtons() {
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.action === state.currentAction);
+    });
   }
 
   function renderLog() {
@@ -833,6 +917,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state.selectedCard = null;
     state.committed = { roman: null, barbarian: null };
     state.revealed = false;
+    state.movement = null;
+    state.currentAction = null;
     log(`Mode changed to ${modeName()}. Dealing a fresh hand for this mode.`);
     dealCards();
   }

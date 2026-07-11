@@ -177,6 +177,11 @@ h3 {
   stroke: rgba(255, 230, 140, 0.8);
 }
 
+.area-hotspot.is-movement {
+  fill: rgba(72, 180, 140, 0.16);
+  stroke: rgba(72, 220, 155, 0.9);
+}
+
 .piece {
   position: absolute;
   width: clamp(30px, 4.2vw, 54px);
