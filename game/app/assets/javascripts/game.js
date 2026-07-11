@@ -85,6 +85,8 @@ document.addEventListener("DOMContentLoaded", () => {
       currentAction: null,
       movement: null,
       dragArea: null,
+      undoStack: [],
+      diceRolledThisTurn: false,
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -140,6 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state.revealed = false;
     state.movement = null;
     state.currentAction = null;
+    state.undoStack = [];
+    state.diceRolledThisTurn = false;
     log(state.mode === "hotseat" ? `Dealt ${count} cards to each player.` : `Dealt ${count} cards to the Roman player. The opponent uses the draw deck.`);
     render();
   }
@@ -296,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    saveUndoMove(unit, target);
     const from = unit.location;
     unit.location = target;
     recordUnitMovement(unit, from, target, plan);
@@ -309,6 +314,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     log(`${unit.name} moved to ${areaName(target)}${plan.force ? ` by forced march through ${areaName(plan.via)}` : ""}.`);
     state.selectedUnit = null;
+    render();
+  }
+
+  function saveUndoMove(unit, target) {
+    if (state.diceRolledThisTurn) return;
+    state.undoStack ||= [];
+    state.undoStack.push({
+      kind: "move",
+      unitId: unit.id,
+      from: unit.location,
+      to: target,
+      units: structuredClone(state.units),
+      supply: state.supply,
+      movement: structuredClone(state.movement),
+      selectedUnit: state.selectedUnit,
+      selectedArea: state.selectedArea
+    });
+  }
+
+  function undoMove() {
+    state.undoStack ||= [];
+    if (state.diceRolledThisTurn) {
+      log("Undo is locked because dice have already been rolled this turn.");
+      render();
+      return;
+    }
+
+    const entry = state.undoStack.pop();
+    if (!entry) {
+      log("No move to undo.");
+      render();
+      return;
+    }
+
+    state.units = entry.units;
+    state.supply = entry.supply;
+    state.movement = entry.movement;
+    state.selectedUnit = entry.selectedUnit;
+    state.selectedArea = entry.selectedArea;
+    log(`${state.units[entry.unitId].name} move to ${areaName(entry.to)} undone.`);
     render();
   }
 
@@ -793,6 +838,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function d6() {
+    state.diceRolledThisTurn = true;
+    state.undoStack = [];
     return Math.floor(Math.random() * 6) + 1;
   }
 
@@ -810,6 +857,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderLog();
     renderModeHelp();
     renderActionButtons();
+    renderUndoButton();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -1215,6 +1263,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderUndoButton() {
+    const button = document.querySelector("#undo-move");
+    button.disabled = state.diceRolledThisTurn || !(state.undoStack?.length);
+  }
+
   function renderLog() {
     els.log.innerHTML = state.log.map((entry) => `<li>${entry}</li>`).join("");
   }
@@ -1235,6 +1288,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state = JSON.parse(saved);
     if (state.movement) state.movement.units ||= {};
     state.dragArea = null;
+    state.undoStack ||= [];
+    state.diceRolledThisTurn ||= false;
     log("Saved game loaded.");
     render();
   }
@@ -1271,6 +1326,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
+  document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
   document.querySelector("#export-game").addEventListener("click", exportGame);
