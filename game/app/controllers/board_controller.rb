@@ -1,39 +1,4 @@
 class BoardController < ApplicationController
-  AREA_COORDINATES = {
-    aedui: [62, 51],
-    allobroges: [72, 62],
-    andes: [30, 38],
-    arverni: [53, 62],
-    atrebates: [54, 18],
-    atuatuci: [62, 29],
-    bellovaci: [47, 25],
-    belgae: [29, 7],
-    bituriges: [49, 52],
-    boii: [63, 63],
-    cadurci: [42, 73],
-    carnutes: [48, 43],
-    esuvii: [40, 34],
-    germania: [89, 10],
-    helvetii: [84, 61],
-    leuci: [84, 38],
-    mandubii: [64, 41],
-    mare_cantrabricum: [16, 61],
-    mediomatrici: [84, 28],
-    menapi: [69, 13],
-    oceanus_britannicus: [31, 19],
-    osismi: [14, 36],
-    pictones: [29, 52],
-    roman_off_map: [88, 77],
-    santones: [38, 63],
-    sequani: [78, 45],
-    tarbelli: [29, 82],
-    tolosates: [39, 87],
-    transalpine_gaul: [74, 78],
-    treveri: [77, 20],
-    veneti: [23, 44],
-    volcae: [57, 84]
-  }.freeze
-
   ROMAN_HOMES = {
     legion_i: "roman_off_map",
     legion_v: "offboard",
@@ -76,22 +41,12 @@ class BoardController < ApplicationController
   private
 
   def areas
-    map_points.index_by { |point| normalize(point.fetch("point")) }.transform_values do |point|
-      id = normalize(point.fetch("point"))
-      {
-        id: id,
-        name: area_name(point),
-        x: AREA_COORDINATES.fetch(id.to_sym).first,
-        y: AREA_COORDINATES.fetch(id.to_sym).last,
-        region: point["region"],
-        sea: point["region"].nil?,
-        port: point["port"],
-        fort: point["fort"],
-        tribes: [id, normalize(point["second_tribe"])].compact,
-        alternate: normalize(point["alternate_tribe"]),
-        links: point.fetch("connections").map { |connection| normalize(connection.fetch("area")) },
-        borders: point.fetch("connections").to_h { |connection| [normalize(connection.fetch("area")), connection.fetch("type")] }
-      }
+    @areas ||= begin
+      GameData::MapSeeder.seed! if Area.none?
+
+      Area.includes(outgoing_borders: :to_area).order(:key).to_h do |area|
+        [area.key, area.game_data]
+      end
     end
   end
 
@@ -142,22 +97,8 @@ class BoardController < ApplicationController
     areas.values.find { |area| area[:tribes].include?(id) || area[:alternate] == id }&.fetch(:id) || "offboard"
   end
 
-  def map_points
-    @map_points ||= JSON.parse(Rails.root.join("config", "data", "map_points.json").read)
-  end
-
   def images_path
     Rails.root.join("..", "images")
-  end
-
-  def area_name(point)
-    parts = [point.fetch("point"), point["second_tribe"]].compact
-    separator = point["alternate_tribe"].present? ? " / " : " + "
-    if point["alternate_tribe"].present?
-      [point.fetch("point"), point["alternate_tribe"]].map(&:titleize).join(separator)
-    else
-      parts.map(&:titleize).join(separator)
-    end
   end
 
   def unit_id(path)

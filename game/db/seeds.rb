@@ -1,0 +1,1 @@
+GameData::MapSeeder.seed!

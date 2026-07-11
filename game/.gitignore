@@ -23,6 +23,10 @@
 
 /public/assets
 
+# Local SQLite databases.
+/storage/*.sqlite3
+/storage/*.sqlite3-*
+
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
