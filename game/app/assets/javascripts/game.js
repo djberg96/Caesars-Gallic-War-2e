@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const els = {
     areaLayer: document.querySelector("#area-layer"),
+    boardImage: document.querySelector("#board > img"),
     pieceLayer: document.querySelector("#piece-layer"),
     log: document.querySelector("#log"),
     selection: document.querySelector("#selection"),
@@ -20,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand")
   };
+  const hitMapSize = { width: 880, height: 1020 };
+  let areaHitMap = null;
 
   function makeUnit(id) {
     const spec = specs[id];
@@ -199,22 +202,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function canMove(unit, target) {
-    if (!areas[target] || areas[target].sea) return false;
-    if (unit.location === "offboard" || unit.location === "eliminated") return false;
+    return Boolean(movePlan(unit, target));
+  }
+
+  function movePlan(unit, target) {
+    if (!areas[target] || areas[target].sea) return null;
+    if (unit.location === "offboard" || unit.location === "eliminated") return null;
+    if (!legalAreaForUnit(unit, target)) return null;
+
+    const forceRoute = forceMarchRoute(unit, target);
+    if (forceRoute) return { force: true, via: forceRoute };
 
     const from = unit.location;
-    const direct = areas[from]?.links.includes(target);
-    if (direct) return legalAreaForUnit(unit, target);
+    if (areas[from]?.links.includes(target)) return { force: false, via: null };
 
-    const forceMarch = document.querySelector("#force-march").checked;
-    if (!forceMarch || unit.owner !== "roman" || unit.type !== "roman" || state.supply <= 0) return false;
+    return null;
+  }
 
-    return areas[from].links.some((middle) => {
+  function forceMarchRoute(unit, target) {
+    if (unit.owner !== "roman" || unit.type !== "roman" || state.supply <= 0) return null;
+
+    const from = unit.location;
+    return areas[from].links.find((middle) => {
+      if (middle === target) return false;
       const middleArea = areas[middle];
-      if (!middleArea || middleArea.sea) return false;
+      if (!middleArea || middleArea.sea || !middleArea.links.includes(target)) return false;
       const blockers = areaUnits(middle).some((other) => isEnemy(other.owner, unit.owner) || other.owner === "neutral");
-      return !blockers && middleArea.links.includes(target) && legalAreaForUnit(unit, target);
-    });
+      return !blockers;
+    }) || null;
   }
 
   function legalAreaForUnit(unit, target) {
@@ -242,16 +257,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!canMove(unit, target)) {
+    const plan = movePlan(unit, target);
+    if (!plan) {
       log(`${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`);
       render();
       return;
     }
 
     const from = unit.location;
-    const force = !areas[from].links.includes(target);
     unit.location = target;
-    if (force) state.supply -= 1;
+    if (plan.force) state.supply -= 1;
 
     areaUnits(target).forEach((other) => {
       if (other.owner === "neutral") {
@@ -260,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    log(`${unit.name} moved to ${areaName(target)}${force ? " by forced march" : ""}.`);
+    log(`${unit.name} moved to ${areaName(target)}${plan.force ? ` by forced march through ${areaName(plan.via)}` : ""}.`);
     state.selectedUnit = null;
     render();
   }
@@ -758,21 +773,190 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderAreas() {
     els.areaLayer.innerHTML = "";
+
+    const clickCatcher = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    clickCatcher.setAttribute("x", 0);
+    clickCatcher.setAttribute("y", 0);
+    clickCatcher.setAttribute("width", 100);
+    clickCatcher.setAttribute("height", 100);
+    clickCatcher.classList.add("area-click-catcher");
+    clickCatcher.addEventListener("click", (event) => {
+      const areaId = areaFromMapClick(event);
+      if (areaId) moveSelectedTo(areaId);
+    });
+    els.areaLayer.append(clickCatcher);
+
     Object.values(areas).forEach((area) => {
       if (area.sea) return;
 
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", area.x - 4);
-      rect.setAttribute("y", area.y - 3);
-      rect.setAttribute("width", 8);
-      rect.setAttribute("height", 6);
-      rect.setAttribute("rx", 1);
-      rect.classList.add("area-hotspot");
-      rect.classList.toggle("is-selected", state.selectedArea === area.id);
-      rect.classList.toggle("is-movement", movementAreaActivated(area.id));
-      rect.addEventListener("click", () => moveSelectedTo(area.id));
-      els.areaLayer.append(rect);
+      const marker = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      marker.setAttribute("x", area.x - 4);
+      marker.setAttribute("y", area.y - 3);
+      marker.setAttribute("width", 8);
+      marker.setAttribute("height", 6);
+      marker.setAttribute("rx", 1);
+      marker.classList.add("area-hotspot");
+      marker.classList.toggle("is-selected", state.selectedArea === area.id);
+      marker.classList.toggle("is-movement", movementAreaActivated(area.id));
+      els.areaLayer.append(marker);
     });
+  }
+
+  function areaFromMapClick(event) {
+    const point = mapEventPoint(event);
+    if (!point) return null;
+    if (!areaHitMap) return nearestArea(point.x, point.y);
+
+    const x = Math.round((point.x / 100) * (areaHitMap.width - 1));
+    const y = Math.round((point.y / 100) * (areaHitMap.height - 1));
+    const index = nearestOpenHitPixel(x, y);
+    if (index === null) return nearestArea(point.x, point.y);
+
+    const componentId = areaHitMap.labels[index];
+    const seeds = areaHitMap.componentSeeds.get(componentId) || [];
+    if (!seeds.length) return nearestArea(point.x, point.y);
+
+    const lowX = index % areaHitMap.width;
+    const lowY = Math.floor(index / areaHitMap.width);
+    return seeds.sort((left, right) => distance2(left, lowX, lowY) - distance2(right, lowX, lowY))[0].areaId;
+  }
+
+  function mapEventPoint(event) {
+    const bounds = els.areaLayer.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return null;
+    return {
+      x: ((event.clientX - bounds.left) / bounds.width) * 100,
+      y: ((event.clientY - bounds.top) / bounds.height) * 100
+    };
+  }
+
+  function nearestArea(x, y) {
+    return Object.values(areas)
+      .filter((area) => !area.sea)
+      .sort((left, right) => ((left.x - x) ** 2) + ((left.y - y) ** 2) - ((right.x - x) ** 2) - ((right.y - y) ** 2))[0]?.id;
+  }
+
+  function nearestOpenHitPixel(x, y) {
+    const direct = hitIndex(x, y);
+    if (direct !== null && areaHitMap.labels[direct] >= 0) return direct;
+
+    for (let radius = 1; radius <= 12; radius += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+          const index = hitIndex(x + dx, y + dy);
+          if (index !== null && areaHitMap.labels[index] >= 0) return index;
+        }
+      }
+    }
+    return null;
+  }
+
+  function hitIndex(x, y) {
+    if (!areaHitMap || x < 0 || y < 0 || x >= areaHitMap.width || y >= areaHitMap.height) return null;
+    return y * areaHitMap.width + x;
+  }
+
+  function distance2(seed, x, y) {
+    return ((seed.x - x) ** 2) + ((seed.y - y) ** 2);
+  }
+
+  function prepareAreaHitMap() {
+    if (!els.boardImage) return;
+    if (!els.boardImage.complete) {
+      els.boardImage.addEventListener("load", prepareAreaHitMap, { once: true });
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = hitMapSize.width;
+    canvas.height = hitMapSize.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(els.boardImage, 0, 0, canvas.width, canvas.height);
+
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const labels = new Int32Array(canvas.width * canvas.height);
+    labels.fill(-2);
+
+    for (let index = 0; index < labels.length; index += 1) {
+      const pixelIndex = index * 4;
+      if (isBorderPixel(pixels[pixelIndex], pixels[pixelIndex + 1], pixels[pixelIndex + 2])) labels[index] = -1;
+    }
+
+    let componentId = 0;
+    const queue = new Int32Array(labels.length);
+    for (let index = 0; index < labels.length; index += 1) {
+      if (labels[index] !== -2) continue;
+      floodFillHitComponent(index, componentId, labels, queue, canvas.width, canvas.height);
+      componentId += 1;
+    }
+
+    const componentSeeds = new Map();
+    Object.values(areas).filter((area) => !area.sea).forEach((area) => {
+      const x = Math.round((area.x / 100) * (canvas.width - 1));
+      const y = Math.round((area.y / 100) * (canvas.height - 1));
+      const index = nearestLabeledHitPixel(labels, canvas.width, canvas.height, x, y);
+      if (index === null) return;
+
+      const seedComponent = labels[index];
+      if (seedComponent < 0) return;
+      if (!componentSeeds.has(seedComponent)) componentSeeds.set(seedComponent, []);
+      componentSeeds.get(seedComponent).push({ areaId: area.id, x: index % canvas.width, y: Math.floor(index / canvas.width) });
+    });
+
+    areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds };
+  }
+
+  function isBorderPixel(red, green, blue) {
+    const average = (red + green + blue) / 3;
+    const whiteLine = red > 225 && green > 220 && blue > 205 && (red - blue) < 55;
+    return average < 72 || whiteLine;
+  }
+
+  function floodFillHitComponent(start, componentId, labels, queue, width, height) {
+    let head = 0;
+    let tail = 0;
+    labels[start] = componentId;
+    queue[tail] = start;
+    tail += 1;
+
+    while (head < tail) {
+      const index = queue[head];
+      head += 1;
+      const x = index % width;
+      const y = Math.floor(index / width);
+
+      if (x > 0) tail = enqueueHitNeighbor(index - 1, componentId, labels, queue, tail);
+      if (x < width - 1) tail = enqueueHitNeighbor(index + 1, componentId, labels, queue, tail);
+      if (y > 0) tail = enqueueHitNeighbor(index - width, componentId, labels, queue, tail);
+      if (y < height - 1) tail = enqueueHitNeighbor(index + width, componentId, labels, queue, tail);
+    }
+  }
+
+  function enqueueHitNeighbor(index, componentId, labels, queue, tail) {
+    if (labels[index] !== -2) return tail;
+    labels[index] = componentId;
+    queue[tail] = index;
+    return tail + 1;
+  }
+
+  function nearestLabeledHitPixel(labels, width, height, x, y) {
+    const direct = y * width + x;
+    if (labels[direct] >= 0) return direct;
+
+    for (let radius = 1; radius <= 24; radius += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+          const nextX = x + dx;
+          const nextY = y + dy;
+          if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) continue;
+          const index = nextY * width + nextX;
+          if (labels[index] >= 0) return index;
+        }
+      }
+    }
+    return null;
   }
 
   function renderPieces() {
@@ -950,5 +1134,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
   document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => playAction(button.dataset.action)));
 
+  prepareAreaHitMap();
   newGame();
 });

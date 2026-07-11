@@ -164,22 +164,26 @@ h3 {
 }
 
 .area-hotspot {
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
   fill: transparent;
   stroke: rgba(255, 230, 140, 0);
   stroke-width: 0.35;
 }
 
-.area-hotspot:hover,
 .area-hotspot.is-selected {
   fill: rgba(255, 230, 140, 0.13);
   stroke: rgba(255, 230, 140, 0.8);
 }
 
+.area-click-catcher {
+  pointer-events: auto;
+  cursor: pointer;
+  fill: rgba(0, 0, 0, 0);
+}
+
 .area-hotspot.is-movement {
   fill: rgba(72, 180, 140, 0.16);
-  stroke: rgba(72, 220, 155, 0.9);
+  stroke: rgba(72, 220, 155, 0);
 }
 
 .piece {
