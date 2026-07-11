@@ -666,6 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderStatus() {
     document.querySelector("#mode-label").textContent = modeName();
+    document.querySelector("#play-mode").value = state.mode;
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
     document.querySelector("#phase-label").textContent = state.phase;
     document.querySelector("#active-label").textContent = playerName(state.active);
@@ -836,6 +837,14 @@ document.addEventListener("DOMContentLoaded", () => {
     dealCards();
   }
 
+  function changeMode(mode) {
+    if (mode === state.mode) return;
+    if (window.confirm("Save the current game before switching modes?")) {
+      saveGame();
+    }
+    setMode(mode);
+  }
+
   function exportGame() {
     document.querySelector("#export-text").value = JSON.stringify(state, null, 2);
     document.querySelector("#export-dialog").showModal();
@@ -846,7 +855,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#commit-card").addEventListener("click", commitCard);
   document.querySelector("#reveal-cards").addEventListener("click", revealCards);
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);
-  document.querySelector("#play-mode").addEventListener("change", (event) => setMode(event.target.value));
+  document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
