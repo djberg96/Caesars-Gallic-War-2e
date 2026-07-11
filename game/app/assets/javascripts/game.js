@@ -810,7 +810,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function saveGame() {
     localStorage.setItem("cgw2e-save", JSON.stringify(state));
-    log("Game saved in this browser.");
+    log("Game quick-saved in this browser.");
     render();
   }
 
@@ -822,8 +822,63 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     state = JSON.parse(saved);
-    log("Saved game loaded.");
+    log("Browser quick-save loaded.");
     render();
+  }
+
+  function saveGameFile() {
+    const fallback = `cgw-${gameData.years[state.turn].toLowerCase().replaceAll(" ", "-")}.json`;
+    const filename = prompt("Save game filename", fallback);
+    if (!filename) {
+      log("Save file canceled.");
+      render();
+      return;
+    }
+
+    const safeFilename = filename.endsWith(".json") ? filename : `${filename}.json`;
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = safeFilename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    log(`Prepared save file ${safeFilename}.`);
+    render();
+  }
+
+  function chooseGameFile() {
+    document.querySelector("#load-file-input").click();
+  }
+
+  function loadGameFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      try {
+        const loaded = JSON.parse(reader.result);
+        validateSaveState(loaded);
+        state = loaded;
+        document.querySelector("#play-mode").value = state.mode || "hotseat";
+        log(`Loaded save file ${file.name}.`);
+        render();
+      } catch (error) {
+        log(`Could not load ${file.name}: ${error.message}`);
+        render();
+      } finally {
+        event.target.value = "";
+      }
+    });
+    reader.readAsText(file);
+  }
+
+  function validateSaveState(loaded) {
+    if (!loaded || typeof loaded !== "object") throw new Error("not a game save");
+    if (!loaded.units || !loaded.hands || !Number.isInteger(loaded.turn)) throw new Error("missing required game fields");
   }
 
   function setMode(mode) {
@@ -850,6 +905,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
+  document.querySelector("#save-file").addEventListener("click", saveGameFile);
+  document.querySelector("#load-file").addEventListener("click", chooseGameFile);
+  document.querySelector("#load-file-input").addEventListener("change", loadGameFile);
   document.querySelector("#export-game").addEventListener("click", exportGame);
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));

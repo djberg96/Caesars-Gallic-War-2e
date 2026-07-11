@@ -38,6 +38,7 @@ Implemented now:
 - second edition initial setup, including random variable tribes
 - current-player hand visibility, basic card actions, movement helpers, political rolls, dice battles,
   strength reduction, save/load, and JSON export
+- browser quick-save plus named JSON save/load files
 - hotseat, first-pass solitaire Roman mode, and AI-opponent configuration placeholder
 
 Still to refine:
