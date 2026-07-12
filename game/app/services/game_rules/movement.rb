@@ -1,0 +1,242 @@
+module GameRules
+  class Movement
+    class InvalidMove < StandardError; end
+
+    def initialize(session:, state:)
+      @session = session
+      @state = state.deep_dup
+    end
+
+    def move!(unit_id:, target:)
+      @unit_id = unit_id.to_s
+      @target = target.to_s
+      @unit = unit(@unit_id)
+      @from = @unit.fetch("location")
+
+      validate_control!
+      validate_start_area!
+      plan = move_plan
+      raise InvalidMove, "#{unit_name} cannot move from #{area_name(@from)} to #{area_name(@target)}." unless plan
+
+      apply_capacity!(plan)
+      apply_move!(plan)
+      persist!
+    end
+
+    private
+
+    def validate_control!
+      return if @unit["owner"] == active_player
+
+      raise InvalidMove, "#{unit_name} is not controlled by the active player."
+    end
+
+    def validate_start_area!
+      return unless movement
+      return if movement_area_activated?(@from)
+
+      raise InvalidMove, "Activate #{area_name(@from)} for movement before moving #{unit_name}."
+    end
+
+    def move_plan
+      return nil unless target_area
+      return nil if target_area.sea?
+      return nil if offboard?(@from)
+      return nil unless legal_area_for_unit?
+      return nil unless can_unit_move_this_card?
+
+      direct_border = border(@from, @target)
+      return { "force" => false, "steps" => [[@from, @target, direct_border]] } if direct_border
+
+      force_route
+    end
+
+    def can_unit_move_this_card?
+      return true unless movement
+
+      moved = movement_units[@unit_id]
+      return movement_area_activated?(@from) unless moved
+      return false if moved["stopped"] || moved["steps"].to_i >= 2
+
+      roman_legion? && supply.positive?
+    end
+
+    def force_route
+      return nil unless roman_legion?
+      return nil unless supply.positive?
+      return nil if movement_units.dig(@unit_id, "steps").to_i.positive?
+
+      from_area.outgoing_borders.includes(:to_area).each do |first_border|
+        middle = first_border.to_area
+        next if middle.key == @target || middle.sea?
+        next if area_has_stopper?(middle.key, @unit["owner"])
+
+        second_border = border(middle.key, @target)
+        next unless second_border
+        next if second_border.to_area.sea?
+
+        return {
+          "force" => true,
+          "via" => middle.key,
+          "steps" => [[@from, middle.key, first_border], [middle.key, @target, second_border]]
+        }
+      end
+
+      nil
+    end
+
+    def apply_capacity!(plan)
+      return unless movement
+
+      crossings = movement["crossings"] ||= {}
+
+      plan.fetch("steps").each do |from, to, border|
+        capacity = border.capacity
+        next unless capacity
+
+        key = "#{from}->#{to}"
+        used = crossings[key].to_i
+        next if used + 1 <= capacity
+
+        raise InvalidMove, "No more than #{capacity} unit#{capacity == 1 ? "" : "s"} may cross #{area_name(from)} to #{area_name(to)} this movement action."
+      end
+    end
+
+    def apply_move!(plan)
+      @unit["location"] = @target
+      record_unit_movement!(plan)
+      activate_neutral_units_in_target!
+
+      message = "#{unit_name} moved to #{area_name(@target)}"
+      message += " by forced march through #{area_name(plan.fetch("via"))}" if plan["force"]
+      log("#{message}.")
+      @state["selectedUnit"] = nil
+    end
+
+    def record_unit_movement!(plan)
+      return unless movement
+
+      movement_units[@unit_id] ||= { "origin" => @from, "steps" => 0, "stopped" => false }
+      moved = movement_units[@unit_id]
+
+      plan.fetch("steps").each do |from, to, border|
+        capacity = border.capacity
+        movement["crossings"]["#{from}->#{to}"] = movement["crossings"].fetch("#{from}->#{to}", 0).to_i + 1 if capacity
+      end
+
+      if plan["force"]
+        moved["steps"] = 2
+        moved["stopped"] = true
+        @state["supply"] = supply - 1
+        return
+      end
+
+      moved["steps"] = moved["steps"].to_i + 1
+      if !roman_legion? || border_stops?(plan.fetch("steps").first.third) || area_has_stopper?(@target, @unit["owner"]) || moved["steps"] >= 2
+        moved["stopped"] = true
+      end
+      @state["supply"] = supply - 1 if moved["steps"] == 2
+    end
+
+    def activate_neutral_units_in_target!
+      units.values.select { |other| other["location"] == @target && other["owner"] == "neutral" }.each do |other|
+        other["owner"] = active_player == "roman" ? "barbarian" : "roman"
+        log("#{other.fetch("name")} joins the #{player_name(other.fetch("owner"))} player as #{unit_name} enters #{area_name(@target)}.")
+      end
+    end
+
+    def persist!
+      @session.update!(data: @state)
+      @state
+    end
+
+    def border(from, to)
+      Border.includes(:to_area).find_by(from_area: Area.find_by(key: from), to_area: Area.find_by(key: to))
+    end
+
+    def from_area
+      @from_area ||= Area.find_by!(key: @from)
+    end
+
+    def target_area
+      @target_area ||= Area.find_by(key: @target)
+    end
+
+    def legal_area_for_unit?
+      return @unit["type"] == "roman" if @target == "roman_off_map"
+      return @unit["type"].in?(["roman", "german"]) if @target == "germania"
+
+      true
+    end
+
+    def border_stops?(border)
+      border.kind == "minor_river"
+    end
+
+    def area_has_stopper?(area_key, owner)
+      units.values.any? do |other|
+        other["location"] == area_key && (enemy?(other["owner"], owner) || other["owner"] == "neutral")
+      end
+    end
+
+    def enemy?(left, right)
+      left != "neutral" && right != "neutral" && left != right
+    end
+
+    def roman_legion?
+      @unit["owner"] == "roman" && @unit["type"] == "roman"
+    end
+
+    def movement_area_activated?(area_key)
+      movement.fetch("areas", []).include?(area_key)
+    end
+
+    def movement_units
+      movement["units"] ||= {}
+    end
+
+    def movement
+      @state["movement"]
+    end
+
+    def active_player
+      @state.fetch("active")
+    end
+
+    def supply
+      @state.fetch("supply").to_i
+    end
+
+    def units
+      @state.fetch("units")
+    end
+
+    def unit(id)
+      units.fetch(id)
+    rescue KeyError
+      raise InvalidMove, "Unknown unit #{id}."
+    end
+
+    def unit_name
+      @unit.fetch("name")
+    end
+
+    def area_name(key)
+      Area.find_by(key: key)&.name || key
+    end
+
+    def offboard?(key)
+      key.in?(["offboard", "eliminated"])
+    end
+
+    def log(message)
+      @state["log"] ||= []
+      @state["log"].unshift(message)
+      @state["log"] = @state["log"].first(80)
+    end
+
+    def player_name(player)
+      player == "roman" ? "Roman" : "Barbarian"
+    end
+  end
+end

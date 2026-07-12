@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const gameData = JSON.parse(dataElement.textContent);
   const areas = gameData.areas;
   const specs = gameData.units;
+  const csrfToken = document.querySelector("meta[name='csrf-token']")?.content;
 
   let state;
 
@@ -87,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dragArea: null,
       undoStack: [],
       diceRolledThisTurn: false,
+      gameSessionId: null,
       hands: { roman: [], barbarian: [] },
       discard: [],
       log: []
@@ -94,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     log("New game set up. Variable tribes were randomly selected.");
     dealCards();
+    createGameSession();
     render();
   }
 
@@ -279,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
     moveUnitTo(state.selectedUnit, target);
   }
 
-  function moveUnitTo(unitId, target) {
+  async function moveUnitTo(unitId, target) {
     const unit = state.units[unitId];
     if (unit.owner !== state.active) {
       log(`${unit.name} is not controlled by the active player.`);
@@ -301,19 +304,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     saveUndoMove(unit, target);
-    const from = unit.location;
-    unit.location = target;
-    recordUnitMovement(unit, from, target, plan);
-
-    areaUnits(target).forEach((other) => {
-      if (other.owner === "neutral") {
-        other.owner = state.active === "roman" ? "barbarian" : "roman";
-        log(`${other.name} joins the ${playerName(other.owner)} player as ${unit.name} enters ${areaName(target)}.`);
-      }
-    });
-
-    log(`${unit.name} moved to ${areaName(target)}${plan.force ? ` by forced march through ${areaName(plan.via)}` : ""}.`);
-    state.selectedUnit = null;
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/move`, {
+        state,
+        unit_id: unitId,
+        target
+      });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      state.undoStack?.pop();
+      log(error.message);
+    }
     render();
   }
 
@@ -1306,12 +1310,20 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     state = JSON.parse(saved);
-    if (state.movement) state.movement.units ||= {};
+    normalizeLoadedState();
+    log("Saved game loaded.");
+    render();
+  }
+
+  function normalizeLoadedState() {
+    if (state.movement) {
+      state.movement.units ||= {};
+      state.movement.crossings ||= {};
+    }
     state.dragArea = null;
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;
-    log("Saved game loaded.");
-    render();
+    state.gameSessionId ||= null;
   }
 
   function setMode(mode) {
@@ -1337,6 +1349,37 @@ document.addEventListener("DOMContentLoaded", () => {
   function exportGame() {
     document.querySelector("#export-text").value = JSON.stringify(state, null, 2);
     document.querySelector("#export-dialog").showModal();
+  }
+
+  async function createGameSession() {
+    try {
+      const result = await postJson("/game_sessions", { state });
+      state.gameSessionId = result.game_session_id;
+    } catch (error) {
+      log(`Database session was not created: ${error.message}`);
+      render();
+    }
+  }
+
+  async function ensureGameSession() {
+    if (state.gameSessionId) return;
+    await createGameSession();
+    if (!state.gameSessionId) throw new Error("No database session is available.");
+  }
+
+  async function postJson(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
+      },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Request failed.");
+    return payload;
   }
 
   document.querySelector("#new-game").addEventListener("click", newGame);

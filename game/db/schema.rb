@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_11_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_11_000003) do
   create_table "areas", force: :cascade do |t|
     t.string "alternate_tribe"
     t.datetime "created_at", null: false
@@ -38,6 +38,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_11_000002) do
     t.index ["from_area_id", "to_area_id"], name: "index_borders_on_from_area_id_and_to_area_id", unique: true
     t.index ["from_area_id"], name: "index_borders_on_from_area_id"
     t.index ["to_area_id"], name: "index_borders_on_to_area_id"
+  end
+
+  create_table "game_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.json "data", default: {}, null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "borders", "areas", column: "from_area_id"
