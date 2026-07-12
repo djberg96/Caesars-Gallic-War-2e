@@ -39,39 +39,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function buildDeck() {
-    return shuffle(gameData.cards.map((card) => ({ ...card })));
-  }
-
-  function shuffle(items) {
-    const copy = items.slice();
-    for (let i = copy.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
+  async function dealCards() {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/deal`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(`Cards could not be dealt: ${error.message}`);
     }
-    return copy;
-  }
-
-  function dealCards() {
-    const deck = buildDeck();
-    const count = 5;
-    state.hands.roman = deck.splice(0, count);
-    if (state.mode === "hotseat") {
-      state.hands.barbarian = deck.splice(0, count);
-      state.botDeck = [];
-    } else {
-      state.hands.barbarian = [];
-      state.botDeck = deck;
-    }
-    state.botNeutralActivations = 0;
-    state.selectedCard = null;
-    state.committed = { roman: null, barbarian: null };
-    state.revealed = false;
-    state.movement = null;
-    state.currentAction = null;
-    state.undoStack = [];
-    state.diceRolledThisTurn = false;
-    log(state.mode === "hotseat" ? `Dealt ${count} cards to each player.` : `Dealt ${count} cards to the Roman player. The opponent uses the draw deck.`);
     render();
   }
 
@@ -1250,7 +1227,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.gameSessionId ||= null;
   }
 
-  function setMode(mode) {
+  async function setMode(mode) {
     state.mode = mode;
     state.active = "roman";
     state.selectedCard = null;
@@ -1259,15 +1236,15 @@ document.addEventListener("DOMContentLoaded", () => {
     state.movement = null;
     state.currentAction = null;
     log(`Mode changed to ${modeName()}. Dealing a fresh hand for this mode.`);
-    dealCards();
+    await dealCards();
   }
 
-  function changeMode(mode) {
+  async function changeMode(mode) {
     if (mode === state.mode) return;
     if (window.confirm("Save the current game before switching modes?")) {
       saveGame();
     }
-    setMode(mode);
+    await setMode(mode);
   }
 
   function exportGame() {
@@ -1307,7 +1284,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.querySelector("#new-game").addEventListener("click", newGame);
-  document.querySelector("#deal-cards").addEventListener("click", dealCards);
+  document.querySelector("#deal-cards").addEventListener("click", () => dealCards());
   document.querySelector("#commit-card").addEventListener("click", commitCard);
   document.querySelector("#reveal-cards").addEventListener("click", revealCards);
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);

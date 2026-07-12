@@ -56,6 +56,45 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Area.find_by!(key: "helvetii"), session.game_units.sole.area
   end
 
+  test "deals cards through the session API" do
+    session = GameSession.create!(data: base_state.merge(mode: "hotseat"))
+    session.sync_from_data!
+
+    post deal_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal 5, body.dig("state", "hands", "roman").length
+    assert_equal 5, body.dig("state", "hands", "barbarian").length
+    assert_empty body.dig("state", "botDeck")
+    assert_nil body.dig("state", "committed", "roman")
+    assert_nil body.dig("state", "movement")
+    assert_equal 10, session.game_session_cards.count
+    assert_equal 5, session.game_session_cards.where(location: "roman_hand").count
+    assert_equal 5, session.game_session_cards.where(location: "barbarian_hand").count
+  end
+
+  test "deals solitaire bot deck through the session API" do
+    session = GameSession.create!(data: base_state.merge(mode: "solitaire"))
+    session.sync_from_data!
+
+    post deal_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_equal 5, body.dig("state", "hands", "roman").length
+    assert_empty body.dig("state", "hands", "barbarian")
+    assert_equal 28, body.dig("state", "botDeck").length
+    assert_equal 33, session.reload.game_session_cards.count
+  end
+
   private
 
   def base_state

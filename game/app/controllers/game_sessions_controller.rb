@@ -17,6 +17,13 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def deal
+    session = GameSession.find(params[:id])
+    result = GameRules::Deal.new(session: session, state: state_params).deal!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   private
 
   def create_state
