@@ -44,6 +44,27 @@
     <text x="84" y="293" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
     <text x="101" y="293" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Roman Supply Track.</text>
 
+  <g transform="translate(0 0)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 436 C144 411 183 406 229 421 C258 431 289 428 321 410" fill="none" stroke="#80613a" stroke-opacity="0.28" stroke-width="5"/>
+    <path d="M104 453 C149 434 193 435 230 449 C261 461 294 454 329 437" fill="none" stroke="#80613a" stroke-opacity="0.22" stroke-width="4"/>
+    <g>
+      <path d="M105 372 H271 L251 431 H119 Z" fill="#8a5a2f" stroke="#3d2a18" stroke-width="4"/>
+      <path d="M122 372 L145 337 H244 L271 372" fill="#b98249" stroke="#3d2a18" stroke-width="4"/>
+      <path d="M145 337 L158 372 M184 337 L190 372 M224 337 L231 372" fill="none" stroke="#5a371f" stroke-width="3"/>
+      <path d="M129 390 H259 M124 410 H253" fill="none" stroke="#d4ad72" stroke-opacity="0.62" stroke-width="4"/>
+      <path d="M271 391 C291 380 315 389 326 411" fill="none" stroke="#3d2a18" stroke-width="5"/>
+      <path d="M283 389 C293 373 312 371 326 384" fill="none" stroke="#3d2a18" stroke-width="4"/>
+      <path d="M316 384 C331 391 334 411 323 424" fill="none" stroke="#3d2a18" stroke-width="4"/>
+      <path d="M298 398 C310 400 318 405 326 414" fill="none" stroke="#d4ad72" stroke-opacity="0.65" stroke-width="3"/>
+      <circle cx="138" cy="438" r="20" fill="#2a2117" stroke="#d4ad72" stroke-width="5"/>
+      <circle cx="138" cy="438" r="7" fill="#d4ad72"/>
+      <circle cx="231" cy="438" r="20" fill="#2a2117" stroke="#d4ad72" stroke-width="5"/>
+      <circle cx="231" cy="438" r="7" fill="#d4ad72"/>
+      <path d="M91 431 H283" fill="none" stroke="#3d2a18" stroke-width="5"/>
+    </g>
+    <path d="M146 338 C159 317 187 310 208 326 C224 306 258 313 266 340" fill="none" stroke="#f5ddb0" stroke-opacity="0.38" stroke-width="3"/>
+  </g>
+
   <path d="M67 538 H244" stroke="#f5ddb0" stroke-opacity="0.48" stroke-width="3"/>
   <text x="68" y="555" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#f5ddb0" opacity="0.82">CAESAR'S GALLIC WAR</text>
   <circle cx="210" cy="509" r="18" fill="#15130f" stroke="#f5ddb0" stroke-width="3"/>
