@@ -114,8 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await selectArea(unit.location);
       return;
     }
-    if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
-      await activateMovementArea(unit.location);
+    if (state.movement && unit.owner === state.active && !movementAreaActivated(movementOrigin(unit))) {
+      await activateMovementArea(movementOrigin(unit));
     }
     markUnitSelected(id);
     render();
@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!canUnitMoveThisCard(unit)) return null;
 
     const directBorder = borderType(unit.location, target);
-    if (directBorder) return { force: false, via: null, border: directBorder };
+    if (directBorder && borderHasCapacity(unit.location, target, directBorder)) return { force: false, via: null, border: directBorder };
 
     const forceRoute = forceMarchRoute(unit, target);
     if (forceRoute) return { force: true, via: forceRoute };
@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function canUnitMoveThisCard(unit) {
-    if (!state.movement) return true;
+    if (!state.movement) return false;
     state.movement.units ||= {};
     const moved = state.movement.units[unit.id];
     if (!moved) return movementAreaActivated(unit.location);
@@ -193,6 +193,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (middle === target) return false;
       const middleArea = areas[middle];
       if (!middleArea || middleArea.sea || !middleArea.links.includes(target)) return false;
+      const firstBorder = borderType(from, middle);
+      const secondBorder = borderType(middle, target);
+      if (!borderHasCapacity(from, middle, firstBorder) || !borderHasCapacity(middle, target, secondBorder)) return false;
       const blockers = areaUnits(middle).some((other) => isEnemy(other.owner, unit.owner) || other.owner === "neutral");
       return !blockers;
     }) || null;
@@ -202,8 +205,21 @@ document.addEventListener("DOMContentLoaded", () => {
     return areas[from]?.borders?.[target] || (areas[from]?.links.includes(target) ? "regular" : null);
   }
 
+  function borderCapacity(type) {
+    if (type === "regular" || type === "black") return 4;
+    if (type === "minor_river") return 2;
+    return null;
+  }
+
+  function borderHasCapacity(from, target, type) {
+    const capacity = borderCapacity(type);
+    if (!capacity || !state.movement) return true;
+    state.movement.crossings ||= {};
+    return (state.movement.crossings[`${from}->${target}`] || 0) < capacity;
+  }
+
   function restrictedBorder(type) {
-    return type && type !== "regular";
+    return type === "minor_river";
   }
 
   function legalAreaForUnit(unit, target) {
@@ -229,8 +245,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (state.movement && !movementAreaActivated(unit.location)) {
-      log(`Activate ${areaName(unit.location)} for movement before moving ${unit.name}.`);
+    if (!state.movement) {
+      log("Play a card for movement before moving blocks.");
+      render();
+      return;
+    }
+
+    if (!movementAreaActivated(movementOrigin(unit))) {
+      log(`Activate ${areaName(movementOrigin(unit))} for movement before moving ${unit.name}.`);
       render();
       return;
     }
@@ -397,6 +419,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function movementAreaActivated(areaId) {
     return state.movement?.areas.includes(areaId);
+  }
+
+  function movementOrigin(unit) {
+    return state.movement?.units?.[unit.id]?.origin || unit.location;
   }
 
   async function activateMovementArea(areaId) {
@@ -1059,8 +1085,14 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
-      const activated = await activateMovementArea(unit.location);
+    if (!state.movement) {
+      log("Play a card for movement before moving blocks.");
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      render();
+      return;
+    }
+    if (!movementAreaActivated(movementOrigin(unit))) {
+      const activated = await activateMovementArea(movementOrigin(unit));
       if (!activated) {
         event.currentTarget.releasePointerCapture(event.pointerId);
         render();

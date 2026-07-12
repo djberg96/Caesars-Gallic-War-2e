@@ -32,10 +32,10 @@ module GameRules
     end
 
     def validate_start_area!
-      return unless movement
-      return if movement_area_activated?(@from)
+      raise InvalidMove, "Play a card for movement before moving blocks." unless movement
+      return if movement_area_activated?(movement_origin)
 
-      raise InvalidMove, "Activate #{area_name(@from)} for movement before moving #{unit_name}."
+      raise InvalidMove, "Activate #{area_name(movement_origin)} for movement before moving #{unit_name}."
     end
 
     def move_plan
@@ -52,7 +52,7 @@ module GameRules
     end
 
     def can_unit_move_this_card?
-      return true unless movement
+      return false unless movement
 
       moved = movement_units[@unit_id]
       return movement_area_activated?(@from) unless moved
@@ -86,8 +86,6 @@ module GameRules
     end
 
     def apply_capacity!(plan)
-      return unless movement
-
       crossings = movement["crossings"] ||= {}
 
       plan.fetch("steps").each do |from, to, border|
@@ -114,8 +112,7 @@ module GameRules
     end
 
     def record_unit_movement!(plan)
-      return unless movement
-
+      movement["crossings"] ||= {}
       movement_units[@unit_id] ||= { "origin" => @from, "steps" => 0, "stopped" => false }
       moved = movement_units[@unit_id]
 
@@ -190,6 +187,10 @@ module GameRules
 
     def movement_area_activated?(area_key)
       movement.fetch("areas", []).include?(area_key)
+    end
+
+    def movement_origin
+      movement_units.dig(@unit_id, "origin") || @from
     end
 
     def movement_units

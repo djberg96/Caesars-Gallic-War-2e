@@ -76,6 +76,20 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 15, session.supply
   end
 
+  test "rejects moves through the session API before movement starts" do
+    state = base_state.merge(movement: nil)
+    session = GameSession.create!(data: state)
+
+    post move_game_session_url(session, host: "localhost"),
+         params: { state: session.data, unit_id: "legion_vii", target: "helvetii" },
+         as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_match "Play a card for movement", body.fetch("error")
+    assert_equal "allobroges", session.reload.data.dig("units", "legion_vii", "location")
+  end
+
   test "starts movement through the session API" do
     state = base_state.merge(
       mode: "solitaire",
