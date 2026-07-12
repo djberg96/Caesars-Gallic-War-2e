@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_11_000007) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_11_000008) do
   create_table "areas", force: :cascade do |t|
     t.string "alternate_tribe"
     t.datetime "created_at", null: false
@@ -66,9 +66,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_11_000007) do
   end
 
   create_table "game_sessions", force: :cascade do |t|
+    t.string "active_player", default: "roman", null: false
+    t.integer "bot_neutral_activations", default: 0, null: false
     t.datetime "created_at", null: false
     t.json "data", default: {}, null: false
+    t.boolean "dice_rolled_this_turn", default: false, null: false
+    t.string "mode", default: "hotseat", null: false
+    t.string "phase", default: "Card Phase", null: false
+    t.boolean "revealed", default: false, null: false
+    t.integer "supply", default: 15, null: false
+    t.integer "turn_index", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.integer "vp", default: 0, null: false
+    t.index ["active_player"], name: "index_game_sessions_on_active_player"
+    t.index ["mode"], name: "index_game_sessions_on_mode"
   end
 
   create_table "game_units", force: :cascade do |t|

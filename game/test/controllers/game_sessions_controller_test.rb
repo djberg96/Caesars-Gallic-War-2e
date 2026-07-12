@@ -21,6 +21,15 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, session.game_units.count
     assert_equal "allobroges", session.game_units.sole.location
     assert_equal 3, session.game_session_cards.count
+    assert_equal 0, session.turn_index
+    assert_equal "Card Phase", session.phase
+    assert_equal "roman", session.active_player
+    assert_equal 15, session.supply
+    assert_equal 0, session.vp
+    assert_equal "hotseat", session.mode
+    assert_not session.revealed
+    assert_not session.dice_rolled_this_turn
+    assert_equal 0, session.bot_neutral_activations
     assert_equal ["allobroges"], session.game_session_cards.where(location: "roman_hand").joins(:card).pluck("cards.key")
     assert_equal ["event_4_massive_revolt"], session.game_session_cards.where(location: "committed_roman").joins(:card).pluck("cards.key")
   end
@@ -39,6 +48,15 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 28, body.dig("state", "botDeck").length
     assert_equal 33, session.game_session_cards.count
     assert_equal "roman", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "legion_x" }).owner
+    assert_equal 0, session.turn_index
+    assert_equal "Card Phase", session.phase
+    assert_equal "roman", session.active_player
+    assert_equal 15, session.supply
+    assert_equal 0, session.vp
+    assert_equal "solitaire", session.mode
+    assert_not session.revealed
+    assert_not session.dice_rolled_this_turn
+    assert_equal 0, session.bot_neutral_activations
   end
 
   test "moves through the session API" do
@@ -54,6 +72,8 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "helvetii", session.reload.data.dig("units", "legion_vii", "location")
     assert_equal "helvetii", session.game_units.sole.location
     assert_equal Area.find_by!(key: "helvetii"), session.game_units.sole.area
+    assert_equal "roman", session.active_player
+    assert_equal 15, session.supply
   end
 
   test "deals cards through the session API" do
@@ -76,6 +96,10 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 10, session.game_session_cards.count
     assert_equal 5, session.game_session_cards.where(location: "roman_hand").count
     assert_equal 5, session.game_session_cards.where(location: "barbarian_hand").count
+    assert_equal "hotseat", session.mode
+    assert_not session.revealed
+    assert_not session.dice_rolled_this_turn
+    assert_equal 0, session.bot_neutral_activations
   end
 
   test "deals solitaire bot deck through the session API" do
@@ -93,6 +117,10 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_empty body.dig("state", "hands", "barbarian")
     assert_equal 28, body.dig("state", "botDeck").length
     assert_equal 33, session.reload.game_session_cards.count
+    assert_equal "solitaire", session.mode
+    assert_not session.revealed
+    assert_not session.dice_rolled_this_turn
+    assert_equal 0, session.bot_neutral_activations
   end
 
   test "commits and reveals cards through the session API" do
@@ -127,6 +155,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = JSON.parse(response.body)
     assert body.dig("state", "revealed")
+    assert session.reload.revealed
     assert_match "Cards revealed", body.dig("state", "log").first
   end
 
@@ -156,6 +185,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_nil body.dig("state", "committed", "roman")
     assert body.dig("state", "revealed")
     assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "discard").joins(:card).pluck("cards.key")
+    assert session.revealed
   end
 
   test "discards a solitaire selected card through the session API" do
