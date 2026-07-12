@@ -50,6 +50,115 @@ module GameRules
       persist!
     end
 
+    def supply!
+      raise InvalidAction, "End the current movement action before choosing another card action." if @state["movement"].present?
+
+      card = action_card
+      raise InvalidAction, card_prompt unless card
+
+      @state["currentAction"] = "supply"
+      if active_player == "roman"
+        @state["supply"] = [@state.fetch("supply", 0).to_i + card.fetch("ap").to_i * 2, 19].min
+        log("Roman supply action with #{card.fetch("title")}: +#{card.fetch("ap").to_i * 2} supply.")
+      else
+        @state["supply"] = [@state.fetch("supply", 0).to_i - card.fetch("ap").to_i, 0].max
+        log("Barbarian raid with #{card.fetch("title")}: -#{card.fetch("ap").to_i} Roman supply.")
+      end
+      persist!
+    end
+
+    def activate_neutral!
+      raise InvalidAction, "End the current movement action before choosing another card action." if @state["movement"].present?
+
+      card = action_card
+      raise InvalidAction, card_prompt unless card
+      area_id = card["area"]
+      raise InvalidAction, "Event cards cannot activate neutral tribes." if area_id.blank?
+
+      area = Area.find_by!(key: area_id)
+      if active_player == "roman" && (area.key == "germania" || area.region == "britannia")
+        raise InvalidAction, "Romans may not use neutral activation in Britannia or Germania."
+      end
+
+      @state["currentAction"] = "activate"
+      units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }.each do |unit|
+        unit["owner"] = active_player
+        unit["step"] = 0
+      end
+      log("#{player_name(active_player)} activates #{area.name}.")
+      persist!
+    end
+
+    def political!(area_id:, roll: nil)
+      raise InvalidAction, "End the current movement action before choosing another card action." if @state["movement"].present?
+
+      card = action_card
+      raise InvalidAction, card_prompt unless card
+
+      area = Area.find_by(key: area_id.to_s)
+      raise InvalidAction, "That area is not a valid political target." unless political_target?(area)
+
+      rolled = die_roll(roll)
+      modified = rolled
+      modified -= 1 if card["area"] == area.key
+      modified += 1 if units.values.any? { |unit| unit["location"] == area.key && unit["owner"] != active_player && unit["owner"] != "neutral" }
+
+      @state["currentAction"] = "political"
+      @state["diceRolledThisTurn"] = true
+      @state["undoStack"] = []
+
+      if modified <= card.fetch("ap").to_i
+        units.values.each do |unit|
+          next unless unit["location"] == area.key
+          next if unit["type"].in?(["roman", "german"])
+
+          unit["owner"] = active_player
+          unit["location"] = unit["home"]
+        end
+        log("Political action succeeds in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
+      else
+        log("Political action fails in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
+      end
+      persist!
+    end
+
+    def event!(area_id: nil)
+      raise InvalidAction, "End the current movement action before choosing another card action." if @state["movement"].present?
+
+      card = action_card
+      raise InvalidAction, card_prompt unless card
+
+      @state["currentAction"] = "event"
+      if card.fetch("title") == "Baggage Train"
+        if active_player == "roman"
+          @state["supply"] = [@state.fetch("supply", 0).to_i + 5, 19].min
+        else
+          @state["supply"] = [@state.fetch("supply", 0).to_i - 2, 0].max
+        end
+        log("#{player_name(active_player)} resolves Baggage Train.")
+        return persist!
+      end
+
+      area_id = area_id.presence || @state["selectedArea"]
+      raise InvalidAction, "Select an area, then play the revolt event." if area_id.blank?
+
+      area = Area.find_by(key: area_id)
+      raise InvalidAction, "Unknown area #{area_id}." unless area
+
+      activate_area!(area, active_player == "roman" ? "roman" : "barbarian")
+      if card.fetch("title") == "Massive Revolt" && active_player == "barbarian"
+        vercingetorix = units["vercingetorix"]
+        if vercingetorix
+          vercingetorix["location"] = area.key
+          vercingetorix["owner"] = "barbarian"
+        end
+      end
+
+      count = card.fetch("title") == "Massive Revolt" ? 3 : card.fetch("title") == "Major Revolt" ? 2 : 1
+      log("#{card.fetch("title")} resolved for #{area.name}. Apply up to #{count} selected areas manually if needed.")
+      persist!
+    end
+
     private
 
     def action_card
@@ -66,6 +175,28 @@ module GameRules
 
     def active_player
       @state.fetch("active")
+    end
+
+    def political_target?(area)
+      area && area.region.present? && !area.region.in?(["roman", "germania"])
+    end
+
+    def die_roll(roll)
+      roll = roll&.to_i
+      return roll if roll&.between?(1, 6)
+
+      rand(1..6)
+    end
+
+    def activate_area!(area, owner)
+      if owner == "roman" && (area.key == "germania" || area.region == "britannia")
+        raise InvalidAction, "Romans may not use neutral activation in Britannia or Germania."
+      end
+
+      units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }.each do |unit|
+        unit["owner"] = owner
+        unit["step"] = 0
+      end
     end
 
     def units

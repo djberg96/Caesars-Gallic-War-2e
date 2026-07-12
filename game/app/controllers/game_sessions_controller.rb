@@ -1,7 +1,9 @@
 class GameSessionsController < ApplicationController
   rescue_from GameRules::ActionPhase::InvalidAction, with: :invalid_action
   rescue_from GameRules::CardPhase::InvalidAction, with: :invalid_action
+  rescue_from GameRules::EndTurn::InvalidAction, with: :invalid_action
   rescue_from GameRules::Movement::InvalidMove, with: :invalid_move
+  rescue_from GameRules::UndoMove::InvalidUndo, with: :invalid_action
 
   def create
     session = GameSession.create!(data: create_state)
@@ -26,6 +28,18 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def draw_bot_card
+    session = GameSession.find(params[:id])
+    result = GameRules::Bot.new(
+      session: session,
+      state: state_params,
+      roll: params[:roll],
+      target: params[:target]
+    ).draw!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   def commit_card
     session = GameSession.find(params[:id])
     result = GameRules::CardPhase.new(session: session, state: state_params).commit!(
@@ -43,6 +57,20 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def resolve_battles
+    session = GameSession.find(params[:id])
+    result = GameRules::Battle.new(session: session, state: state_params, rolls: params[:rolls]).resolve!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def undo_move
+    session = GameSession.find(params[:id])
+    result = GameRules::UndoMove.new(session: session, state: state_params).undo!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   def discard_card
     session = GameSession.find(params[:id])
     result = GameRules::CardPhase.new(session: session, state: state_params).discard!(
@@ -52,9 +80,53 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def end_turn
+    session = GameSession.find(params[:id])
+    result = GameRules::EndTurn.new(
+      session: session,
+      state: state_params,
+      harvest_roll: params[:harvest_roll]
+    ).end_turn!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   def start_movement
     session = GameSession.find(params[:id])
     result = GameRules::ActionPhase.new(session: session, state: state_params).start_movement!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def supply_action
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).supply!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def activate_neutral
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).activate_neutral!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def political_action
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).political!(
+      area_id: params.require(:area_id),
+      roll: params[:roll]
+    )
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def event_action
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).event!(
+      area_id: params[:area_id]
+    )
 
     render json: { game_session_id: session.id, state: result }
   end

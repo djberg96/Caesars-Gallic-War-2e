@@ -127,6 +127,243 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["allobroges"], session.reload.data.dig("movement", "areas")
   end
 
+  test "undoes a move through the session API" do
+    state = base_state.merge(
+      supply: 14,
+      diceRolledThisTurn: false,
+      undoStack: [
+        {
+          kind: "move",
+          unitId: "legion_vii",
+          from: "allobroges",
+          to: "helvetii",
+          units: base_state[:units],
+          supply: 15,
+          movement: base_state[:movement],
+          selectedUnit: "legion_vii",
+          selectedArea: "allobroges"
+        }
+      ]
+    )
+    state[:units] = state[:units].deep_dup
+    state[:units][:legion_vii] = state[:units][:legion_vii].merge(location: "helvetii")
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post undo_move_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal "allobroges", body.dig("state", "units", "legion_vii", "location")
+    assert_equal 15, body.dig("state", "supply")
+    assert_empty body.dig("state", "undoStack")
+    assert_equal "allobroges", session.game_units.sole.location
+    assert_equal 15, session.supply
+  end
+
+  test "performs a supply action through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      supply: 14,
+      selectedCard: card_hash("allobroges"),
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post supply_action_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_equal 16, body.dig("state", "supply")
+    assert_equal "supply", body.dig("state", "currentAction")
+    assert_equal 16, session.reload.supply
+  end
+
+  test "activates neutral tribes through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      selectedCard: card_hash("allobroges"),
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil
+    )
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "neutral",
+      location: "allobroges",
+      step: 1
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post activate_neutral_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_equal "roman", body.dig("state", "units", "allobroges", "owner")
+    assert_equal 0, body.dig("state", "units", "allobroges", "step")
+    assert_equal "activate", body.dig("state", "currentAction")
+    assert_equal "roman", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
+  end
+
+  test "performs a political action through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      selectedArea: "allobroges",
+      selectedCard: card_hash("allobroges"),
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil,
+      undoStack: [{ kind: "move" }]
+    )
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "neutral",
+      location: "allobroges",
+      home: "allobroges",
+      step: 0
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post political_action_game_session_url(session, host: "localhost"),
+         params: { state: session.data, area_id: "allobroges", roll: 2 },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal "roman", body.dig("state", "units", "allobroges", "owner")
+    assert_equal "political", body.dig("state", "currentAction")
+    assert body.dig("state", "diceRolledThisTurn")
+    assert_empty body.dig("state", "undoStack")
+    assert session.dice_rolled_this_turn
+    assert_equal "roman", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
+  end
+
+  test "performs an event action through the session API" do
+    card = card_hash("event_0_baggage_train")
+    state = base_state.merge(
+      mode: "solitaire",
+      supply: 14,
+      selectedCard: card,
+      hands: { roman: [card], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      botDeck: [],
+      movement: nil
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post event_action_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_equal 19, body.dig("state", "supply")
+    assert_equal "event", body.dig("state", "currentAction")
+    assert_equal 19, session.reload.supply
+  end
+
+  test "resolves battles through the session API" do
+    state = base_state.merge(
+      vp: 5,
+      diceRolledThisTurn: false,
+      undoStack: [{ kind: "move" }]
+    )
+    state[:units][:legion_vii] = state[:units][:legion_vii].merge(
+      location: "allobroges",
+      strengths: [1],
+      initiative: "A",
+      fire: 6
+    )
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "barbarian",
+      location: "allobroges",
+      home: "allobroges",
+      step: 0,
+      strengths: [1, 0],
+      initiative: "D",
+      fire: 1
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post resolve_battles_game_session_url(session, host: "localhost"),
+         params: { state: session.data, rolls: [1] },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal "eliminated", body.dig("state", "units", "allobroges", "location")
+    assert body.dig("state", "diceRolledThisTurn")
+    assert_empty body.dig("state", "undoStack")
+    assert session.dice_rolled_this_turn
+    assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
+  end
+
+  test "draws a bot card through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      botNeutralActivations: 0,
+      botDeck: [card_hash("allobroges")],
+      discard: [],
+      hands: { roman: [], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil
+    )
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "neutral",
+      location: "allobroges",
+      home: "allobroges",
+      step: 0
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post draw_bot_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_empty body.dig("state", "botDeck")
+    assert_equal ["allobroges"], body.dig("state", "discard").map { |card| card.fetch("id") }
+    assert_equal "barbarian", body.dig("state", "units", "allobroges", "owner")
+    assert_equal 1, body.dig("state", "botNeutralActivations")
+    assert_equal "barbarian", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
+  end
+
   test "deals cards through the session API" do
     session = GameSession.create!(data: base_state.merge(mode: "hotseat"))
     session.sync_from_data!
@@ -172,6 +409,51 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_not session.revealed
     assert_not session.dice_rolled_this_turn
     assert_equal 0, session.bot_neutral_activations
+  end
+
+  test "ends the turn through the session API" do
+    state = base_state.merge(
+      turn: 0,
+      vp: 0,
+      mode: "hotseat",
+      hands: { roman: [], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      diceRolledThisTurn: true,
+      undoStack: [{ kind: "move" }],
+      movement: nil
+    )
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "roman",
+      location: "allobroges",
+      home: "allobroges",
+      step: 0
+    }
+    state[:units][:legion_vii][:home] = "transalpine_gaul"
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post end_turn_game_session_url(session, host: "localhost"),
+         params: { state: session.data, harvest_roll: 1 },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal 1, body.dig("state", "turn")
+    assert_equal 13, body.dig("state", "supply")
+    assert_equal 1, body.dig("state", "vp")
+    assert_equal "transalpine_gaul", body.dig("state", "units", "legion_vii", "location")
+    assert_equal 5, body.dig("state", "hands", "roman").length
+    assert_equal 5, body.dig("state", "hands", "barbarian").length
+    assert_equal 1, session.turn_index
+    assert_equal 13, session.supply
+    assert_equal 1, session.vp
+    assert_not session.dice_rolled_this_turn
+    assert_equal 10, session.game_session_cards.count
   end
 
   test "commits and reveals cards through the session API" do

@@ -238,27 +238,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function undoMove() {
-    state.undoStack ||= [];
-    if (state.diceRolledThisTurn) {
-      log("Undo is locked because dice have already been rolled this turn.");
-      render();
-      return;
+  async function undoMove() {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/undo_move`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
     }
-
-    const entry = state.undoStack.pop();
-    if (!entry) {
-      log("No move to undo.");
-      render();
-      return;
-    }
-
-    state.units = entry.units;
-    state.supply = entry.supply;
-    state.movement = entry.movement;
-    state.selectedUnit = entry.selectedUnit;
-    state.selectedArea = entry.selectedArea;
-    log(`${state.units[entry.unitId].name} move to ${areaName(entry.to)} undone.`);
     render();
   }
 
@@ -307,31 +296,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (action === "supply") {
-      if (state.active === "roman") {
-        state.supply = Math.min(19, state.supply + card.ap * 2);
-        log(`Roman supply action with ${card.title}: +${card.ap * 2} supply.`);
-      } else {
-        state.supply = Math.max(0, state.supply - card.ap);
-        log(`Barbarian raid with ${card.title}: -${card.ap} Roman supply.`);
-      }
-      await discardSelectedCard();
+      if (await performCardAction("supply_action")) await discardSelectedCard();
     } else if (action === "activate") {
-      if (!card.area) {
-        log("Event cards cannot activate neutral tribes.");
-      } else {
-        activateArea(card.area, state.active);
-        await discardSelectedCard();
-      }
+      if (await performCardAction("activate_neutral")) await discardSelectedCard();
     } else if (action === "political") {
       if (!state.selectedArea) {
         log("Select a target area before a political action.");
       } else {
-        politicalAction(state.selectedArea, card);
-        await discardSelectedCard();
+        if (await performCardAction("political_action", { area_id: state.selectedArea })) await discardSelectedCard();
       }
     } else if (action === "event") {
-      eventAction(card);
-      await discardSelectedCard();
+      if (await performCardAction("event_action", { area_id: state.selectedArea })) await discardSelectedCard();
     } else {
       await startMovement();
     }
@@ -354,6 +329,20 @@ document.addEventListener("DOMContentLoaded", () => {
       unit.step = 0;
     });
     log(`${playerName(owner)} activates ${areaName(areaId)}.`);
+  }
+
+  async function performCardAction(endpoint, extra = {}) {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/${endpoint}`, { state, ...extra });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      return true;
+    } catch (error) {
+      log(error.message);
+      return false;
+    }
   }
 
   async function startMovement() {
@@ -469,7 +458,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (state.mode !== "hotseat") {
-      drawBotCard();
+      await drawBotCard();
     }
   }
 
@@ -528,21 +517,17 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  function drawBotCard() {
-    if (state.mode === "ai") {
-      log(gameData.ai.configured ? `AI opponent placeholder: ${gameData.ai.model || "configured model"} would choose the Barbarian response here.` : "AI opponent is not configured. Copy config/ai.yml.example to config/ai.yml and add a local API key.");
-      return;
+  async function drawBotCard() {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/draw_bot_card`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
     }
-
-    const card = state.botDeck.shift();
-    if (!card) {
-      log("Bot deck is empty.");
-      return;
-    }
-
-    log(`Bot reveals ${card.title}.`);
-    resolveBotCard(card);
-    state.discard.push(card);
+    render();
   }
 
   function resolveBotCard(card) {
@@ -643,14 +628,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function resolveBattles() {
-    const battleAreas = contestedAreas();
-    if (!battleAreas.length) {
-      log("No battles to resolve.");
-      render();
-      return;
+  async function resolveBattles() {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
     }
-    battleAreas.forEach(resolveBattle);
     render();
   }
 
@@ -732,34 +719,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const harvest = d6();
-    if (harvest === 1) state.supply = Math.max(0, state.supply - 2);
-    if (harvest === 6) state.supply = Math.min(19, state.supply + 2);
-
-    Object.values(state.units).forEach((unit) => {
-      if (unit.location === "eliminated" && unit.type !== "roman") {
-        unit.location = unit.home === "offboard" ? "offboard" : unit.home;
-        unit.owner = "neutral";
-        unit.step = 0;
-      } else if (unit.type === "roman" && unit.location !== "eliminated" && unit.location !== "offboard") {
-        unit.location = "transalpine_gaul";
-      } else if ((unit.type === "barbarian" || unit.type === "leader") && unit.home !== "offboard" && unit.location !== "offboard") {
-        unit.location = unit.home;
-      } else if (unit.type === "german" && unit.location !== "eliminated") {
-        unit.location = "germania";
-      }
-    });
-
-    const controlledTribes = Object.keys(areas).filter((id) => {
-      const area = areas[id];
-      if (!area.region || area.region === "roman" || area.sea) return false;
-      return areaUnits(id).some((unit) => unit.owner === "roman" && unit.type !== "roman");
-    }).length;
-
-    state.vp += controlledTribes;
-    state.turn = Math.min(gameData.years.length - 1, state.turn + 1);
-    log(`End turn complete. Harvest roll ${harvest}. Roman scores ${controlledTribes} tribal VP.`);
-    dealCards();
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/end_turn`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(`Turn could not be ended: ${error.message}`);
+    }
+    render();
   }
 
   function d6() {

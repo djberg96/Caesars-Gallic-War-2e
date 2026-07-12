@@ -15,9 +15,17 @@ Rails.application.routes.draw do
     post :commit_card, on: :member
     post :deal, on: :member
     post :discard_card, on: :member
+    post :draw_bot_card, on: :member
+    post :end_turn, on: :member
     post :move, on: :member
     post :reveal_cards, on: :member
+    post :resolve_battles, on: :member
     post :start_movement, on: :member
     post :activate_movement_area, on: :member
+    post :undo_move, on: :member
+    post :supply_action, on: :member
+    post :activate_neutral, on: :member
+    post :political_action, on: :member
+    post :event_action, on: :member
   end
 end
