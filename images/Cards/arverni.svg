@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600" role="img" aria-labelledby="title desc">
   <title id="title">Arverni card</title>
-  <desc id="desc">Celtae Area card with AP 1.</desc>
+  <desc id="desc">Celtae Area card with 1 action point.</desc>
   <defs>
     <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#3f7d4a"/>
@@ -12,31 +12,39 @@
       <circle cx="9" cy="8" r="1.8" fill="#f3e6c7" fill-opacity="0.06"/>
     </pattern>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity="0.34"/>
     </filter>
   </defs>
 
   <rect x="10" y="10" width="400" height="580" rx="22" fill="#1d1a14"/>
   <rect x="22" y="22" width="376" height="556" rx="18" fill="url(#field)"/>
   <rect x="22" y="22" width="376" height="556" rx="18" fill="url(#grain)"/>
-  <rect x="38" y="38" width="344" height="524" rx="12" fill="none" stroke="#f5ddb0" stroke-opacity="0.8" stroke-width="4"/>
-  <rect x="52" y="92" width="316" height="258" rx="14" fill="#efe0bd" fill-opacity="0.18" stroke="#f5ddb0" stroke-opacity="0.38"/>
+  <rect x="38" y="38" width="344" height="524" rx="12" fill="none" stroke="#f5ddb0" stroke-opacity="0.82" stroke-width="4"/>
 
-  <text x="210" y="70" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#f9e6b8" letter-spacing="1.6">CELTAE AREA</text>
-  <g filter="url(#shadow)">
-    <circle cx="332" cy="514" r="48" fill="#15130f" stroke="#f5ddb0" stroke-width="5"/>
-    <text x="332" y="531" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="54" font-weight="700" fill="#f9e6b8">1</text>
-    <text x="332" y="555" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="17" font-weight="700" fill="#f9e6b8">AP</text>
-  </g>
-
-  <g transform="translate(92 130)" fill="none" stroke="#b9d58d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
-    <path d="M28 164 C62 122 61 71 102 56 C139 43 151 18 184 28 C215 38 227 67 221 103 C215 139 184 151 155 160 C121 170 88 190 28 164 Z"/><path d="M72 148 C90 118 85 91 109 76"/><path d="M138 58 C159 79 175 104 202 105"/><circle cx="119" cy="112" r="12" fill="#b9d58d" stroke="none"/>
-  </g>
-
-  <text x="210" y="398" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="35" font-weight="700" fill="#fff0c8">
-    <tspan x="210" y="398">Arverni</tspan>
+  <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#fff0c8">
+    <tspan x="210" y="82">Arverni</tspan>
   </text>
-  <text x="210" y="500" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700" fill="#f5ddb0" opacity="0.96">Matching card for Arverni</text>
-  <path d="M67 535 H250" stroke="#f5ddb0" stroke-opacity="0.5" stroke-width="3"/>
-  <text x="68" y="558" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#f5ddb0" opacity="0.84">CAESAR'S GALLIC WAR</text>
+  <g transform="translate(0 -18)">
+  <rect x="58" y="128" width="304" height="250" rx="16" fill="#efe0bd" fill-opacity="0.2" stroke="#f5ddb0" stroke-opacity="0.55" stroke-width="3"/>
+  <rect x="76" y="146" width="268" height="214" rx="10" fill="#162124" fill-opacity="0.32"/>
+  <path d="M110 188 C145 150 201 155 230 188 C258 217 308 206 320 242 C334 285 283 313 242 323 C190 336 158 310 124 324 C91 338 75 307 91 274 C107 241 85 216 110 188 Z" fill="#d9c290" fill-opacity="0.88" stroke="#2d2417" stroke-width="4"/>
+  <path d="M235 186 C267 169 304 178 322 201 C331 214 334 231 320 242" fill="none" stroke="#2d2417" stroke-width="3" opacity="0.55"/>
+  <path d="M105 259 C143 263 160 238 190 253 C221 269 232 239 265 249 C291 258 301 282 331 276" fill="none" stroke="#f7f3dc" stroke-width="4" opacity="0.78"/>
+  <path d="M146 319 C166 282 187 286 207 250 C226 218 260 220 276 183" fill="none" stroke="#f7f3dc" stroke-width="3" opacity="0.62"/>
+  <circle cx="205.2" cy="275.9" r="15" fill="#15130f" stroke="#f9e6b8" stroke-width="5"/>
+  <circle cx="205.2" cy="275.9" r="6" fill="#b9d58d"/>
+  <path d="M205.2 247.9 L205.2 257.9 M205.2 293.9 L205.2 303.9 M177.2 275.9 L187.2 275.9 M223.2 275.9 L233.2 275.9" stroke="#15130f" stroke-width="3" stroke-linecap="round"/>
+</g>
+
+
+  <text x="210" y="390" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="800" fill="#f9e6b8" letter-spacing="1.6">Celtae</text>
+
+  <g filter="url(#shadow)">
+    <circle cx="210" cy="468" r="46" fill="#15130f" stroke="#f5ddb0" stroke-width="5"/>
+    <text x="210" y="491" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#f9e6b8">1</text>
+  </g>
+
+  <path d="M67 538 H244" stroke="#f5ddb0" stroke-opacity="0.48" stroke-width="3"/>
+  <text x="68" y="555" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#f5ddb0" opacity="0.82">CAESAR'S GALLIC WAR</text>
+  <text x="346" y="555" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="800" fill="#f5ddb0" opacity="0.88">04</text>
 </svg>
