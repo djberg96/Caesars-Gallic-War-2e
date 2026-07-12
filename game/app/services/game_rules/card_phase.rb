@@ -35,6 +35,29 @@ module GameRules
       persist!
     end
 
+    def discard!(player:)
+      @player = player.to_s
+      validate_player!
+
+      played = action_card
+      raise InvalidAction, "No card is ready to discard." unless played
+
+      remove_from_hand(played.fetch("id"))
+      @state["discard"] ||= []
+      @state["discard"] << played
+      @state["movement"] = nil
+      @state["currentAction"] = nil
+      @state["selectedCard"] = nil
+
+      if @state["mode"] == "hotseat"
+        @state["committed"] ||= { "roman" => nil, "barbarian" => nil }
+        @state["committed"][@player] = nil
+        @state["revealed"] = @state.fetch("committed").values.any?
+      end
+
+      persist!
+    end
+
     private
 
     def validate_hotseat!
@@ -47,6 +70,19 @@ module GameRules
 
     def hand
       @state.fetch("hands").fetch(@player)
+    end
+
+    def action_card
+      if @state["mode"] == "hotseat"
+        @state["revealed"] ? @state.dig("committed", @player) : @state["selectedCard"]
+      else
+        @player == "roman" ? @state["selectedCard"] : nil
+      end
+    end
+
+    def remove_from_hand(card_id)
+      index = hand.index { |card| card.fetch("id") == card_id }
+      hand.delete_at(index) if index
     end
 
     def persist!

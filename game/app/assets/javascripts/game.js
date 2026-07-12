@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return areaUnits(areaId).some((unit) => isEnemy(unit.owner, owner) || unit.owner === "neutral");
   }
 
-  function playAction(action) {
+  async function playAction(action) {
     if (state.movement) {
       log("End the current movement action before choosing another card action.");
       render();
@@ -314,24 +314,24 @@ document.addEventListener("DOMContentLoaded", () => {
         state.supply = Math.max(0, state.supply - card.ap);
         log(`Barbarian raid with ${card.title}: -${card.ap} Roman supply.`);
       }
-      discardSelectedCard();
+      await discardSelectedCard();
     } else if (action === "activate") {
       if (!card.area) {
         log("Event cards cannot activate neutral tribes.");
       } else {
         activateArea(card.area, state.active);
-        discardSelectedCard();
+        await discardSelectedCard();
       }
     } else if (action === "political") {
       if (!state.selectedArea) {
         log("Select a target area before a political action.");
       } else {
         politicalAction(state.selectedArea, card);
-        discardSelectedCard();
+        await discardSelectedCard();
       }
     } else if (action === "event") {
       eventAction(card);
-      discardSelectedCard();
+      await discardSelectedCard();
     } else {
       startMovement(card);
     }
@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  function completeMovementAction() {
+  async function completeMovementAction() {
     if (!state.movement) {
       log("No movement action is in progress.");
       render();
@@ -402,7 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const movedFrom = state.movement.areas.map(areaName).join(", ") || "no areas";
     log(`Movement action finished after activating ${movedFrom}.`);
     state.movement = null;
-    discardSelectedCard();
+    await discardSelectedCard();
     render();
   }
 
@@ -454,20 +454,27 @@ document.addEventListener("DOMContentLoaded", () => {
     log(`${card.title} resolved for ${areaName(state.selectedArea)}. Apply up to ${count} selected areas manually if needed.`);
   }
 
-  function discardSelectedCard() {
-    const hand = state.hands[state.active];
+  async function discardSelectedCard() {
     const played = actionCard();
-    const index = hand.findIndex((card) => card.id === played.id);
-    if (index >= 0) state.discard.push(hand.splice(index, 1)[0]);
-    state.movement = null;
-    state.currentAction = null;
-    if (state.mode === "hotseat") {
-      state.committed[state.active] = null;
-      state.revealed = Boolean(state.committed.roman || state.committed.barbarian);
-    } else {
+    if (!played) return;
+
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/discard_card`, {
+        state,
+        player: state.active
+      });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
+      return;
+    }
+
+    if (state.mode !== "hotseat") {
       drawBotCard();
     }
-    state.selectedCard = null;
   }
 
   async function commitCard() {
@@ -723,9 +730,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function endTurn() {
+  async function endTurn() {
     if (state.movement) {
-      completeMovementAction();
+      await completeMovementAction();
       return;
     }
 

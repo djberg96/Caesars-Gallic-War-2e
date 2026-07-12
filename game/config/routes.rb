@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   resources :game_sessions, only: :create do
     post :commit_card, on: :member
     post :deal, on: :member
+    post :discard_card, on: :member
     post :move, on: :member
     post :reveal_cards, on: :member
   end

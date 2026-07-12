@@ -42,6 +42,15 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def discard_card
+    session = GameSession.find(params[:id])
+    result = GameRules::CardPhase.new(session: session, state: state_params).discard!(
+      player: params.require(:player)
+    )
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   private
 
   def create_state

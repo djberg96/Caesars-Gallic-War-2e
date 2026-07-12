@@ -130,6 +130,59 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Cards revealed", body.dig("state", "log").first
   end
 
+  test "discards a committed hotseat card through the session API" do
+    state = base_state.merge(
+      mode: "hotseat",
+      active: "roman",
+      hands: {
+        roman: [card_hash("allobroges")],
+        barbarian: [card_hash("helvetii")]
+      },
+      committed: { roman: card_hash("allobroges"), barbarian: card_hash("helvetii") },
+      revealed: true
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post discard_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data, player: "roman" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_empty body.dig("state", "hands", "roman")
+    assert_equal ["allobroges"], body.dig("state", "discard").map { |card| card.fetch("id") }
+    assert_nil body.dig("state", "committed", "roman")
+    assert body.dig("state", "revealed")
+    assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "discard").joins(:card).pluck("cards.key")
+  end
+
+  test "discards a solitaire selected card through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      active: "roman",
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      selectedCard: card_hash("allobroges"),
+      committed: { roman: nil, barbarian: nil },
+      discard: []
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post discard_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data, player: "roman" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_empty body.dig("state", "hands", "roman")
+    assert_nil body.dig("state", "selectedCard")
+    assert_equal ["allobroges"], body.dig("state", "discard").map { |card| card.fetch("id") }
+    assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "discard").joins(:card).pluck("cards.key")
+  end
+
   private
 
   def card_hash(key)
