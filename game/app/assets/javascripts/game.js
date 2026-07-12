@@ -1197,19 +1197,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function endPieceDrag(event) {
+  async function endPieceDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const target = state.dragArea || areaFromClientPoint(event.clientX, event.clientY);
     const dragged = dragState.dragged;
     const unitId = dragState.unitId;
-    cleanupPieceDrag(event.currentTarget);
     if (dragged) suppressNextPieceClick = true;
     if (dragged && target) {
-      moveUnitTo(unitId, target);
+      const piece = event.currentTarget;
+      cleanupPieceDrag(piece, { keepGhost: true });
+      try {
+        await moveUnitTo(unitId, target);
+      } finally {
+        cleanupPieceDrag(piece);
+        dragState = null;
+      }
     } else {
+      cleanupPieceDrag(event.currentTarget);
+      dragState = null;
       renderAreas();
     }
-    dragState = null;
   }
 
   function cancelPieceDrag(event) {
@@ -1219,10 +1226,10 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAreas();
   }
 
-  function cleanupPieceDrag(piece) {
+  function cleanupPieceDrag(piece, { keepGhost = false } = {}) {
     if (dragState && piece.hasPointerCapture?.(dragState.pointerId)) piece.releasePointerCapture(dragState.pointerId);
-    dragState?.ghost?.remove();
-    piece.classList.remove("is-dragging");
+    if (!keepGhost) dragState?.ghost?.remove();
+    if (!keepGhost) piece.classList.remove("is-dragging");
     piece.removeEventListener("pointermove", updatePieceDrag);
     piece.removeEventListener("pointerup", endPieceDrag);
     piece.removeEventListener("pointercancel", cancelPieceDrag);
