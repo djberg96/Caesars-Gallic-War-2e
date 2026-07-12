@@ -16,7 +16,7 @@ module GameRules
       validate_control!
       validate_start_area!
       plan = move_plan
-      raise InvalidMove, "#{unit_name} cannot move from #{area_name(@from)} to #{area_name(@target)}." unless plan
+      raise InvalidMove, invalid_move_reason unless plan
 
       apply_capacity!(plan)
       apply_move!(plan)
@@ -49,6 +49,36 @@ module GameRules
       return { "force" => false, "steps" => [[@from, @target, direct_border]] } if direct_border
 
       force_route
+    end
+
+    def invalid_move_reason
+      return "#{@target} is not a known area." unless target_area
+      return "#{unit_name} cannot move into #{area_name(@target)} because it is a sea area." if target_area.sea?
+      return "#{unit_name} is not on the map." if offboard?(@from)
+      return illegal_area_reason unless legal_area_for_unit?
+      return movement_limit_reason unless can_unit_move_this_card?
+      return "#{unit_name} cannot force march." unless roman_legion?
+      return "Roman legions need 1 supply to force march." unless supply.positive?
+      return "#{unit_name} cannot force march after it has already moved." if movement_units.dig(@unit_id, "steps").to_i.positive?
+
+      "#{unit_name} has no legal route from #{area_name(@from)} to #{area_name(@target)}."
+    end
+
+    def illegal_area_reason
+      return "Only Roman blocks may move to the Roman off-map area." if @target == "roman_off_map"
+      return "Only Roman and German blocks may move to Germania." if @target == "germania"
+
+      "#{unit_name} cannot enter #{area_name(@target)}."
+    end
+
+    def movement_limit_reason
+      moved = movement_units[@unit_id]
+      return "Activate #{area_name(@from)} for movement before moving #{unit_name}." unless moved
+      return "#{unit_name} has already finished movement for this card." if moved["stopped"]
+      return "#{unit_name} has already moved two areas for this card." if moved["steps"].to_i >= 2
+      return "#{unit_name} cannot move more than one area." unless roman_legion?
+
+      "Roman legions need 1 supply to move a second area."
     end
 
     def can_unit_move_this_card?

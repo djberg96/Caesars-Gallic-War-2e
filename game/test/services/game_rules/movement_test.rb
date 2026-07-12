@@ -58,6 +58,28 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_match "No more than 4 units", error.message
   end
 
+  test "explains when a unit has already finished movement" do
+    state = base_state
+    state["movement"]["units"]["legion_vii"] = { "origin" => "allobroges", "steps" => 1, "stopped" => true }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_vii", "sequani")
+    end
+
+    assert_match "already finished movement", error.message
+  end
+
+  test "explains when no legal route exists" do
+    session = GameSession.create!(data: base_state)
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_vii", "menapi")
+    end
+
+    assert_match "no legal route", error.message
+  end
+
   test "spends supply when a roman legion moves a second area" do
     state = base_state
     state["movement"]["areas"] = ["transalpine_gaul"]

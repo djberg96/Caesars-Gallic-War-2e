@@ -174,6 +174,32 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   }
 
+  function moveFailureReason(unit, target) {
+    const targetArea = areas[target];
+    if (!targetArea) return `${target} is not a known area.`;
+    if (targetArea.sea) return `${unit.name} cannot move into ${areaName(target)} because it is a sea area.`;
+    if (unit.location === "offboard" || unit.location === "eliminated") return `${unit.name} is not on the map.`;
+    if (!legalAreaForUnit(unit, target)) return illegalAreaReason(unit, target);
+    if (!state.movement) return "Play a card for movement before moving blocks.";
+
+    const moved = state.movement.units?.[unit.id];
+    if (!moved && !movementAreaActivated(unit.location)) return `Activate ${areaName(unit.location)} for movement before moving ${unit.name}.`;
+    if (moved?.stopped) return `${unit.name} has already finished movement for this card.`;
+    if (moved?.steps >= 2) return `${unit.name} has already moved two areas for this card.`;
+    if (moved && (unit.owner !== "roman" || unit.type !== "roman")) return `${unit.name} cannot move more than one area.`;
+    if (moved && state.supply <= 0) return "Roman legions need 1 supply to move a second area.";
+
+    const directBorder = borderType(unit.location, target);
+    if (directBorder) {
+      if (!borderHasCapacity(unit.location, target, directBorder)) return borderCapacityReason(unit.location, target, directBorder);
+      return `${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`;
+    }
+
+    const forceReason = forceMarchFailureReason(unit, target);
+    if (forceReason) return forceReason;
+    return `${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`;
+  }
+
   function canUnitMoveThisCard(unit) {
     if (!state.movement) return false;
     state.movement.units ||= {};
@@ -201,6 +227,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }) || null;
   }
 
+  function forceMarchFailureReason(unit, target) {
+    if (unit.owner !== "roman" || unit.type !== "roman") return `${unit.name} cannot force march.`;
+    if (state.supply <= 0) return "Roman legions need 1 supply to force march.";
+    if (state.movement?.units?.[unit.id]?.steps) return `${unit.name} cannot force march after it has already moved.`;
+
+    const from = unit.location;
+    const routeExists = areas[from]?.links.some((middle) => {
+      if (middle === target) return false;
+      const middleArea = areas[middle];
+      return middleArea && !middleArea.sea && middleArea.links.includes(target);
+    });
+    if (!routeExists) return `${unit.name} has no legal two-area route from ${areaName(from)} to ${areaName(target)}.`;
+
+    const capacityBlock = areas[from].links.find((middle) => {
+      if (middle === target) return false;
+      const middleArea = areas[middle];
+      if (!middleArea || middleArea.sea || !middleArea.links.includes(target)) return false;
+      const firstBorder = borderType(from, middle);
+      const secondBorder = borderType(middle, target);
+      return !borderHasCapacity(from, middle, firstBorder) || !borderHasCapacity(middle, target, secondBorder);
+    });
+    if (capacityBlock) {
+      const firstBorder = borderType(from, capacityBlock);
+      const secondBorder = borderType(capacityBlock, target);
+      if (!borderHasCapacity(from, capacityBlock, firstBorder)) return borderCapacityReason(from, capacityBlock, firstBorder);
+      return borderCapacityReason(capacityBlock, target, secondBorder);
+    }
+
+    return `${unit.name} cannot force march because the intermediate area is occupied by enemy or neutral blocks.`;
+  }
+
   function borderType(from, target) {
     return areas[from]?.borders?.[target] || (areas[from]?.links.includes(target) ? "regular" : null);
   }
@@ -218,6 +275,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return (state.movement.crossings[`${from}->${target}`] || 0) < capacity;
   }
 
+  function borderCapacityReason(from, target, type) {
+    const capacity = borderCapacity(type);
+    return `No more than ${capacity} unit${capacity === 1 ? "" : "s"} may cross ${areaName(from)} to ${areaName(target)} this movement action.`;
+  }
+
   function restrictedBorder(type) {
     return type === "minor_river";
   }
@@ -226,6 +288,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (target === "roman_off_map") return unit.type === "roman";
     if (target === "germania") return unit.type === "roman" || unit.type === "german";
     return true;
+  }
+
+  function illegalAreaReason(unit, target) {
+    if (target === "roman_off_map") return "Only Roman blocks may move to the Roman off-map area.";
+    if (target === "germania") return "Only Roman and German blocks may move to Germania.";
+    return `${unit.name} cannot enter ${areaName(target)}.`;
   }
 
   function moveSelectedTo(target) {
@@ -259,7 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const plan = movePlan(unit, target);
     if (!plan) {
-      log(`${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`);
+      log(moveFailureReason(unit, target));
       render();
       return;
     }
