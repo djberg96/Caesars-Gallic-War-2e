@@ -2,7 +2,7 @@ class GameSessionsController < ApplicationController
   rescue_from GameRules::Movement::InvalidMove, with: :invalid_move
 
   def create
-    session = GameSession.create!(data: state_params)
+    session = GameSession.create!(data: create_state)
     session.sync_from_data!
     render json: { game_session_id: session.id, state: session.data }
   end
@@ -18,6 +18,12 @@ class GameSessionsController < ApplicationController
   end
 
   private
+
+  def create_state
+    return state_params if params[:state].present?
+
+    GameRules::Setup.new(view_context: helpers).state(mode: params[:mode])
+  end
 
   def state_params
     params.require(:state).permit!.to_h

@@ -25,6 +25,22 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["event_4_massive_revolt"], session.game_session_cards.where(location: "committed_roman").joins(:card).pluck("cards.key")
   end
 
+  test "creates a new game from database-backed setup data" do
+    post game_sessions_url(host: "localhost"), params: { mode: "solitaire" }, as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session = GameSession.find(body.fetch("game_session_id"))
+
+    assert_equal "solitaire", body.dig("state", "mode")
+    assert_equal 64, session.game_units.count
+    assert_equal 5, body.dig("state", "hands", "roman").length
+    assert_empty body.dig("state", "hands", "barbarian")
+    assert_equal 28, body.dig("state", "botDeck").length
+    assert_equal 33, session.game_session_cards.count
+    assert_equal "roman", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "legion_x" }).owner
+  end
+
   test "moves through the session API" do
     session = GameSession.create!(data: base_state)
 

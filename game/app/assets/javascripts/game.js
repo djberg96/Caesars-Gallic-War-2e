@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const gameData = JSON.parse(dataElement.textContent);
   const areas = gameData.areas;
-  const specs = gameData.units;
   const csrfToken = document.querySelector("meta[name='csrf-token']")?.content;
 
   let state;
@@ -27,77 +26,17 @@ document.addEventListener("DOMContentLoaded", () => {
   let dragState = null;
   let suppressNextPieceClick = false;
 
-  function makeUnit(id) {
-    const spec = specs[id];
-    return {
-      ...spec,
-      location: spec.home,
-      owner: spec.type === "roman" ? "roman" : "neutral",
-      step: 0
-    };
-  }
-
-  function newGame() {
-    const units = {};
-    Object.keys(specs).forEach((id) => {
-      units[id] = makeUnit(id);
-    });
-
-    gameData.variable_areas.forEach((areaId) => {
-      const area = areas[areaId];
-      const primary = area.tribes[0];
-      const alternate = area.alternate;
-      if (!alternate) return;
-
-      if (Math.random() < 0.5) {
-        units[primary].location = "offboard";
-        units[alternate].location = areaId;
-      } else {
-        units[alternate].location = "offboard";
-      }
-    });
-
-    ["helvetii", "ariovistus", "german_marcomanni", "german_tencteri", "german_usipetes"].forEach((id) => {
-      units[id].owner = "barbarian";
-    });
-    ["volcae", "allobroges"].forEach((id) => {
-      units[id].owner = "roman";
-    });
-
-    units.allobroges.step = units.allobroges.strengths.length - 1;
-    units.legion_xi.step = 1;
-    units.legion_xii.step = 1;
-
-    state = {
-      turn: 0,
-      phase: "Card Phase",
-      active: "roman",
-      supply: 15,
-      vp: 0,
-      units,
-      selectedUnit: null,
-      selectedArea: null,
-      selectedCard: null,
-      committed: { roman: null, barbarian: null },
-      revealed: false,
-      mode: document.querySelector("#play-mode")?.value || "hotseat",
-      botDeck: [],
-      botNeutralActivations: 0,
-      currentAction: null,
-      movement: null,
-      dragArea: null,
-      undoStack: [],
-      diceRolledThisTurn: false,
-      gameSessionId: null,
-      hands: { roman: [], barbarian: [] },
-      discard: [],
-      log: []
-    };
-
-    log("New game set up. Variable tribes were randomly selected.");
-    dealCards();
-    createGameSession();
-    render();
+  async function newGame() {
+    const mode = document.querySelector("#play-mode")?.value || "hotseat";
+    try {
+      const result = await postJson("/game_sessions", { mode });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      render();
+    } catch (error) {
+      window.alert(`New game could not be created: ${error.message}`);
+    }
   }
 
   function buildDeck() {
