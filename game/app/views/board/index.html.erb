@@ -10,7 +10,7 @@
     <p>Second edition hotseat prototype</p>
   </div>
   <div class="status-strip" aria-live="polite">
-    <span id="mode-label">Hotseat</span>
+    <span id="mode-label">Solitaire</span>
     <span id="turn-label">58 BC</span>
     <span id="phase-label">Card Phase</span>
     <span id="active-label">Roman</span>
@@ -26,13 +26,14 @@
       <button id="deal-cards" type="button">Deal</button>
       <button id="end-turn" type="button">End Turn</button>
       <button id="undo-move" type="button">Undo</button>
+      <button id="toggle-pieces" type="button" aria-pressed="false">Hide</button>
       <button id="save-game" type="button">Save</button>
       <button id="load-game" type="button">Load</button>
       <button id="export-game" type="button">Export</button>
       <label class="select-label" for="play-mode">Mode</label>
       <select id="play-mode">
         <option value="hotseat">Hotseat</option>
-        <option value="solitaire">Solitaire Roman</option>
+        <option value="solitaire" selected>Solitaire Roman</option>
         <option value="ai">AI Opponent</option>
       </select>
     </div>

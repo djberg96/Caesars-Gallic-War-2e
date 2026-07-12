@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let areaHitMap = null;
   let dragState = null;
   let suppressNextPieceClick = false;
+  let piecesHidden = false;
 
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
@@ -789,6 +790,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderModeHelp();
     renderActionButtons();
     renderUndoButton();
+    renderPieceToggle();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -1007,6 +1009,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
+    if (piecesHidden) return;
+
     const byArea = {};
     Object.values(state.units).forEach((unit) => {
       if (!areas[unit.location]) return;
@@ -1226,6 +1230,17 @@ document.addEventListener("DOMContentLoaded", () => {
     button.disabled = state.diceRolledThisTurn || !(state.undoStack?.length);
   }
 
+  function renderPieceToggle() {
+    const button = document.querySelector("#toggle-pieces");
+    button.textContent = piecesHidden ? "Show" : "Hide";
+    button.setAttribute("aria-pressed", piecesHidden ? "true" : "false");
+  }
+
+  function togglePieces() {
+    piecesHidden = !piecesHidden;
+    render();
+  }
+
   function renderLog() {
     els.log.innerHTML = state.log.map((entry) => `<li>${entry}</li>`).join("");
   }
@@ -1324,6 +1339,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
+  document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
   document.querySelector("#export-game").addEventListener("click", exportGame);
