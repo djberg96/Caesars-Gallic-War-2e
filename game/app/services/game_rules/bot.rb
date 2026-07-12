@@ -34,6 +34,7 @@ module GameRules
       if card["area"].present? && neutral_area?(card["area"]) && @state.fetch("botNeutralActivations", 0).to_i < 2
         activate_area!(card["area"], "barbarian")
         @state["botNeutralActivations"] = @state.fetch("botNeutralActivations", 0).to_i + 1
+        record_neutral_activation_card(card)
         return
       end
 
@@ -125,6 +126,12 @@ module GameRules
         unit["step"] = 0
       end
       log("#{player_name(owner)} activates #{area_name(area_id)}.")
+    end
+
+    def record_neutral_activation_card(card)
+      @state["neutralActivationCards"] ||= { "roman" => [], "barbarian" => [] }
+      @state["neutralActivationCards"]["barbarian"] ||= []
+      @state["neutralActivationCards"]["barbarian"] << card
     end
 
     def neutral_area?(area_id)

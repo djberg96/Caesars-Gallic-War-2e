@@ -85,6 +85,7 @@ module GameRules
         unit["owner"] = active_player
         unit["step"] = 0
       end
+      record_neutral_activation_card(card)
       log("#{player_name(active_player)} activates #{area.name}.")
       persist!
     end
@@ -171,6 +172,12 @@ module GameRules
 
     def card_prompt
       @state["mode"] == "hotseat" ? "Select and commit a card first." : "Select a Roman card first."
+    end
+
+    def record_neutral_activation_card(card)
+      @state["neutralActivationCards"] ||= { "roman" => [], "barbarian" => [] }
+      @state["neutralActivationCards"][active_player] ||= []
+      @state["neutralActivationCards"][active_player] << card
     end
 
     def active_player

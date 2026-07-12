@@ -21,6 +21,7 @@ module GameRules
       end
 
       @state["botNeutralActivations"] = 0
+      @state["neutralActivationCards"] = { "roman" => [], "barbarian" => [] }
       @state["selectedCard"] = nil
       @state["committed"] = { "roman" => nil, "barbarian" => nil }
       @state["revealed"] = false

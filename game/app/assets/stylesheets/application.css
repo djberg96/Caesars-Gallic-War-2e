@@ -154,7 +154,8 @@ h3 {
 }
 
 #area-layer,
-.piece-layer {
+.piece-layer,
+.neutral-activation-layer {
   position: absolute;
   inset: 0;
   width: min(100%, 980px);
@@ -164,6 +165,68 @@ h3 {
   left: 50%;
   translate: -50% 0;
   pointer-events: none;
+}
+
+.neutral-activation-layer {
+  z-index: 35;
+}
+
+.neutral-activation-slot {
+  position: absolute;
+  display: grid;
+  gap: 2.5%;
+  padding: 1.1%;
+  color: var(--text);
+}
+
+.neutral-activation-slot-barbarian {
+  left: 87.2%;
+  top: 43.4%;
+  width: 10.2%;
+  height: 14.8%;
+}
+
+.neutral-activation-slot-roman {
+  left: 87.2%;
+  top: 58.5%;
+  width: 10.2%;
+  height: 13.7%;
+}
+
+.neutral-activation-slot > span {
+  display: none;
+  align-self: center;
+  justify-self: center;
+  color: rgba(24, 22, 16, 0.72);
+  font-family: Georgia, serif;
+  font-size: clamp(0.48rem, 0.85vw, 0.72rem);
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.neutral-activation-card {
+  display: grid;
+  align-content: center;
+  min-height: 0;
+  padding: 0.25rem;
+  border: 1px solid rgba(255, 235, 165, 0.72);
+  border-radius: 4px;
+  background: #2a2a21;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
+}
+
+.neutral-activation-card strong {
+  color: var(--accent);
+  font-size: clamp(0.45rem, 0.75vw, 0.7rem);
+  line-height: 1.05;
+}
+
+.neutral-activation-card small {
+  color: var(--muted);
+  font-size: clamp(0.42rem, 0.65vw, 0.58rem);
+  line-height: 1.1;
 }
 
 .area-hotspot {

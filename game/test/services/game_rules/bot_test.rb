@@ -17,6 +17,7 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal 1, result["botNeutralActivations"]
     assert_empty result["botDeck"]
     assert_equal ["allobroges"], result["discard"].map { |card| card.fetch("id") }
+    assert_equal ["allobroges"], result.dig("neutralActivationCards", "barbarian").map { |card| card.fetch("id") }
     assert_equal "barbarian", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 

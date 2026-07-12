@@ -28,6 +28,7 @@ module GameRules
         "mode" => mode,
         "botDeck" => [],
         "botNeutralActivations" => 0,
+        "neutralActivationCards" => { "roman" => [], "barbarian" => [] },
         "currentAction" => nil,
         "movement" => nil,
         "dragArea" => nil,

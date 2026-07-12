@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     areaLayer: document.querySelector("#area-layer"),
     boardImage: document.querySelector("#board > img"),
     pieceLayer: document.querySelector("#piece-layer"),
+    neutralActivationLayer: document.querySelector("#neutral-activation-layer"),
     log: document.querySelector("#log"),
     selection: document.querySelector("#selection"),
     areaDetail: document.querySelector("#area-detail"),
@@ -879,6 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderStatus();
     renderAreas();
     renderPieces();
+    renderNeutralActivationCards();
     renderHands();
     renderLog();
     renderModeHelp();
@@ -1145,6 +1147,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderNeutralActivationCards() {
+    els.neutralActivationLayer.innerHTML = "";
+    const slots = [
+      { player: "barbarian", label: "German player neutral tribe activation", cards: state.neutralActivationCards.barbarian || [] },
+      { player: "roman", label: "Roman player neutral tribe activation", cards: state.neutralActivationCards.roman || [] }
+    ];
+
+    slots.forEach((slot) => {
+      const container = document.createElement("div");
+      container.className = `neutral-activation-slot neutral-activation-slot-${slot.player}`;
+      container.setAttribute("aria-label", slot.label);
+
+      const cards = slot.cards.slice(-2);
+      if (cards.length === 0) {
+        container.innerHTML = `<span>${slot.player === "roman" ? "Roman" : "German"} NTA</span>`;
+      } else {
+        cards.forEach((card) => {
+          const marker = document.createElement("div");
+          marker.className = "neutral-activation-card";
+          marker.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap}</small>`;
+          container.append(marker);
+        });
+      }
+
+      els.neutralActivationLayer.append(container);
+    });
+  }
+
   async function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
@@ -1380,6 +1410,9 @@ document.addEventListener("DOMContentLoaded", () => {
       state.movement.units ||= {};
       state.movement.crossings ||= {};
     }
+    state.neutralActivationCards ||= {};
+    state.neutralActivationCards.roman ||= [];
+    state.neutralActivationCards.barbarian ||= [];
     state.dragArea = null;
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;

@@ -373,6 +373,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_empty body.dig("state", "botDeck")
     assert_equal ["allobroges"], body.dig("state", "discard").map { |card| card.fetch("id") }
+    assert_equal ["allobroges"], body.dig("state", "neutralActivationCards", "barbarian").map { |card| card.fetch("id") }
     assert_equal "barbarian", body.dig("state", "units", "allobroges", "owner")
     assert_equal 1, body.dig("state", "botNeutralActivations")
     assert_equal "barbarian", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
