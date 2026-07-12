@@ -1028,11 +1028,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const faceVisible = unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
         piece.classList.toggle("is-hidden", !faceVisible);
-        if (!faceVisible) piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
+        if (!faceVisible) {
+          piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
+          piece.classList.add(unit.owner === "neutral" ? "is-hidden-neutral" : "is-hidden-enemy");
+        }
         piece.style.left = `${area.x + offsetX}%`;
         piece.style.top = `${area.y + offsetY}%`;
-        piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : "Hidden block";
-        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : "Hidden block"}">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
+        const hiddenLabel = unit.owner === "neutral" ? "Neutral block" : "Enemy block";
+        piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
+        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {

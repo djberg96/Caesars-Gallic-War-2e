@@ -272,7 +272,7 @@ h3 {
   background: #7b7f80;
 }
 
-.piece.is-hidden::after {
+.piece.is-hidden-neutral::after {
   content: "?";
   position: absolute;
   inset: 0;
