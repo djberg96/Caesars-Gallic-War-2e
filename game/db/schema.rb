@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_11_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_11_000005) do
   create_table "areas", force: :cascade do |t|
     t.string "alternate_tribe"
     t.datetime "created_at", null: false
@@ -40,12 +40,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_11_000003) do
     t.index ["to_area_id"], name: "index_borders_on_to_area_id"
   end
 
+  create_table "cards", force: :cascade do |t|
+    t.integer "ap", null: false
+    t.integer "area_id"
+    t.datetime "created_at", null: false
+    t.string "key", null: false
+    t.string "kind", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["area_id"], name: "index_cards_on_area_id"
+    t.index ["key"], name: "index_cards_on_key", unique: true
+  end
+
   create_table "game_sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.json "data", default: {}, null: false
     t.datetime "updated_at", null: false
   end
 
+  create_table "unit_types", force: :cascade do |t|
+    t.string "category", null: false
+    t.datetime "created_at", null: false
+    t.integer "fire", null: false
+    t.string "home", null: false
+    t.string "image_path", null: false
+    t.string "initiative", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.json "strengths", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_unit_types_on_key", unique: true
+  end
+
   add_foreign_key "borders", "areas", column: "from_area_id"
   add_foreign_key "borders", "areas", column: "to_area_id"
+  add_foreign_key "cards", "areas"
 end

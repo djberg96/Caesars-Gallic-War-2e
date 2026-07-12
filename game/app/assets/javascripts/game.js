@@ -101,22 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildDeck() {
-    const areaCards = Object.values(areas)
-      .filter((area) => !area.sea && area.region && area.region !== "roman")
-      .map((area) => ({
-        id: area.id,
-        title: area.name,
-        area: area.id,
-        ap: area.region === "germania" ? 3 : area.region === "belgica" ? 2 : 1,
-        type: "area"
-      }));
-    const events = ["Baggage Train", "Minor Revolt", "Minor Revolt", "Major Revolt", "Massive Revolt"].map((title, index) => ({
-      id: `event_${index}_${title.toLowerCase().replaceAll(" ", "_")}`,
-      title,
-      ap: 1,
-      type: "event"
-    }));
-    return shuffle(areaCards.concat(events));
+    return shuffle(gameData.cards.map((card) => ({ ...card })));
   }
 
   function shuffle(items) {

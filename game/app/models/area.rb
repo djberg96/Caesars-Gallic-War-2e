@@ -5,6 +5,7 @@ class Area < ApplicationRecord
            foreign_key: :from_area_id,
            inverse_of: :from_area,
            dependent: :destroy
+  has_many :cards, dependent: :destroy
 
   validates :key, presence: true, uniqueness: true
   validates :name, :x, :y, presence: true
@@ -24,6 +25,10 @@ class Area < ApplicationRecord
       links: sorted_outgoing_borders.map { |border| border.to_area.key },
       borders: sorted_outgoing_borders.to_h { |border| [border.to_area.key, border.kind] }
     }
+  end
+
+  def card_area?
+    !sea? && region.present? && region != "roman"
   end
 
   private

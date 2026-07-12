@@ -3,6 +3,7 @@ module GameData
     class << self
       def seed!
         Area.transaction do
+          Card.delete_all if ActiveRecord::Base.connection.data_source_exists?("cards")
           Border.delete_all
           Area.delete_all
 
