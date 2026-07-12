@@ -210,20 +210,31 @@ h3 {
   display: grid;
   align-content: center;
   min-height: 0;
-  padding: 0.25rem;
-  border: 1px solid rgba(255, 235, 165, 0.72);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(255, 235, 165, 0.58);
   border-radius: 4px;
-  background: #2a2a21;
+  background: rgba(22, 19, 14, 0.68);
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
 }
 
+.neutral-activation-card img {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
 .neutral-activation-card strong {
+  padding: 0.25rem 0.25rem 0;
   color: var(--accent);
   font-size: clamp(0.45rem, 0.75vw, 0.7rem);
   line-height: 1.05;
 }
 
 .neutral-activation-card small {
+  padding: 0 0.25rem 0.25rem;
   color: var(--muted);
   font-size: clamp(0.42rem, 0.65vw, 0.58rem);
   line-height: 1.1;

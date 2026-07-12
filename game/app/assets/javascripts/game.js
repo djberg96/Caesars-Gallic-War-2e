@@ -1166,13 +1166,22 @@ document.addEventListener("DOMContentLoaded", () => {
         cards.forEach((card) => {
           const marker = document.createElement("div");
           marker.className = "neutral-activation-card";
-          marker.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap}</small>`;
+          const image = cardImage(card);
+          if (image) {
+            marker.innerHTML = `<img src="${image}" alt="${card.title} card">`;
+          } else {
+            marker.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap}</small>`;
+          }
           container.append(marker);
         });
       }
 
       els.neutralActivationLayer.append(container);
     });
+  }
+
+  function cardImage(card) {
+    return gameData.cards.find((candidate) => candidate.id === card.id)?.image;
   }
 
   async function beginPieceDrag(event, unitId) {

@@ -37,7 +37,9 @@ class BoardController < ApplicationController
     @cards ||= begin
       GameData::CardSeeder.seed! if Card.none?
 
-      Card.includes(:area).order(:id).map(&:game_data)
+      Card.includes(:area).order(:id).map do |card|
+        card.game_data.merge(image: helpers.asset_path("Cards/#{card.key}.svg"))
+      end
     end
   end
 
