@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.selectedCard = null;
   }
 
-  function commitCard() {
+  async function commitCard() {
     if (state.mode !== "hotseat") {
       log("Face-down simultaneous commit is only used in hotseat mode. In solitaire mode, play a Roman card, then draw the bot card.");
       render();
@@ -486,13 +486,23 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
       return;
     }
-    state.committed[state.active] = state.selectedCard;
-    state.selectedCard = null;
-    log(`${playerName(state.active)} committed a card face down.`);
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/commit_card`, {
+        state,
+        player: state.active,
+        card_id: state.selectedCard.id
+      });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
+    }
     render();
   }
 
-  function revealCards() {
+  async function revealCards() {
     if (state.mode !== "hotseat") {
       log("Reveal is only used in hotseat mode.");
       render();
@@ -503,8 +513,15 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
       return;
     }
-    state.revealed = true;
-    log(`Cards revealed: Roman ${state.committed.roman.title}; Barbarian ${state.committed.barbarian.title}.`);
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/reveal_cards`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
+    }
     render();
   }
 
@@ -1285,8 +1302,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelector("#new-game").addEventListener("click", newGame);
   document.querySelector("#deal-cards").addEventListener("click", () => dealCards());
-  document.querySelector("#commit-card").addEventListener("click", commitCard);
-  document.querySelector("#reveal-cards").addEventListener("click", revealCards);
+  document.querySelector("#commit-card").addEventListener("click", () => commitCard());
+  document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);

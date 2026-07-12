@@ -1,4 +1,5 @@
 class GameSessionsController < ApplicationController
+  rescue_from GameRules::CardPhase::InvalidAction, with: :invalid_action
   rescue_from GameRules::Movement::InvalidMove, with: :invalid_move
 
   def create
@@ -24,6 +25,23 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, state: result }
   end
 
+  def commit_card
+    session = GameSession.find(params[:id])
+    result = GameRules::CardPhase.new(session: session, state: state_params).commit!(
+      player: params.require(:player),
+      card_id: params.require(:card_id)
+    )
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def reveal_cards
+    session = GameSession.find(params[:id])
+    result = GameRules::CardPhase.new(session: session, state: state_params).reveal!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
   private
 
   def create_state
@@ -37,6 +55,10 @@ class GameSessionsController < ApplicationController
   end
 
   def invalid_move(error)
+    render json: { error: error.message }, status: :unprocessable_entity
+  end
+
+  def invalid_action(error)
     render json: { error: error.message }, status: :unprocessable_entity
   end
 end

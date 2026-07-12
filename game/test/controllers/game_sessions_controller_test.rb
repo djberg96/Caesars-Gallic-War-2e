@@ -95,7 +95,46 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 33, session.reload.game_session_cards.count
   end
 
+  test "commits and reveals cards through the session API" do
+    state = base_state.merge(
+      mode: "hotseat",
+      hands: {
+        roman: [card_hash("allobroges")],
+        barbarian: [card_hash("helvetii")]
+      },
+      committed: { roman: nil, barbarian: nil },
+      revealed: false
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post commit_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data, player: "roman", card_id: "allobroges" },
+         as: :json
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "allobroges", body.dig("state", "committed", "roman", "id")
+    assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "committed_roman").joins(:card).pluck("cards.key")
+
+    post commit_card_game_session_url(session, host: "localhost"),
+         params: { state: session.reload.data, player: "barbarian", card_id: "helvetii" },
+         as: :json
+    assert_response :success
+
+    post reveal_cards_game_session_url(session, host: "localhost"),
+         params: { state: session.reload.data },
+         as: :json
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert body.dig("state", "revealed")
+    assert_match "Cards revealed", body.dig("state", "log").first
+  end
+
   private
+
+  def card_hash(key)
+    Card.find_by!(key: key).game_data
+  end
 
   def base_state
     {

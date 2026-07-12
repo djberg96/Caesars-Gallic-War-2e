@@ -12,7 +12,9 @@ Rails.application.routes.draw do
   root "board#index"
 
   resources :game_sessions, only: :create do
+    post :commit_card, on: :member
     post :deal, on: :member
     post :move, on: :member
+    post :reveal_cards, on: :member
   end
 end
