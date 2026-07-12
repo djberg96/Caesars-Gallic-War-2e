@@ -60,6 +60,21 @@ document.addEventListener("DOMContentLoaded", () => {
     return Object.values(state.units).filter((unit) => unit.location === areaId);
   }
 
+  function unitFaceVisibleToActivePlayer(unit) {
+    return unit.owner === state.active || enemyInCombatWithActivePlayer(unit);
+  }
+
+  function publicUnitLabel(unit) {
+    if (unitFaceVisibleToActivePlayer(unit)) return `${unit.name} ${unit.owner} ${currentStrength(unit)}`;
+    if (unit.owner === "neutral") return "Neutral block, strength hidden";
+    return null;
+  }
+
+  function enemyInCombatWithActivePlayer(unit) {
+    if (unit.owner === "neutral" || unit.owner === state.active) return false;
+    return areaUnits(unit.location).some((other) => other.owner === state.active);
+  }
+
   function isEnemy(left, right) {
     return left !== "neutral" && right !== "neutral" && left !== right;
   }
@@ -83,6 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function selectUnit(id) {
     const unit = state.units[id];
+    if (!unitFaceVisibleToActivePlayer(unit)) {
+      await selectArea(unit.location);
+      return;
+    }
     if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
       await activateMovementArea(unit.location);
     }
@@ -94,7 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const unit = state.units[id];
     state.selectedUnit = id;
     state.selectedArea = unit.location;
-    els.selection.textContent = `${unit.name}: ${unit.owner}, strength ${currentStrength(unit)}, ${unit.initiative}${unit.fire}, in ${areaName(unit.location)}.`;
+    if (unitFaceVisibleToActivePlayer(unit)) {
+      els.selection.textContent = `${unit.name}: ${unit.owner}, strength ${currentStrength(unit)}, ${unit.initiative}${unit.fire}, in ${areaName(unit.location)}.`;
+    } else {
+      els.selection.textContent = `Hidden block in ${areaName(unit.location)}.`;
+    }
   }
 
   async function selectArea(id) {
@@ -112,7 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function describeArea(id) {
     const area = areas[id];
     const units = areaUnits(id);
-    const unitText = units.length ? units.map((unit) => `${unit.name} ${unit.owner} ${currentStrength(unit)}`).join(", ") : "No units";
+    const visibleLabels = units.map(publicUnitLabel).filter(Boolean);
+    const hiddenEnemies = units.filter((unit) => unit.owner !== state.active && unit.owner !== "neutral").length;
+    const hiddenText = hiddenEnemies ? `${hiddenEnemies} enemy block${hiddenEnemies === 1 ? "" : "s"}` : null;
+    const unitText = [...visibleLabels, hiddenText].filter(Boolean).join(", ") || "No visible units";
     els.selection.textContent = area.name;
     els.areaDetail.textContent = `${area.region || "sea"}${area.port ? ", port" : ""}${area.fort ? `, fort ${area.fort.level}` : ""}. ${unitText}.`;
   }
@@ -984,12 +1010,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const offsetY = (Math.floor(index / 4) - 0.5) * 2.2;
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
+        const faceVisible = unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
-        piece.classList.toggle("is-hidden", unit.owner === "neutral");
+        piece.classList.toggle("is-hidden", !faceVisible);
         piece.style.left = `${area.x + offsetX}%`;
         piece.style.top = `${area.y + offsetY}%`;
-        piece.title = `${unit.name} ${unit.owner} strength ${currentStrength(unit)}`;
-        piece.innerHTML = `<img src="${unit.image}" alt="${unit.name}"><span class="strength-badge">${currentStrength(unit)}</span>`;
+        piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : "Hidden block";
+        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : "Hidden block"}">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {

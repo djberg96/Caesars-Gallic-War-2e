@@ -248,7 +248,16 @@ h3 {
 }
 
 .piece.is-hidden img {
-  opacity: 0.1;
+  opacity: 0;
+}
+
+.piece.is-hidden {
+  cursor: default;
+  background: #2f5f9f;
+}
+
+.piece.owner-neutral.is-hidden {
+  background: #65665f;
 }
 
 .piece.is-hidden::after {
