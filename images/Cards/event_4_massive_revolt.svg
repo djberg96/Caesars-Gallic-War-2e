@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600" role="img" aria-labelledby="title desc">
   <title id="title">Massive Revolt card</title>
-  <desc id="desc">Event card with 1 action point.</desc>
+  <desc id="desc">Massive Revolt event card with 1 optional action point.</desc>
   <defs>
     <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#69334f"/>
@@ -21,26 +21,47 @@
   <rect x="22" y="22" width="376" height="556" rx="18" fill="url(#grain)"/>
   <rect x="38" y="38" width="344" height="524" rx="12" fill="none" stroke="#f5ddb0" stroke-opacity="0.82" stroke-width="4"/>
 
-  <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#fff0c8">
+  <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="39" font-weight="700" fill="#fff0c8">
     <tspan x="210" y="82">Massive Revolt</tspan>
   </text>
-  <g transform="translate(72 107)" stroke="#dca6c4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
-  <path d="M65 212 C102 172 107 123 148 102 C181 85 209 63 236 31"/>
-  <path d="M229 31 L271 22 L256 64"/>
-  <path d="M56 210 C45 168 50 125 73 88 C94 56 127 37 170 34"/>
-  <path d="M91 227 C139 224 190 201 230 162"/>
-  <path d="M112 118 L70 76 M154 93 L126 48 M190 70 L180 29"/>
-</g>
 
-
-  <text x="210" y="390" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="800" fill="#f9e6b8" letter-spacing="1.6">Event</text>
-
-  <g filter="url(#shadow)">
-    <circle cx="210" cy="468" r="46" fill="#15130f" stroke="#f5ddb0" stroke-width="5"/>
-    <text x="210" y="491" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#f9e6b8">1</text>
-  </g>
+  <rect x="58" y="104" width="304" height="405" rx="16" fill="#efe0bd" stroke="#f5ddb0" stroke-opacity="0.55" stroke-width="3"/>
+  <rect x="72" y="118" width="276" height="377" rx="10" fill="#f7edd0" fill-opacity="0.94" stroke="#533b20" stroke-opacity="0.24" stroke-width="2"/>
+    <text x="76" y="132" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">ROMAN</text>
+    <text x="84" y="154" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="154" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Treat as Minor Revolt.</text>
+    <text x="76" y="183" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">BARBARIAN</text>
+    <text x="84" y="205" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="205" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">On Turn 1, treat as Minor Revolt.</text>
+    <text x="84" y="225" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="225" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">On Turn 2+, select any 3 neutral or</text>
+    <text x="84" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Roman-controlled areas.</text>
+    <text x="84" y="261" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="261" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Roman-controlled tribes return home at</text>
+    <text x="84" y="277" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="277" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">current strength; all selected areas</text>
+    <text x="84" y="293" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="293" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">become Barbarian controlled.</text>
+    <text x="84" y="313" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="313" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">If Gallic units survive, place</text>
+    <text x="84" y="329" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="329" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Vercingetorix in a selected area; then</text>
+    <text x="84" y="345" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="345" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">activate any 3 areas for movement and</text>
+    <text x="84" y="361" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="361" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">combat.</text>
+    <text x="76" y="390" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">AFTER PLAY</text>
+    <text x="84" y="412" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="412" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">If played as Massive Revolt by the</text>
+    <text x="84" y="428" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="428" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Barbarian player, remove this card</text>
+    <text x="84" y="444" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="444" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">from the game.</text>
 
   <path d="M67 538 H244" stroke="#f5ddb0" stroke-opacity="0.48" stroke-width="3"/>
   <text x="68" y="555" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#f5ddb0" opacity="0.82">CAESAR'S GALLIC WAR</text>
+  <circle cx="306" cy="550" r="14" fill="#15130f" stroke="#f5ddb0" stroke-width="2"/>
+  <text x="306" y="558" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="23" font-weight="700" fill="#f9e6b8">1</text>
   <text x="346" y="555" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="800" fill="#f5ddb0" opacity="0.88">18</text>
 </svg>

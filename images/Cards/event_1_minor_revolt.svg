@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="420" height="600" viewBox="0 0 420 600" role="img" aria-labelledby="title desc">
   <title id="title">Minor Revolt card</title>
-  <desc id="desc">Event card with 1 action point.</desc>
+  <desc id="desc">Minor Revolt event card with 1 optional action point.</desc>
   <defs>
     <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8b3f3b"/>
-      <stop offset="0.62" stop-color="#522725"/>
+      <stop offset="0" stop-color="#9b5a3d"/>
+      <stop offset="0.62" stop-color="#5e3425"/>
       <stop offset="1" stop-color="#1d1a14"/>
     </linearGradient>
     <pattern id="grain" width="34" height="34" patternUnits="userSpaceOnUse">
@@ -24,23 +24,48 @@
   <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#fff0c8">
     <tspan x="210" y="82">Minor Revolt</tspan>
   </text>
-  <g transform="translate(72 107)" stroke="#e59a86" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
-  <path d="M65 212 C102 172 107 123 148 102 C181 85 209 63 236 31"/>
-  <path d="M229 31 L271 22 L256 64"/>
-  <path d="M56 210 C45 168 50 125 73 88 C94 56 127 37 170 34"/>
-  <path d="M91 227 C139 224 190 201 230 162"/>
-  <path d="M112 118 L70 76 M154 93 L126 48 M190 70 L180 29"/>
-</g>
 
-
-  <text x="210" y="390" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="800" fill="#f9e6b8" letter-spacing="1.6">Event</text>
-
-  <g filter="url(#shadow)">
-    <circle cx="210" cy="468" r="46" fill="#15130f" stroke="#f5ddb0" stroke-width="5"/>
-    <text x="210" y="491" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#f9e6b8">1</text>
-  </g>
+  <rect x="58" y="104" width="304" height="405" rx="16" fill="#efe0bd" stroke="#f5ddb0" stroke-opacity="0.55" stroke-width="3"/>
+  <rect x="72" y="118" width="276" height="377" rx="10" fill="#f7edd0" fill-opacity="0.94" stroke="#533b20" stroke-opacity="0.24" stroke-width="2"/>
+    <text x="76" y="132" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">ROMAN</text>
+    <text x="84" y="154" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="154" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Select 1 active Barbarian-controlled</text>
+    <text x="84" y="170" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="170" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">tribe.</text>
+    <text x="84" y="190" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="190" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Its area&#39;s units return home at</text>
+    <text x="84" y="206" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="206" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">current strength and remain Barbarian</text>
+    <text x="84" y="222" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="222" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">controlled.</text>
+    <text x="84" y="242" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="242" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">If the home area is empty, they become</text>
+    <text x="84" y="258" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="258" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">neutral at full strength.</text>
+    <text x="76" y="287" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">BARBARIAN</text>
+    <text x="84" y="309" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="309" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Select 1 Roman-controlled active tribe</text>
+    <text x="84" y="325" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="325" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">or neutral tribe.</text>
+    <text x="84" y="345" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="345" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">All units of that tribe&#39;s area return</text>
+    <text x="84" y="361" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="361" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">home at current strength and become</text>
+    <text x="84" y="377" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="377" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Barbarian allies.</text>
+    <text x="76" y="406" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="900" fill="#533b20">REVOLT NOTES</text>
+    <text x="84" y="428" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="428" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">If the home area is occupied, the</text>
+    <text x="84" y="444" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="444" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">returning tribe joins the other player</text>
+    <text x="84" y="460" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117"></text>
+    <text x="101" y="460" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">and battle is resolved.</text>
+    <text x="84" y="480" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="650" fill="#2a2117">•</text>
+    <text x="101" y="480" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#2a2117">Germania may never be targeted.</text>
 
   <path d="M67 538 H244" stroke="#f5ddb0" stroke-opacity="0.48" stroke-width="3"/>
   <text x="68" y="555" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#f5ddb0" opacity="0.82">CAESAR'S GALLIC WAR</text>
+  <circle cx="306" cy="550" r="14" fill="#15130f" stroke="#f5ddb0" stroke-width="2"/>
+  <text x="306" y="558" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="23" font-weight="700" fill="#f9e6b8">1</text>
   <text x="346" y="555" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="800" fill="#f5ddb0" opacity="0.88">15</text>
 </svg>
