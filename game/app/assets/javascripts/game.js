@@ -81,10 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return player === "roman" ? "Roman" : "Barbarian";
   }
 
-  function selectUnit(id) {
+  async function selectUnit(id) {
     const unit = state.units[id];
     if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
-      activateMovementArea(unit.location);
+      await activateMovementArea(unit.location);
     }
     markUnitSelected(id);
     render();
@@ -97,11 +97,11 @@ document.addEventListener("DOMContentLoaded", () => {
     els.selection.textContent = `${unit.name}: ${unit.owner}, strength ${currentStrength(unit)}, ${unit.initiative}${unit.fire}, in ${areaName(unit.location)}.`;
   }
 
-  function selectArea(id) {
+  async function selectArea(id) {
     state.selectedArea = id;
     state.selectedUnit = null;
     describeArea(id);
-    if (state.movement) activateMovementArea(id);
+    if (state.movement) await activateMovementArea(id);
     render();
   }
 
@@ -333,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
       eventAction(card);
       await discardSelectedCard();
     } else {
-      startMovement(card);
+      await startMovement();
     }
     render();
   }
@@ -356,40 +356,36 @@ document.addEventListener("DOMContentLoaded", () => {
     log(`${playerName(owner)} activates ${areaName(areaId)}.`);
   }
 
-  function startMovement(card) {
-    state.movement = {
-      player: state.active,
-      cardId: card.id,
-      remaining: card.ap,
-      areas: [],
-      units: {}
-    };
-    log(`${playerName(state.active)} is using ${card.title} for movement: activate up to ${card.ap} group${card.ap === 1 ? "" : "s"}. Click a group area, then move its units.`);
+  async function startMovement() {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/start_movement`, { state });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
+    }
   }
 
   function movementAreaActivated(areaId) {
     return state.movement?.areas.includes(areaId);
   }
 
-  function activateMovementArea(areaId) {
+  async function activateMovementArea(areaId) {
     if (!state.movement) return false;
     if (movementAreaActivated(areaId)) return true;
-
-    const movableUnits = areaUnits(areaId).filter((unit) => unit.owner === state.active);
-    if (!movableUnits.length) {
-      log(`${areaName(areaId)} has no ${playerName(state.active)} units to activate for movement.`);
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/activate_movement_area`, { state, area_id: areaId });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      return true;
+    } catch (error) {
+      log(error.message);
       return false;
     }
-
-    if (state.movement.remaining <= 0) {
-      log(`No movement group activations remain for this card.`);
-      return false;
-    }
-
-    state.movement.areas.push(areaId);
-    state.movement.remaining -= 1;
-    log(`${areaName(areaId)} activated for movement. ${state.movement.remaining} group activation${state.movement.remaining === 1 ? "" : "s"} remaining.`);
-    return true;
   }
 
   async function completeMovementAction() {
@@ -1039,15 +1035,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function beginPieceDrag(event, unitId) {
+  async function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
     if (unit.owner !== state.active) return;
 
     event.preventDefault();
     event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
     if (state.movement && unit.owner === state.active && !movementAreaActivated(unit.location)) {
-      activateMovementArea(unit.location);
+      const activated = await activateMovementArea(unit.location);
+      if (!activated) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+        render();
+        return;
+      }
     }
     markUnitSelected(unitId);
     renderAreas();
@@ -1059,7 +1061,6 @@ document.addEventListener("DOMContentLoaded", () => {
       dragged: false,
       ghost: createDragGhost(event.currentTarget, event.clientX, event.clientY)
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
     event.currentTarget.classList.add("is-dragging");
     event.currentTarget.addEventListener("pointermove", updatePieceDrag);
     event.currentTarget.addEventListener("pointerup", endPieceDrag);

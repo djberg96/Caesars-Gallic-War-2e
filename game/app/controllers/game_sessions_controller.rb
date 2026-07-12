@@ -1,4 +1,5 @@
 class GameSessionsController < ApplicationController
+  rescue_from GameRules::ActionPhase::InvalidAction, with: :invalid_action
   rescue_from GameRules::CardPhase::InvalidAction, with: :invalid_action
   rescue_from GameRules::Movement::InvalidMove, with: :invalid_move
 
@@ -46,6 +47,22 @@ class GameSessionsController < ApplicationController
     session = GameSession.find(params[:id])
     result = GameRules::CardPhase.new(session: session, state: state_params).discard!(
       player: params.require(:player)
+    )
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def start_movement
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).start_movement!
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def activate_movement_area
+    session = GameSession.find(params[:id])
+    result = GameRules::ActionPhase.new(session: session, state: state_params).activate_movement_area!(
+      area_id: params.require(:area_id)
     )
 
     render json: { game_session_id: session.id, state: result }

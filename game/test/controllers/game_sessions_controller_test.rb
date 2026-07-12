@@ -76,6 +76,57 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 15, session.supply
   end
 
+  test "starts movement through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      selectedCard: card_hash("allobroges"),
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post start_movement_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    session.reload
+
+    assert_equal "movement", body.dig("state", "currentAction")
+    assert_equal "roman", body.dig("state", "movement", "player")
+    assert_equal "allobroges", body.dig("state", "movement", "cardId")
+    assert_equal 1, body.dig("state", "movement", "remaining")
+    assert_equal "movement", session.data["currentAction"]
+    assert_equal 15, session.supply
+  end
+
+  test "activates a movement area through the session API" do
+    state = base_state.merge(
+      movement: {
+        areas: [],
+        remaining: 1,
+        units: {},
+        crossings: {}
+      }
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post activate_movement_area_game_session_url(session, host: "localhost"),
+         params: { state: session.data, area_id: "allobroges" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+
+    assert_equal ["allobroges"], body.dig("state", "movement", "areas")
+    assert_equal 0, body.dig("state", "movement", "remaining")
+    assert_equal ["allobroges"], session.reload.data.dig("movement", "areas")
+  end
+
   test "deals cards through the session API" do
     session = GameSession.create!(data: base_state.merge(mode: "hotseat"))
     session.sync_from_data!

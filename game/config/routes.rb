@@ -17,5 +17,7 @@ Rails.application.routes.draw do
     post :discard_card, on: :member
     post :move, on: :member
     post :reveal_cards, on: :member
+    post :start_movement, on: :member
+    post :activate_movement_area, on: :member
   end
 end
