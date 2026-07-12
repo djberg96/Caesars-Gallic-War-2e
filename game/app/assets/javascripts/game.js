@@ -64,6 +64,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return unit.owner === state.active || enemyInCombatWithActivePlayer(unit);
   }
 
+  function hiddenBlockRegion(unit) {
+    if (unit.type === "german") return "german";
+
+    const region = areas[unit.home]?.region || areas[unit.location]?.region;
+    if (region === "belgica" || region === "belgae") return "belgae";
+    if (region === "aquitania") return "aquitaine";
+    if (region === "germania") return "german";
+    if (region === "celtae") return "celtae";
+    return "unknown";
+  }
+
   function publicUnitLabel(unit) {
     if (unitFaceVisibleToActivePlayer(unit)) return `${unit.name} ${unit.owner} ${currentStrength(unit)}`;
     if (unit.owner === "neutral") return "Neutral block, strength hidden";
@@ -1013,6 +1024,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const faceVisible = unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
         piece.classList.toggle("is-hidden", !faceVisible);
+        if (!faceVisible) piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
         piece.style.left = `${area.x + offsetX}%`;
         piece.style.top = `${area.y + offsetY}%`;
         piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : "Hidden block";

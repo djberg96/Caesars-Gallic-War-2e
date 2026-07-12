@@ -253,11 +253,23 @@ h3 {
 
 .piece.is-hidden {
   cursor: default;
-  background: #2f5f9f;
+  background: #47505a;
 }
 
-.piece.owner-neutral.is-hidden {
-  background: #65665f;
+.piece.is-hidden.hidden-region-celtae {
+  background: #4f8b57;
+}
+
+.piece.is-hidden.hidden-region-belgae {
+  background: #c87935;
+}
+
+.piece.is-hidden.hidden-region-german {
+  background: #2f66a5;
+}
+
+.piece.is-hidden.hidden-region-aquitaine {
+  background: #7b7f80;
 }
 
 .piece.is-hidden::after {
