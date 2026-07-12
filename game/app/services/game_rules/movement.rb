@@ -147,6 +147,7 @@ module GameRules
 
     def persist!
       @session.update!(data: @state)
+      @session.sync_from_data!
       @state
     end
 

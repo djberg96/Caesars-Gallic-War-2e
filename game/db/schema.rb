@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_11_000005) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_11_000007) do
   create_table "areas", force: :cascade do |t|
     t.string "alternate_tribe"
     t.datetime "created_at", null: false
@@ -52,10 +52,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_11_000005) do
     t.index ["key"], name: "index_cards_on_key", unique: true
   end
 
+  create_table "game_session_cards", force: :cascade do |t|
+    t.integer "card_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "game_session_id", null: false
+    t.string "location", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_id"], name: "index_game_session_cards_on_card_id"
+    t.index ["game_session_id", "card_id"], name: "index_game_session_cards_on_game_session_id_and_card_id", unique: true
+    t.index ["game_session_id", "location", "position"], name: "idx_on_game_session_id_location_position_a33eb3590f"
+    t.index ["game_session_id"], name: "index_game_session_cards_on_game_session_id"
+  end
+
   create_table "game_sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.json "data", default: {}, null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "game_units", force: :cascade do |t|
+    t.integer "area_id"
+    t.datetime "created_at", null: false
+    t.integer "game_session_id", null: false
+    t.string "location", null: false
+    t.string "owner", null: false
+    t.integer "step", default: 0, null: false
+    t.integer "unit_type_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["area_id"], name: "index_game_units_on_area_id"
+    t.index ["game_session_id", "unit_type_id"], name: "index_game_units_on_game_session_id_and_unit_type_id", unique: true
+    t.index ["game_session_id"], name: "index_game_units_on_game_session_id"
+    t.index ["location"], name: "index_game_units_on_location"
+    t.index ["unit_type_id"], name: "index_game_units_on_unit_type_id"
   end
 
   create_table "unit_types", force: :cascade do |t|
@@ -75,4 +104,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_11_000005) do
   add_foreign_key "borders", "areas", column: "from_area_id"
   add_foreign_key "borders", "areas", column: "to_area_id"
   add_foreign_key "cards", "areas"
+  add_foreign_key "game_session_cards", "cards"
+  add_foreign_key "game_session_cards", "game_sessions"
+  add_foreign_key "game_units", "areas"
+  add_foreign_key "game_units", "game_sessions"
+  add_foreign_key "game_units", "unit_types"
 end

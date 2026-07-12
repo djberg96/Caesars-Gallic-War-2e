@@ -3,6 +3,7 @@ require "test_helper"
 class GameRules::MovementTest < ActiveSupport::TestCase
   setup do
     GameData::MapSeeder.seed!
+    GameData::UnitTypeSeeder.seed!
   end
 
   test "moves a unit and stores the updated session state" do
@@ -12,6 +13,7 @@ class GameRules::MovementTest < ActiveSupport::TestCase
 
     assert_equal "helvetii", result.dig("units", "legion_vii", "location")
     assert_equal "helvetii", session.reload.data.dig("units", "legion_vii", "location")
+    assert_equal "helvetii", session.game_units.find_by!(unit_type: UnitType.find_by!(key: "legion_vii")).location
     assert_equal 1, result.dig("movement", "crossings", "allobroges->helvetii")
   end
 

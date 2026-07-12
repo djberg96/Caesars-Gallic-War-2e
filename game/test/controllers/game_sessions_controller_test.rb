@@ -3,6 +3,8 @@ require "test_helper"
 class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   setup do
     GameData::MapSeeder.seed!
+    GameData::UnitTypeSeeder.seed!
+    GameData::CardSeeder.seed!
   end
 
   test "creates a persisted game session" do
@@ -14,6 +16,13 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert body["game_session_id"]
     assert_equal "roman", body.dig("state", "active")
+
+    session = GameSession.find(body["game_session_id"])
+    assert_equal 1, session.game_units.count
+    assert_equal "allobroges", session.game_units.sole.location
+    assert_equal 3, session.game_session_cards.count
+    assert_equal ["allobroges"], session.game_session_cards.where(location: "roman_hand").joins(:card).pluck("cards.key")
+    assert_equal ["event_4_massive_revolt"], session.game_session_cards.where(location: "committed_roman").joins(:card).pluck("cards.key")
   end
 
   test "moves through the session API" do
@@ -27,6 +36,8 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_equal "helvetii", body.dig("state", "units", "legion_vii", "location")
     assert_equal "helvetii", session.reload.data.dig("units", "legion_vii", "location")
+    assert_equal "helvetii", session.game_units.sole.location
+    assert_equal Area.find_by!(key: "helvetii"), session.game_units.sole.area
   end
 
   private
@@ -50,6 +61,42 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
         remaining: 0,
         units: {},
         crossings: {}
+      },
+      hands: {
+        roman: [
+          {
+            id: "allobroges",
+            title: "Allobroges",
+            area: "allobroges",
+            ap: 1,
+            type: "area"
+          },
+          {
+            id: "event_4_massive_revolt",
+            title: "Massive Revolt",
+            ap: 1,
+            type: "event"
+          }
+        ],
+        barbarian: []
+      },
+      botDeck: [
+        {
+          id: "event_0_baggage_train",
+          title: "Baggage Train",
+          ap: 1,
+          type: "event"
+        }
+      ],
+      discard: [],
+      committed: {
+        roman: {
+          id: "event_4_massive_revolt",
+          title: "Massive Revolt",
+          ap: 1,
+          type: "event"
+        },
+        barbarian: nil
       },
       log: []
     }

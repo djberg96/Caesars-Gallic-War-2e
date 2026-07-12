@@ -3,6 +3,7 @@ class GameSessionsController < ApplicationController
 
   def create
     session = GameSession.create!(data: state_params)
+    session.sync_from_data!
     render json: { game_session_id: session.id, state: session.data }
   end
 
