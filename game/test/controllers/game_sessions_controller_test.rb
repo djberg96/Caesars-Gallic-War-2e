@@ -299,7 +299,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 19, session.reload.supply
   end
 
-  test "resolves battles through the session API" do
+  test "opens and acts on battles through the session API" do
     state = base_state.merge(
       vp: 5,
       diceRolledThisTurn: false,
@@ -327,7 +327,16 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session.sync_from_data!
 
     post resolve_battles_game_session_url(session, host: "localhost"),
-         params: { state: session.data, rolls: [1] },
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "allobroges", body.dig("state", "battle", "area")
+    assert_equal "legion_vii", body.dig("state", "battle", "activeUnit")
+
+    post battle_action_game_session_url(session, host: "localhost"),
+         params: { state: body.fetch("state"), battle_action: "fire", unit_id: "legion_vii", rolls: [1] },
          as: :json
 
     assert_response :success
@@ -337,6 +346,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "eliminated", body.dig("state", "units", "allobroges", "location")
     assert body.dig("state", "diceRolledThisTurn")
     assert_empty body.dig("state", "undoStack")
+    assert_equal "regroup", body.dig("state", "battle", "phase")
     assert session.dice_rolled_this_turn
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
   end

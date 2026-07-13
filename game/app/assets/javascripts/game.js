@@ -21,6 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedCard: document.querySelector("#selected-card"),
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand"),
+    battleDialog: document.querySelector("#battle-dialog"),
+    battleSummary: document.querySelector("#battle-summary"),
+    battleZones: document.querySelector("#battle-zones"),
+    battleActions: document.querySelector("#battle-actions"),
     resultDialog: document.querySelector("#result-dialog"),
     resultTitle: document.querySelector("#result-title"),
     resultMessage: document.querySelector("#result-message")
@@ -67,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function unitFaceVisibleToActivePlayer(unit) {
+    if (state.battle && unit.location === state.battle.area) return true;
     return unit.owner === state.active || enemyInCombatWithActivePlayer(unit);
   }
 
@@ -325,6 +330,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function moveUnitTo(unitId, target) {
+    if (state.battle) {
+      log("Finish the active battle before moving units on the map.");
+      render();
+      return;
+    }
+
     const unit = state.units[unitId];
     if (unit.owner !== state.active) {
       log(`${unit.name} is not controlled by the active player.`);
@@ -875,7 +886,52 @@ document.addEventListener("DOMContentLoaded", () => {
   async function resolveBattles() {
     try {
       await ensureGameSession();
-      const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state });
+      const mainOrigin = chooseMainAttackingOrigin();
+      if (mainOrigin === false) return;
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state, main_origin: mainOrigin });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+    } catch (error) {
+      log(error.message);
+    }
+    render();
+  }
+
+  function chooseMainAttackingOrigin() {
+    if (state.battle || !state.movement) return null;
+
+    const areaId = contestedAreas()[0];
+    if (!areaId) return null;
+
+    const origins = [...new Set(areaUnits(areaId)
+      .filter((unit) => unit.owner === state.active)
+      .map((unit) => state.movement?.units?.[unit.id]?.origin)
+      .filter((origin) => origin && origin !== areaId))];
+
+    if (origins.length <= 1) return origins[0] || null;
+
+    const choices = origins.map((origin, index) => `${index + 1}. ${areaName(origin)}`).join("\n");
+    const response = window.prompt(`Which attacking group is the main group for ${areaName(areaId)}?\n\n${choices}`, "1");
+    if (response === null) return false;
+
+    const index = Number.parseInt(response, 10) - 1;
+    if (Number.isNaN(index) || !origins[index]) {
+      log("Battle was not started: choose one of the listed attacking groups.");
+      return false;
+    }
+    return origins[index];
+  }
+
+  async function battleAction(action, unitId = null, target = null) {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/battle_action`, {
+        state,
+        battle_action: action,
+        unit_id: unitId,
+        target
+      });
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
@@ -998,6 +1054,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActionButtons();
     renderUndoButton();
     renderPieceToggle();
+    renderBattleBoard();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -1300,6 +1357,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
     if (unit.owner !== state.active) return;
+    if (state.battle) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -1417,7 +1475,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const committed = state.committed[player]?.id === card.id;
       const hidden = state.mode === "hotseat" && !currentPlayer;
       button.className = `card${hidden ? " is-hidden" : ""}`;
-      button.disabled = hidden || Boolean(state.movement) || (state.mode === "hotseat" && (state.revealed || committed));
+      button.disabled = hidden || Boolean(state.movement) || Boolean(state.battle) || (state.mode === "hotseat" && (state.revealed || committed));
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
       if (hidden) {
         button.innerHTML = "<span>Hidden card</span>";
@@ -1452,28 +1510,143 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = `<div>${line("roman")}</div><div>${line("barbarian")}</div>`;
   }
 
+  function renderBattleBoard() {
+    if (!els.battleDialog) return;
+    const battle = state.battle;
+    if (!battle) {
+      if (els.battleDialog.open) els.battleDialog.close();
+      return;
+    }
+    if (!els.battleDialog.open) {
+      if (els.resultDialog?.open) els.resultDialog.close();
+      els.battleDialog.showModal();
+    }
+
+    const activeUnit = battle.activeUnit ? state.units[battle.activeUnit] : null;
+    const status = battle.phase === "regroup"
+      ? `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`
+      : activeUnit
+        ? `${activeUnit.name} may fire or retreat.`
+        : "Waiting for the next battle action.";
+    els.battleSummary.innerHTML = `
+      <strong>${areaName(battle.area)}</strong>
+      <span>Round ${battle.round} of ${battle.maxRounds}</span>
+      <span>${status}</span>
+      ${battleActionHistory(battle)}
+    `;
+
+    const reserveIds = new Set(battle.reserves || []);
+    const fortIds = new Set(battle.fort || []);
+    const zone = (title, unitIds) => `
+      <section class="battle-zone">
+        <h3>${title}</h3>
+        <div class="battle-unit-list">
+          ${unitIds.length ? unitIds.map((id) => battleUnitButton(id, battle.activeUnit)).join("") : "<span class=\"empty-zone\">None</span>"}
+        </div>
+      </section>
+    `;
+    const attackers = (battle.attackers || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
+    const defenders = (battle.defenders || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
+    const reserves = (battle.reserves || []).filter((id) => state.units[id]?.location === battle.area);
+    const fort = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
+    els.battleZones.innerHTML = [
+      zone(`${playerName(battle.attacker)} Active`, attackers),
+      zone(`${playerName(battle.defender)} Active`, defenders),
+      zone("Reserves", reserves),
+      zone("Fort", fort)
+    ].join("");
+
+    els.battleActions.innerHTML = "";
+    if (battle.phase === "regroup") {
+      const hold = document.createElement("button");
+      hold.type = "button";
+      hold.textContent = "Hold";
+      hold.addEventListener("click", () => battleAction("regroup"));
+      els.battleActions.append(hold);
+
+      areas[battle.area].links.filter((areaId) => !areas[areaId]?.sea).forEach((areaId) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = `Regroup to ${areaName(areaId)}`;
+        button.addEventListener("click", () => battleAction("regroup", null, areaId));
+        els.battleActions.append(button);
+      });
+      return;
+    }
+
+    if (!activeUnit || activeUnit.owner !== state.active) return;
+    [
+      ["fire", "Fire"],
+      ["retreat", "Retreat"],
+      ["fort", "Fort"]
+    ].forEach(([action, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      if (action === "fort" && !areas[battle.area].fort) button.disabled = true;
+      button.addEventListener("click", () => battleAction(action, activeUnit.id));
+      els.battleActions.append(button);
+    });
+  }
+
+  function battleUnitButton(unitId, activeUnitId) {
+    const unit = state.units[unitId];
+    if (!unit) return "";
+    return `
+      <button type="button" class="battle-unit${unitId === activeUnitId ? " is-active" : ""}" data-battle-unit="${unitId}">
+        <span>${unit.name}</span>
+        <strong>${currentStrength(unit)}</strong>
+        <small>${unit.initiative}${unit.fire}${state.battle?.halfHits?.[unitId] ? ` +${state.battle.halfHits[unitId]}/2` : ""}</small>
+      </button>
+    `;
+  }
+
+  function battleLastActionText(action) {
+    if (action.type === "fire") {
+      const rolls = (action.rolls || []).join(", ");
+      const hits = action.hits || 0;
+      const applied = action.appliedHits;
+      const reduction = Number.isInteger(applied) && applied !== hits ? `, ${applied} step loss${applied === 1 ? "" : "es"} applied` : "";
+      return `${action.unitName} rolled ${rolls || "no dice"}: ${hits} hit${hits === 1 ? "" : "s"}${reduction}.`;
+    }
+    if (action.type === "retreat") return `${action.unitName} retreated to ${action.targetName}.`;
+    if (action.type === "fort") return `${action.unitName} withdrew into ${action.fortName}.`;
+    return `${action.unitName} acted.`;
+  }
+
+  function battleActionHistory(battle) {
+    const actions = (battle.actionResults || []).slice(-4);
+    if (!actions.length) return "";
+
+    return `
+      <div class="battle-action-history">
+        ${actions.map((action) => `<span>${battleLastActionText(action)}</span>`).join("")}
+      </div>
+    `;
+  }
+
   function renderModeHelp() {
     const help = document.querySelector("#mode-help");
     const commitButton = document.querySelector("#commit-card");
     const revealButton = document.querySelector("#reveal-cards");
     const botButton = document.querySelector("#bot-card");
     const barbarianButton = document.querySelector("[data-player='barbarian']");
-    botButton.disabled = Boolean(state.movement);
+    botButton.disabled = Boolean(state.movement) || Boolean(state.battle);
 
     if (state.mode === "hotseat") {
-      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
+      help.textContent = state.battle ? "Battle: resolve the active unit on the battle board." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
       commitButton.hidden = false;
       revealButton.hidden = false;
       botButton.hidden = true;
       barbarianButton.disabled = false;
     } else if (state.mode === "solitaire") {
-      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play and reveal the bot card." : "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
+      help.textContent = state.battle ? "Battle: resolve Roman units on the battle board. Barbarian units act automatically." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play and reveal the bot card." : "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
       commitButton.hidden = true;
       revealButton.hidden = true;
       botButton.hidden = false;
       barbarianButton.disabled = true;
     } else {
-      help.textContent = state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
+      help.textContent = state.battle ? "Battle: resolve Roman units on the battle board. Opponent units act automatically." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
       commitButton.hidden = true;
       revealButton.hidden = true;
       botButton.hidden = false;
@@ -1484,7 +1657,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderActionButtons() {
     document.querySelectorAll("[data-action]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.action === state.currentAction || button.dataset.action === state.targetingAction);
+      button.disabled = Boolean(state.battle);
     });
+    document.querySelector("#resolve-battles").classList.toggle("is-active", Boolean(state.battle));
   }
 
   function renderUndoButton() {
@@ -1539,6 +1714,15 @@ document.addEventListener("DOMContentLoaded", () => {
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;
     state.gameSessionId ||= null;
+    if (state.battle) {
+      state.battle.acted ||= [];
+      state.battle.actionResults ||= [];
+      state.battle.reserves ||= [];
+      state.battle.fort ||= [];
+      state.battle.halfHits ||= {};
+      state.battle.retreated ||= [];
+      state.battle.crossings ||= {};
+    }
   }
 
   async function setMode(mode) {
@@ -1548,6 +1732,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.committed = { roman: null, barbarian: null };
     state.revealed = false;
     state.movement = null;
+    state.battle = null;
     state.currentAction = null;
     log(`Mode changed to ${modeName()}. Dealing a fresh hand for this mode.`);
     await dealCards();
@@ -1603,6 +1788,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);
   els.resultDialog?.addEventListener("close", showNextResultDialog);
+  els.battleDialog?.addEventListener("cancel", (event) => {
+    if (state?.battle) event.preventDefault();
+  });
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#undo-move").addEventListener("click", undoMove);

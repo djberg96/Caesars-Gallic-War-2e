@@ -26,6 +26,7 @@ module GameRules
       @state["committed"] = { "roman" => nil, "barbarian" => nil }
       @state["revealed"] = false
       @state["movement"] = nil
+      @state["battle"] = nil
       @state["currentAction"] = nil
       @state["undoStack"] = []
       @state["diceRolledThisTurn"] = false

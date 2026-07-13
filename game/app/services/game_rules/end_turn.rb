@@ -12,6 +12,7 @@ module GameRules
 
     def end_turn!
       raise InvalidAction, "Finish the current movement action before ending the turn." if @state["movement"].present?
+      raise InvalidAction, "Finish the current battle before ending the turn." if @state["battle"].present?
 
       harvest = roll_harvest
       apply_harvest!(harvest)

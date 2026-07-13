@@ -19,6 +19,7 @@ Rails.application.routes.draw do
     post :end_turn, on: :member
     post :move, on: :member
     post :reveal_cards, on: :member
+    post :battle_action, on: :member
     post :resolve_battles, on: :member
     post :start_movement, on: :member
     post :activate_movement_area, on: :member

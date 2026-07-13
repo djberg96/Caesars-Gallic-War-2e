@@ -4,6 +4,7 @@ class GameSessionsController < ApplicationController
   rescue_from GameRules::EndTurn::InvalidAction, with: :invalid_action
   rescue_from GameRules::Movement::InvalidMove, with: :invalid_move
   rescue_from GameRules::UndoMove::InvalidUndo, with: :invalid_action
+  rescue_from GameRules::Battle::InvalidAction, with: :invalid_action
 
   def create
     session = GameSession.create!(data: create_state)
@@ -59,7 +60,20 @@ class GameSessionsController < ApplicationController
 
   def resolve_battles
     session = GameSession.find(params[:id])
-    result = GameRules::Battle.new(session: session, state: state_params, rolls: params[:rolls]).resolve!
+    result = GameRules::Battle.new(session: session, state: state_params, rolls: params[:rolls]).resolve!(
+      main_origin: params[:main_origin]
+    )
+
+    render json: { game_session_id: session.id, state: result }
+  end
+
+  def battle_action
+    session = GameSession.find(params[:id])
+    result = GameRules::Battle.new(session: session, state: state_params, rolls: params[:rolls]).act!(
+      action: params.require(:battle_action),
+      unit_id: params[:unit_id],
+      target: params[:target]
+    )
 
     render json: { game_session_id: session.id, state: result }
   end

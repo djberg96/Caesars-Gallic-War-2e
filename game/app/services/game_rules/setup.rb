@@ -31,6 +31,7 @@ module GameRules
         "neutralActivationCards" => { "roman" => [], "barbarian" => [] },
         "currentAction" => nil,
         "movement" => nil,
+        "battle" => nil,
         "dragArea" => nil,
         "undoStack" => [],
         "diceRolledThisTurn" => false,

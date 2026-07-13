@@ -46,6 +46,7 @@ module GameRules
       @state["discard"] ||= []
       @state["discard"] << played
       @state["movement"] = nil
+      @state["battle"] = nil
       @state["currentAction"] = nil
       @state["selectedCard"] = nil
 
