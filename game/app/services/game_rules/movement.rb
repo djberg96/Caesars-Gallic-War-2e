@@ -42,6 +42,7 @@ module GameRules
       return nil unless target_area
       return nil if target_area.sea?
       return nil if offboard?(@from)
+      return nil if @from == @target
       return nil unless legal_area_for_unit?
       return nil unless can_unit_move_this_card?
 
@@ -55,6 +56,7 @@ module GameRules
       return "#{@target} is not a known area." unless target_area
       return "#{unit_name} cannot move into #{area_name(@target)} because it is a sea area." if target_area.sea?
       return "#{unit_name} is not on the map." if offboard?(@from)
+      return "#{unit_name} is already in #{area_name(@target)}." if @from == @target
       return illegal_area_reason unless legal_area_for_unit?
       return movement_limit_reason unless can_unit_move_this_card?
       return "#{unit_name} cannot force march." unless roman_legion?

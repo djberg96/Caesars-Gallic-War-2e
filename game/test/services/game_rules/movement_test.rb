@@ -123,6 +123,28 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal 1, result.dig("movement", "crossings", "allobroges->sequani")
   end
 
+  test "rejects moving a legion to its current area without marking it stopped" do
+    state = base_state
+    state["units"]["legion_xii"] = {
+      "id" => "legion_xii",
+      "name" => "Legion XII",
+      "type" => "roman",
+      "owner" => "roman",
+      "location" => "transalpine_gaul",
+      "step" => 1
+    }
+    state["movement"]["areas"] = ["transalpine_gaul"]
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_xii", "transalpine_gaul")
+    end
+
+    assert_match "already in Transalpine Gaul", error.message
+    assert_equal "transalpine_gaul", session.reload.data.dig("units", "legion_xii", "location")
+    assert_nil session.data.dig("movement", "units", "legion_xii")
+  end
+
   private
 
   def move(session, unit_id, target)

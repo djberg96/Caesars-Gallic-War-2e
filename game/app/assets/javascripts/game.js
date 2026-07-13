@@ -163,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function movePlan(unit, target) {
     if (!areas[target] || areas[target].sea) return null;
     if (unit.location === "offboard" || unit.location === "eliminated") return null;
+    if (unit.location === target) return null;
     if (!legalAreaForUnit(unit, target)) return null;
     if (!canUnitMoveThisCard(unit)) return null;
 
@@ -180,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!targetArea) return `${target} is not a known area.`;
     if (targetArea.sea) return `${unit.name} cannot move into ${areaName(target)} because it is a sea area.`;
     if (unit.location === "offboard" || unit.location === "eliminated") return `${unit.name} is not on the map.`;
+    if (unit.location === target) return `${unit.name} is already in ${areaName(target)}.`;
     if (!legalAreaForUnit(unit, target)) return illegalAreaReason(unit, target);
     if (!state.movement) return "Play a card for movement before moving blocks.";
 
