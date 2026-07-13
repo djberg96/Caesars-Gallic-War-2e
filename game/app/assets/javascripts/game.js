@@ -128,8 +128,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (targetingPoliticalAction()) return;
 
     const unit = state.units[id];
-    if (regroupingOnMap()) {
-      if (canRegroupUnit(unit)) markUnitSelected(id);
+    if (battleMapMode()) {
+      if (canBattleMapUnit(unit)) markUnitSelected(id);
       else await selectArea(unit.location);
       render();
       return;
@@ -355,23 +355,23 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (regroupingOnMap()) {
-      regroupUnitTo(state.selectedUnit, target);
+    if (battleMapMode()) {
+      battleMapUnitTo(state.selectedUnit, target);
       return;
     }
 
     moveUnitTo(state.selectedUnit, target);
   }
 
-  async function regroupUnitTo(unitId, target) {
+  async function battleMapUnitTo(unitId, target) {
     const unit = state.units[unitId];
-    if (!canRegroupUnit(unit)) {
-      log("Select a victorious unit in the battle area to regroup.");
+    if (!canBattleMapUnit(unit)) {
+      log(state.retreating ? "Select a defeated unit in the battle area to retreat." : "Select a victorious unit in the battle area to regroup.");
       render();
       return;
     }
 
-    await battleAction("regroup", unitId, target);
+    await battleAction(state.retreating ? "forced_retreat" : "regroup", unitId, target);
   }
 
   async function moveUnitTo(unitId, target) {
@@ -1011,6 +1011,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function battleAction(action, unitId = null, target = null) {
     const hadBattle = Boolean(state.battle);
+    const wasRegrouping = state.regrouping;
+    const wasRetreating = state.retreating;
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/battle_action`, {
@@ -1022,6 +1024,10 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      if (state.battle) {
+        state.regrouping = Boolean(wasRegrouping && state.battle.phase === "regroup");
+        state.retreating = Boolean(wasRetreating && state.battle.phase === "retreat");
+      }
       if (hadBattle && !state.battle) {
         if (contestedAreas().length) await resolveBattles();
         else await discardSelectedCard();
@@ -1161,7 +1167,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = `Supply ${state.supply}`;
     document.querySelector("#vp-label").textContent = `VP ${state.vp}`;
-    if (els.finishRegroup) els.finishRegroup.hidden = !regroupingOnMap();
+    if (els.finishRegroup) {
+      els.finishRegroup.hidden = !battleMapMode();
+      els.finishRegroup.textContent = state.retreating ? "Retreat Complete" : "Finished Regroup";
+    }
   }
 
   function modeName() {
@@ -1448,8 +1457,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
-    if (regroupingOnMap()) {
-      if (!canRegroupUnit(unit)) return;
+    if (battleMapMode()) {
+      if (!canBattleMapUnit(unit)) return;
     } else {
       if (unit.owner !== state.active) return;
       if (state.battle) return;
@@ -1458,13 +1467,13 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    if (!regroupingOnMap() && !state.movement) {
+    if (!battleMapMode() && !state.movement) {
       log("Play a card for movement before moving blocks.");
       event.currentTarget.releasePointerCapture(event.pointerId);
       render();
       return;
     }
-    if (!regroupingOnMap() && !movementAreaActivated(movementOrigin(unit))) {
+    if (!battleMapMode() && !movementAreaActivated(movementOrigin(unit))) {
       const activated = await activateMovementArea(movementOrigin(unit));
       if (!activated) {
         event.currentTarget.releasePointerCapture(event.pointerId);
@@ -1512,7 +1521,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const piece = event.currentTarget;
       cleanupPieceDrag(piece, { keepGhost: true });
       try {
-        if (regroupingOnMap()) await regroupUnitTo(unitId, target);
+        if (battleMapMode()) await battleMapUnitTo(unitId, target);
         else await moveUnitTo(unitId, target);
       } finally {
         cleanupPieceDrag(piece);
@@ -1615,7 +1624,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.regroupUnit = null;
       return;
     }
-    if (regroupingOnMap()) {
+    if (battleMapMode()) {
       if (els.battleDialog.open) els.battleDialog.close();
       return;
     }
@@ -1625,11 +1634,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const activeUnit = battle.activeUnit ? state.units[battle.activeUnit] : null;
-    const status = battle.phase === "regroup"
-      ? `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`
-      : activeUnit
-        ? `${activeUnit.name} may fire or retreat.`
-        : "Waiting for the next battle action.";
+    const status = battleStatusText(battle, activeUnit);
     els.battleSummary.innerHTML = `
       <strong>${areaName(battle.area)}</strong>
       <span>Round ${battle.round} of ${battle.maxRounds}</span>
@@ -1674,6 +1679,14 @@ document.addEventListener("DOMContentLoaded", () => {
       els.battleActions.append(hold);
       return;
     }
+    if (battle.phase === "retreat") {
+      const retreat = document.createElement("button");
+      retreat.type = "button";
+      retreat.textContent = "Retreat";
+      retreat.addEventListener("click", startMapRetreat);
+      els.battleActions.append(retreat);
+      return;
+    }
 
     if (!activeUnit || activeUnit.owner !== state.active) return;
     [
@@ -1690,13 +1703,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function battleStatusText(battle, activeUnit) {
+    if (battle.phase === "regroup") return `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`;
+    if (battle.phase === "retreat") return `${playerName(battle.retreating)} is defeated and must retreat.`;
+    if (activeUnit) return `${activeUnit.name} may fire or retreat.`;
+    return "Waiting for the next battle action.";
+  }
+
   function wireBattleUnitButtons(battle) {
     els.battleZones.querySelectorAll("[data-battle-unit]").forEach((button) => {
       button.addEventListener("click", () => {
         const unit = state.units[button.dataset.battleUnit];
         if (!unit) return;
-        if (battle.phase !== "regroup") return;
-        if (unit.owner !== battle.winner || unit.location !== battle.area || currentStrength(unit) <= 0) return;
+        if (!["regroup", "retreat"].includes(battle.phase)) return;
+        if (battle.phase === "regroup" && (unit.owner !== battle.winner || unit.location !== battle.area || currentStrength(unit) <= 0)) return;
+        if (battle.phase === "retreat" && (unit.owner !== battle.retreating || unit.location !== battle.area || currentStrength(unit) <= 0)) return;
 
         state.regroupUnit = unit.id;
         render();
@@ -1708,11 +1729,35 @@ document.addEventListener("DOMContentLoaded", () => {
     return Boolean(state.regrouping && state.battle?.phase === "regroup");
   }
 
+  function retreatingOnMap() {
+    return Boolean(state.retreating && state.battle?.phase === "retreat");
+  }
+
+  function battleMapMode() {
+    return regroupingOnMap() || retreatingOnMap();
+  }
+
+  function canBattleMapUnit(unit) {
+    if (regroupingOnMap()) return canRegroupUnit(unit);
+    if (retreatingOnMap()) return canForcedRetreatUnit(unit);
+    return false;
+  }
+
   function canRegroupUnit(unit) {
     return Boolean(
       regroupingOnMap() &&
       unit &&
       unit.owner === state.battle.winner &&
+      unit.location === state.battle.area &&
+      currentStrength(unit) > 0
+    );
+  }
+
+  function canForcedRetreatUnit(unit) {
+    return Boolean(
+      retreatingOnMap() &&
+      unit &&
+      unit.owner === state.battle.retreating &&
       unit.location === state.battle.area &&
       currentStrength(unit) > 0
     );
@@ -1732,10 +1777,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function finishRegroup() {
-    state.regrouping = false;
     state.regroupUnit = null;
     state.selectedUnit = null;
     await battleAction("regroup");
+  }
+
+  function startMapRetreat() {
+    if (!state.battle || state.battle.phase !== "retreat") return;
+
+    state.retreating = true;
+    state.selectedUnit = null;
+    state.selectedArea = state.battle.area;
+    els.selection.textContent = `Retreat from ${areaName(state.battle.area)}. Select or drag defeated units to adjacent legal areas.`;
+    els.areaDetail.textContent = "Click Retreat Complete when the defeated army has left the battle area.";
+    if (els.battleDialog?.open) els.battleDialog.close();
+    document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
+    render();
+  }
+
+  async function finishBattleMapMode() {
+    if (retreatingOnMap()) {
+      state.regroupUnit = null;
+      state.selectedUnit = null;
+      await battleAction("finish_retreat");
+      return;
+    }
+
+    await finishRegroup();
   }
 
   function legalRegroupTargets(battle, unit) {
@@ -1884,7 +1952,10 @@ document.addEventListener("DOMContentLoaded", () => {
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;
     state.gameSessionId ||= null;
-    if (!state.battle) state.regrouping = false;
+    if (!state.battle) {
+      state.regrouping = false;
+      state.retreating = false;
+    }
     if (state.battle) {
       state.battle.acted ||= [];
       state.battle.actionResults ||= [];
@@ -1967,7 +2038,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
-  els.finishRegroup?.addEventListener("click", finishRegroup);
+  els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
   document.querySelector("#save-game").addEventListener("click", saveGame);

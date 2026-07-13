@@ -46,7 +46,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_not result["diceRolledThisTurn"]
   end
 
-  test "round limit moves the battle board to regroup for the defender" do
+  test "round limit forces the attacker to retreat" do
     state = battle_state
     state["units"]["legion_vii"]["fire"] = 0
     state["units"]["allobroges"]["fire"] = 0
@@ -61,7 +61,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     session = GameSession.create!(data: state)
 
     result = GameRules::Battle.new(session: session, state: session.data, rolls: Array.new(6, 6)).resolve!
-    until result.dig("battle", "phase") == "regroup"
+    until %w[regroup retreat].include?(result.dig("battle", "phase"))
       result = GameRules::Battle.new(session: session, state: result, rolls: Array.new(6, 6)).act!(
         action: "fire",
         unit_id: result.dig("battle", "activeUnit")
@@ -69,9 +69,54 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     end
 
     assert_match "reached the round limit", result["log"].join(" ")
-    assert_equal "regroup", result.dig("battle", "phase")
+    assert_equal "retreat", result.dig("battle", "phase")
+    assert_equal "roman", result.dig("battle", "retreating")
     assert_equal "barbarian", result.dig("battle", "winner")
     assert_equal ["transalpine_gaul"], result.dig("movement", "areas")
+  end
+
+  test "defeated army must retreat before battle can finish" do
+    state = battle_state
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 3,
+      "maxRounds" => 3,
+      "phase" => "retreat",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => nil,
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => ["allobroges"],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => "barbarian",
+      "retreating" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(action: "finish_retreat")
+    end
+    assert_match "Retreat Legion VII", error.message
+
+    result = GameRules::Battle.new(session: session, state: session.data).act!(
+      action: "forced_retreat",
+      unit_id: "legion_vii",
+      target: "transalpine_gaul"
+    )
+    assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
+    assert_equal "retreat", result.dig("battle", "phase")
+
+    result = GameRules::Battle.new(session: session, state: result).act!(action: "finish_retreat")
+    assert_nil result["battle"]
+    assert_match "retreat complete", result["log"].join(" ")
   end
 
   test "defending units that moved into battle start in reserve" do

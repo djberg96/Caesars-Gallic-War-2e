@@ -30,6 +30,7 @@ module GameRules
     def act!(action:, unit_id: nil, target: nil)
       raise InvalidAction, "No battle is in progress." unless battle
       raise InvalidAction, "This battle is ready for regroup." if battle["phase"] == "regroup" && action != "regroup"
+      raise InvalidAction, "The defeated army must retreat." if battle["phase"] == "retreat" && !action.to_s.in?(["forced_retreat", "finish_retreat"])
 
       case action.to_s
       when "fire"
@@ -42,6 +43,10 @@ module GameRules
         retreat_into_fort!(unit_id)
       when "regroup"
         regroup!(target.presence, unit_id: unit_id.presence)
+      when "forced_retreat"
+        forced_retreat!(unit_id, target.presence)
+      when "finish_retreat"
+        finish_forced_retreat!
       else
         raise InvalidAction, "Unknown battle action #{action}."
       end
@@ -160,7 +165,7 @@ module GameRules
 
     def advance_battle!
       return unless battle
-      return if battle["phase"] == "regroup"
+      return if battle["phase"].in?(["regroup", "retreat"])
 
       eliminate_dead(battle_area.key)
       finish_battle_if_decided!
@@ -177,9 +182,10 @@ module GameRules
     def start_next_round_or_regroup!
       if battle["round"].to_i >= battle["maxRounds"].to_i
         battle["winner"] = battle["defender"]
-        battle["phase"] = "regroup"
+        battle["retreating"] = battle["attacker"]
+        battle["phase"] = "retreat"
         battle["activeUnit"] = nil
-        log("Battle in #{battle_area.name} reached the round limit. #{player_name(battle["attacker"])} must retreat; #{player_name(battle["defender"])} may regroup.")
+        log("Battle in #{battle_area.name} reached the round limit. #{player_name(battle["attacker"])} must retreat; #{player_name(battle["defender"])} holds the area.")
         return
       end
 
@@ -260,6 +266,47 @@ module GameRules
       })
       battle["acted"] << unit_id
       log("#{unit(unit_id).fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}.")
+    end
+
+    def forced_retreat!(unit_id, target)
+      raise InvalidAction, "Select a defeated unit to retreat." if unit_id.blank?
+
+      acting = unit(unit_id)
+      raise InvalidAction, "#{acting.fetch("name")} is not part of the defeated army." unless acting["owner"] == battle["retreating"]
+      raise InvalidAction, "#{acting.fetch("name")} is not in #{battle_area.name}." unless acting["location"] == battle_area.key
+      raise InvalidAction, "#{acting.fetch("name")} is inside the fort and cannot retreat from the field." if battle["fort"].include?(unit_id)
+      raise InvalidAction, "#{acting.fetch("name")} has no legal retreat area." if target.blank?
+
+      border = border(battle_area.key, target)
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless border
+      raise InvalidAction, "Only German units may retreat into Germania." if target == "germania" && acting["type"] != "german"
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat into an enemy or neutral occupied area." if non_friendly_units_in?(target, acting["owner"])
+      if blocked_retreat_area?(acting, target)
+        raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
+      end
+
+      apply_retreat_capacity!(target, border)
+      acting["location"] = target
+      battle["retreated"] << unit_id
+      record_action_result({
+        "type" => "retreat",
+        "unitId" => unit_id,
+        "unitName" => acting.fetch("name"),
+        "target" => target,
+        "targetName" => area_name(target)
+      })
+      log("#{acting.fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}.")
+    end
+
+    def finish_forced_retreat!
+      remaining = live_combat_units.select { |unit| unit["owner"] == battle["retreating"] && unit["location"] == battle_area.key }
+      if remaining.any?
+        names = remaining.map { |unit| unit.fetch("name") }.join(", ")
+        raise InvalidAction, "Retreat #{names} before completing the retreat."
+      end
+
+      log("#{player_name(battle["retreating"])} retreat complete. #{player_name(battle["winner"])} holds #{battle_area.name}.")
+      @state["battle"] = nil
     end
 
     def retreat_into_fort!(unit_id)
