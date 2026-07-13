@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let dragState = null;
   let suppressNextPieceClick = false;
   let piecesHidden = false;
+  let resultDialogQueue = [];
 
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
@@ -506,8 +507,8 @@ document.addEventListener("DOMContentLoaded", () => {
       state.gameSessionId = result.game_session_id;
       state.targetingAction = null;
       normalizeLoadedState();
-      await discardSelectedCard();
       showResultDialog(resultMessage.includes("succeeds") ? "Political Success" : "Political Failure", resultMessage);
+      await discardSelectedCard();
     } catch (error) {
       log(error.message);
     }
@@ -519,9 +520,23 @@ document.addEventListener("DOMContentLoaded", () => {
       window.alert(message);
       return;
     }
-    els.resultTitle.textContent = title;
-    els.resultMessage.textContent = message;
+    const result = { title, message };
+    if (els.resultDialog.open) {
+      resultDialogQueue.push(result);
+      return;
+    }
+    displayResultDialog(result);
+  }
+
+  function displayResultDialog(result) {
+    els.resultTitle.textContent = result.title;
+    els.resultMessage.textContent = result.message;
     els.resultDialog.showModal();
+  }
+
+  function showNextResultDialog() {
+    if (!resultDialogQueue.length) return;
+    displayResultDialog(resultDialogQueue.shift());
   }
 
   async function startMovement() {
@@ -701,16 +716,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function drawBotCard() {
+    const previousLog = [...(state.log || [])];
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/draw_bot_card`, { state });
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      showBotActionDialog(previousLog, state.log || []);
     } catch (error) {
       log(error.message);
     }
     render();
+  }
+
+  function showBotActionDialog(previousLog, nextLog) {
+    const previousHead = previousLog[0];
+    const firstOldIndex = previousHead ? nextLog.indexOf(previousHead) : -1;
+    const entries = firstOldIndex >= 0 ? nextLog.slice(0, firstOldIndex) : nextLog.slice(0, 5);
+    const message = entries.reverse().join("\n") || "The bot had no action to resolve.";
+    showResultDialog("Bot Response", message);
   }
 
   function resolveBotCard(card) {
@@ -1541,6 +1566,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   document.querySelector("#bot-card").addEventListener("click", drawBotCard);
+  els.resultDialog?.addEventListener("close", showNextResultDialog);
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
