@@ -20,7 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
     areaDetail: document.querySelector("#area-detail"),
     selectedCard: document.querySelector("#selected-card"),
     romanHand: document.querySelector("#roman-hand"),
-    barbarianHand: document.querySelector("#barbarian-hand")
+    barbarianHand: document.querySelector("#barbarian-hand"),
+    resultDialog: document.querySelector("#result-dialog"),
+    resultTitle: document.querySelector("#result-title"),
+    resultMessage: document.querySelector("#result-message")
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
@@ -110,6 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectUnit(id) {
+    if (targetingPoliticalAction()) return;
+
     const unit = state.units[id];
     if (!unitFaceVisibleToActivePlayer(unit)) {
       await selectArea(unit.location);
@@ -134,6 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectArea(id) {
+    if (targetingPoliticalAction()) {
+      await resolvePoliticalTarget(id);
+      return;
+    }
+
     state.selectedArea = id;
     state.selectedUnit = null;
     describeArea(id);
@@ -426,16 +436,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (action !== "political") state.targetingAction = null;
     if (action === "supply") {
       if (await performCardAction("supply_action")) await discardSelectedCard();
     } else if (action === "activate") {
       if (await performCardAction("activate_neutral")) await discardSelectedCard();
     } else if (action === "political") {
-      if (!state.selectedArea) {
-        log("Select a target area before a political action.");
-      } else {
-        if (await performCardAction("political_action", { area_id: state.selectedArea })) await discardSelectedCard();
-      }
+      startPoliticalTargeting();
     } else if (action === "event") {
       if (await performCardAction("event_action", { area_id: state.selectedArea })) await discardSelectedCard();
     } else {
@@ -474,6 +481,47 @@ document.addEventListener("DOMContentLoaded", () => {
       log(error.message);
       return false;
     }
+  }
+
+  function startPoliticalTargeting() {
+    state.currentAction = "political";
+    state.targetingAction = "political";
+    state.selectedUnit = null;
+    state.selectedArea = null;
+    els.selection.textContent = "Select a political action target.";
+    els.areaDetail.textContent = "Blocks are hidden while choosing.";
+    log("Political action: select a target area.");
+  }
+
+  function targetingPoliticalAction() {
+    return state.targetingAction === "political";
+  }
+
+  async function resolvePoliticalTarget(areaId) {
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/political_action`, { state, area_id: areaId });
+      const resultMessage = result.state.log?.[0] || `Political action resolved in ${areaName(areaId)}.`;
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      state.targetingAction = null;
+      normalizeLoadedState();
+      await discardSelectedCard();
+      showResultDialog(resultMessage.includes("succeeds") ? "Political Success" : "Political Failure", resultMessage);
+    } catch (error) {
+      log(error.message);
+    }
+    render();
+  }
+
+  function showResultDialog(title, message) {
+    if (!els.resultDialog) {
+      window.alert(message);
+      return;
+    }
+    els.resultTitle.textContent = title;
+    els.resultMessage.textContent = message;
+    els.resultDialog.showModal();
   }
 
   async function startMovement() {
@@ -939,6 +987,7 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.add("area-hotspot");
       marker.classList.toggle("is-selected", state.selectedArea === area.id);
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
+      marker.classList.toggle("is-targeting", targetingPoliticalAction());
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
@@ -1107,7 +1156,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
-    if (piecesHidden) return;
+    if (piecesHidden || targetingPoliticalAction()) return;
 
     const byArea = {};
     Object.values(state.units).forEach((unit) => {
@@ -1373,7 +1422,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderActionButtons() {
     document.querySelectorAll("[data-action]").forEach((button) => {
-      button.classList.toggle("is-active", button.dataset.action === state.currentAction);
+      button.classList.toggle("is-active", button.dataset.action === state.currentAction || button.dataset.action === state.targetingAction);
     });
   }
 
@@ -1425,6 +1474,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.neutralActivationCards.roman ||= [];
     state.neutralActivationCards.barbarian ||= [];
     state.dragArea = null;
+    state.targetingAction ||= null;
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;
     state.gameSessionId ||= null;

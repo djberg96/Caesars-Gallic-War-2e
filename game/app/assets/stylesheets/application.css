@@ -257,6 +257,11 @@ h3 {
   stroke: rgba(255, 230, 140, 0.95);
 }
 
+.area-hotspot.is-targeting {
+  fill: rgba(255, 230, 140, 0.18);
+  stroke: rgba(255, 230, 140, 0.9);
+}
+
 .area-click-catcher {
   pointer-events: auto;
   cursor: pointer;
@@ -473,11 +478,22 @@ h3 {
 }
 
 dialog {
-  width: min(760px, 92vw);
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
+}
+
+#export-dialog {
+  width: min(760px, 92vw);
+}
+
+#result-dialog {
+  inset: 0 400px 0 20px;
+  width: min(360px, calc(100vw - 430px));
+  min-width: 260px;
+  height: fit-content;
+  margin: auto;
 }
 
 textarea {
@@ -500,6 +516,11 @@ textarea {
   .shell {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  #result-dialog {
+    inset: 0;
+    width: min(360px, 92vw);
   }
 
   .side-panel {
