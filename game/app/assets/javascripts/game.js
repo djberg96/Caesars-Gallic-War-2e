@@ -924,6 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function battleAction(action, unitId = null, target = null) {
+    const hadBattle = Boolean(state.battle);
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/battle_action`, {
@@ -935,6 +936,10 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      if (hadBattle && !state.battle) {
+        if (contestedAreas().length) await resolveBattles();
+        else await discardSelectedCard();
+      }
     } catch (error) {
       log(error.message);
     }

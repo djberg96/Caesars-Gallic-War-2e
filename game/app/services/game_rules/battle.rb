@@ -20,7 +20,6 @@ module GameRules
       end
 
       @state["battle"] = build_battle(area, main_origin: main_origin)
-      @state["movement"] = nil
       @state["currentAction"] = nil
       log("Battle board opened for #{area.name}.")
       advance_battle!

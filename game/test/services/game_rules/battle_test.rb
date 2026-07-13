@@ -71,7 +71,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "reached the round limit", result["log"].join(" ")
     assert_equal "regroup", result.dig("battle", "phase")
     assert_equal "barbarian", result.dig("battle", "winner")
-    assert_nil result["movement"]
+    assert_equal ["transalpine_gaul"], result.dig("movement", "areas")
   end
 
   test "defending units that moved into battle start in reserve" do
