@@ -48,6 +48,7 @@ module GameRules
 
       direct_border = border(@from, @target)
       return { "force" => false, "steps" => [[@from, @target, direct_border]] } if direct_border
+      return nil if retreat_movement?
 
       force_route
     end
@@ -59,6 +60,7 @@ module GameRules
       return "#{unit_name} is already in #{area_name(@target)}." if @from == @target
       return illegal_area_reason unless legal_area_for_unit?
       return movement_limit_reason unless can_unit_move_this_card?
+      return "#{unit_name} cannot retreat more than one area." if retreat_movement?
       return "#{unit_name} cannot force march." unless roman_legion?
       return "Roman legions need 1 supply to force march." unless supply.positive?
       return "#{unit_name} cannot force march after it has already moved." if movement_units.dig(@unit_id, "steps").to_i.positive?
@@ -76,6 +78,7 @@ module GameRules
     def movement_limit_reason
       moved = movement_units[@unit_id]
       return "Activate #{area_name(@from)} for movement before moving #{unit_name}." unless moved
+      return "#{unit_name} has already retreated from this battle." if retreat_movement? && moved["stopped"]
       return "#{unit_name} has already finished movement for this card." if moved["stopped"]
       return "#{unit_name} has already moved two areas for this card." if moved["steps"].to_i >= 2
       return "#{unit_name} cannot move more than one area." unless roman_legion?
@@ -89,11 +92,13 @@ module GameRules
       moved = movement_units[@unit_id]
       return movement_area_activated?(@from) unless moved
       return false if moved["stopped"] || moved["steps"].to_i >= 2
+      return false if retreat_movement?
 
       roman_legion? && supply.positive?
     end
 
     def force_route
+      return nil if retreat_movement?
       return nil unless roman_legion?
       return nil unless supply.positive?
       return nil if movement_units.dig(@unit_id, "steps").to_i.positive?
@@ -161,6 +166,11 @@ module GameRules
       end
 
       moved["steps"] = moved["steps"].to_i + 1
+      if retreat_movement?
+        moved["stopped"] = true
+        return
+      end
+
       if !roman_legion? || border_stops?(plan.fetch("steps").first.third) || area_has_stopper?(@target, @unit["owner"]) || moved["steps"] >= 2
         moved["stopped"] = true
       end
@@ -231,6 +241,10 @@ module GameRules
 
     def movement
       @state["movement"]
+    end
+
+    def retreat_movement?
+      movement&.fetch("retreat", false)
     end
 
     def active_player

@@ -145,6 +145,35 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_nil session.data.dig("movement", "units", "legion_xii")
   end
 
+  test "allows retreat movement after prior card movement and forbids retreat force march" do
+    state = base_state
+    state["units"]["legion_xi"]["location"] = "sequani"
+    state["movement"] = {
+      "areas" => ["sequani"],
+      "remaining" => 0,
+      "retreat" => true,
+      "units" => {},
+      "crossings" => {}
+    }
+    session = GameSession.create!(data: state)
+
+    result = move(session, "legion_xi", "allobroges")
+
+    assert_equal "allobroges", result.dig("units", "legion_xi", "location")
+    assert_equal 1, result.dig("movement", "units", "legion_xi", "steps")
+    assert result.dig("movement", "units", "legion_xi", "stopped")
+
+    state = result
+    state["units"]["legion_vii"]["location"] = "sequani"
+    session.update!(data: state)
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_vii", "transalpine_gaul")
+    end
+
+    assert_match "cannot retreat more than one area", error.message
+  end
+
   private
 
   def move(session, unit_id, target)

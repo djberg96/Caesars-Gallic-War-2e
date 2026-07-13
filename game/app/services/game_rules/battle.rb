@@ -50,10 +50,28 @@ module GameRules
 
       survivors = area_units(area.key).select { |unit| unit["owner"].in?(["roman", "barbarian"]) }
       if both_sides?(survivors)
+        prepare_retreat_movement!(area)
         log("Battle in #{area.name} is unresolved after #{max_rounds} rounds. Move retreats manually.")
       elsif survivors.first
         log("#{player_name(survivors.first.fetch("owner"))} controls #{area.name} after battle.")
       end
+    end
+
+    def prepare_retreat_movement!(area)
+      movement = @state["movement"] ||= {
+        "player" => @state.fetch("active", "roman"),
+        "cardId" => nil,
+        "remaining" => 0,
+        "areas" => [],
+        "units" => {},
+        "crossings" => {}
+      }
+      movement["retreat"] = true
+      movement["remaining"] = 0
+      movement["areas"] = (Array(movement["areas"]) + [area.key]).uniq
+      movement["units"] = {}
+      movement["crossings"] = {}
+      @state["currentAction"] = "movement"
     end
 
     def d6

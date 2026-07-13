@@ -33,6 +33,29 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_not result["diceRolledThisTurn"]
   end
 
+  test "opens retreat movement when a battle remains unresolved" do
+    state = battle_state
+    state["units"]["legion_vii"]["fire"] = 0
+    state["units"]["allobroges"]["fire"] = 0
+    state["movement"] = {
+      "areas" => ["transalpine_gaul"],
+      "remaining" => 0,
+      "units" => {
+        "legion_vii" => { "origin" => "transalpine_gaul", "steps" => 2, "stopped" => true }
+      },
+      "crossings" => { "transalpine_gaul->allobroges" => 1 }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data, rolls: Array.new(6, 6)).resolve!
+
+    assert_match "Move retreats manually", result["log"].first
+    assert result.dig("movement", "retreat")
+    assert_equal ["transalpine_gaul", "allobroges"], result.dig("movement", "areas")
+    assert_empty result.dig("movement", "units")
+    assert_empty result.dig("movement", "crossings")
+  end
+
   private
 
   def battle_state

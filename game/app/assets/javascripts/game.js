@@ -180,6 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const directBorder = borderType(unit.location, target);
     if (directBorder && borderHasCapacity(unit.location, target, directBorder)) return { force: false, via: null, border: directBorder };
+    if (retreatMovement()) return null;
 
     const forceRoute = forceMarchRoute(unit, target);
     if (forceRoute) return { force: true, via: forceRoute };
@@ -198,8 +199,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const moved = state.movement.units?.[unit.id];
     if (!moved && !movementAreaActivated(unit.location)) return `Activate ${areaName(unit.location)} for movement before moving ${unit.name}.`;
+    if (retreatMovement() && moved?.stopped) return `${unit.name} has already retreated from this battle.`;
     if (moved?.stopped) return `${unit.name} has already finished movement for this card.`;
     if (moved?.steps >= 2) return `${unit.name} has already moved two areas for this card.`;
+    if (retreatMovement()) return `${unit.name} cannot retreat more than one area.`;
     if (moved && (unit.owner !== "roman" || unit.type !== "roman")) return `${unit.name} cannot move more than one area.`;
     if (moved && state.supply <= 0) return "Roman legions need 1 supply to move a second area.";
 
@@ -220,10 +223,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const moved = state.movement.units[unit.id];
     if (!moved) return movementAreaActivated(unit.location);
     if (moved.stopped || moved.steps >= 2) return false;
+    if (retreatMovement()) return false;
     return unit.owner === "roman" && unit.type === "roman" && state.supply > 0;
   }
 
   function forceMarchRoute(unit, target) {
+    if (retreatMovement()) return null;
     if (unit.owner !== "roman" || unit.type !== "roman" || state.supply <= 0) return null;
     if (state.movement) state.movement.units ||= {};
     if (state.movement?.units[unit.id]?.steps) return null;
@@ -412,6 +417,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     moved.steps += 1;
+    if (retreatMovement()) {
+      moved.stopped = true;
+      return;
+    }
+
     if (unit.type !== "roman" || unit.owner !== "roman" || restrictedBorder(plan.border) || areaHasStopper(target, unit.owner) || moved.steps >= 2) {
       moved.stopped = true;
     }
@@ -439,9 +449,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (action !== "political") state.targetingAction = null;
     if (action === "supply") {
-      if (await performCardAction("supply_action")) await discardSelectedCard();
+      const message = await performCardAction("supply_action");
+      if (message) {
+        showResultDialog(`${playerName(state.active)} Action - Supply Action`, message);
+        await discardSelectedCard();
+      }
     } else if (action === "activate") {
-      if (await performCardAction("activate_neutral")) await discardSelectedCard();
+      const message = await performCardAction("activate_neutral");
+      if (message) {
+        showResultDialog(`${playerName(state.active)} Action - Neutral Tribe Activation`, message);
+        await discardSelectedCard();
+      }
     } else if (action === "political") {
       startPoliticalTargeting();
     } else if (action === "event") {
@@ -477,7 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
-      return true;
+      return state.log?.[0] || true;
     } catch (error) {
       log(error.message);
       return false;
@@ -553,6 +571,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function movementAreaActivated(areaId) {
     return state.movement?.areas.includes(areaId);
+  }
+
+  function retreatMovement() {
+    return Boolean(state.movement?.retreat);
   }
 
   function movementOrigin(unit) {
