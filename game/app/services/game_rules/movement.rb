@@ -152,11 +152,14 @@ module GameRules
       movement["crossings"] ||= {}
       movement_units[@unit_id] ||= { "origin" => @from, "steps" => 0, "stopped" => false }
       moved = movement_units[@unit_id]
+      moved["path"] ||= []
 
       plan.fetch("steps").each do |from, to, border|
         capacity = border.capacity
+        moved["path"] << { "from" => from, "to" => to, "border" => border.kind }
         movement["crossings"]["#{from}->#{to}"] = movement["crossings"].fetch("#{from}->#{to}", 0).to_i + 1 if capacity
       end
+      moved["entry"] = plan.fetch("steps").last.first
 
       if plan["force"]
         moved["steps"] = 2

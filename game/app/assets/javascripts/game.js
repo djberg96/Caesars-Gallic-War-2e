@@ -27,7 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
     battleActions: document.querySelector("#battle-actions"),
     resultDialog: document.querySelector("#result-dialog"),
     resultTitle: document.querySelector("#result-title"),
-    resultMessage: document.querySelector("#result-message")
+    resultMessage: document.querySelector("#result-message"),
+    mainForceDialog: document.querySelector("#main-force-dialog"),
+    mainForceTitle: document.querySelector("#main-force-title"),
+    mainForceMessage: document.querySelector("#main-force-message"),
+    mainForceChoices: document.querySelector("#main-force-choices"),
+    mainForceCancel: document.querySelector("#main-force-cancel"),
+    finishRegroup: document.querySelector("#finish-regroup")
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
@@ -122,6 +128,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (targetingPoliticalAction()) return;
 
     const unit = state.units[id];
+    if (regroupingOnMap()) {
+      if (canRegroupUnit(unit)) markUnitSelected(id);
+      else await selectArea(unit.location);
+      render();
+      return;
+    }
+
     if (!unitFaceVisibleToActivePlayer(unit)) {
       await selectArea(unit.location);
       return;
@@ -184,11 +197,27 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!canUnitMoveThisCard(unit)) return null;
 
     const directBorder = borderType(unit.location, target);
-    if (directBorder && borderHasCapacity(unit.location, target, directBorder)) return { force: false, via: null, border: directBorder };
+    if (directBorder && borderHasCapacity(unit.location, target, directBorder)) {
+      return {
+        force: false,
+        via: null,
+        border: directBorder,
+        steps: [{ from: unit.location, to: target, border: directBorder }]
+      };
+    }
     if (retreatMovement()) return null;
 
     const forceRoute = forceMarchRoute(unit, target);
-    if (forceRoute) return { force: true, via: forceRoute };
+    if (forceRoute) {
+      return {
+        force: true,
+        via: forceRoute,
+        steps: [
+          { from: unit.location, to: forceRoute, border: borderType(unit.location, forceRoute) },
+          { from: forceRoute, to: target, border: borderType(forceRoute, target) }
+        ]
+      };
+    }
 
     return null;
   }
@@ -326,7 +355,23 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (regroupingOnMap()) {
+      regroupUnitTo(state.selectedUnit, target);
+      return;
+    }
+
     moveUnitTo(state.selectedUnit, target);
+  }
+
+  async function regroupUnitTo(unitId, target) {
+    const unit = state.units[unitId];
+    if (!canRegroupUnit(unit)) {
+      log("Select a victorious unit in the battle area to regroup.");
+      render();
+      return;
+    }
+
+    await battleAction("regroup", unitId, target);
   }
 
   async function moveUnitTo(unitId, target) {
@@ -419,6 +464,10 @@ document.addEventListener("DOMContentLoaded", () => {
       stopped: false
     };
     const moved = state.movement.units[unit.id];
+    moved.path ||= [];
+    const steps = plan.steps || [{ from, to: target, border: plan.border }];
+    steps.forEach((step) => moved.path.push(step));
+    moved.entry = steps[steps.length - 1]?.from || from;
 
     if (plan.force) {
       moved.steps = 2;
@@ -886,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function resolveBattles() {
     try {
       await ensureGameSession();
-      const mainOrigin = chooseMainAttackingOrigin();
+      const mainOrigin = await chooseMainAttackingOrigin();
       if (mainOrigin === false) return;
       const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state, main_origin: mainOrigin });
       state = result.state;
@@ -898,7 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  function chooseMainAttackingOrigin() {
+  async function chooseMainAttackingOrigin() {
     if (state.battle || !state.movement) return null;
 
     const areaId = contestedAreas()[0];
@@ -906,21 +955,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const origins = [...new Set(areaUnits(areaId)
       .filter((unit) => unit.owner === state.active)
-      .map((unit) => state.movement?.units?.[unit.id]?.origin)
+      .map((unit) => movementEntry(unit, areaId))
       .filter((origin) => origin && origin !== areaId))];
 
     if (origins.length <= 1) return origins[0] || null;
 
-    const choices = origins.map((origin, index) => `${index + 1}. ${areaName(origin)}`).join("\n");
-    const response = window.prompt(`Which attacking group is the main group for ${areaName(areaId)}?\n\n${choices}`, "1");
-    if (response === null) return false;
+    return chooseMainForceWithDialog(areaId, origins);
+  }
 
-    const index = Number.parseInt(response, 10) - 1;
-    if (Number.isNaN(index) || !origins[index]) {
-      log("Battle was not started: choose one of the listed attacking groups.");
-      return false;
-    }
-    return origins[index];
+  function chooseMainForceWithDialog(areaId, origins) {
+    if (!els.mainForceDialog) return false;
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        els.mainForceDialog.removeEventListener("cancel", onCancel);
+        els.mainForceCancel.removeEventListener("click", onCancelClick);
+        if (els.mainForceDialog.open) els.mainForceDialog.close();
+        resolve(value);
+      };
+      const onCancel = (event) => {
+        event.preventDefault();
+        settle(false);
+      };
+      const onCancelClick = () => settle(false);
+
+      els.mainForceTitle.textContent = "Choose Main Force";
+      els.mainForceMessage.textContent = `Multiple groups are attacking ${areaName(areaId)}. Choose the group that starts active; the others enter as reserves.`;
+      els.mainForceChoices.innerHTML = "";
+      origins.forEach((origin) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = areaName(origin);
+        button.addEventListener("click", () => settle(origin));
+        els.mainForceChoices.append(button);
+      });
+      els.mainForceDialog.addEventListener("cancel", onCancel);
+      els.mainForceCancel.addEventListener("click", onCancelClick);
+      if (els.resultDialog?.open) els.resultDialog.close();
+      els.mainForceDialog.showModal();
+    });
+  }
+
+  function movementEntry(unit, areaId) {
+    const moved = state.movement?.units?.[unit.id];
+    if (!moved) return null;
+    if (moved.entry) return moved.entry;
+
+    const path = moved.path || [];
+    const finalStep = [...path].reverse().find((step) => step.to === areaId);
+    return finalStep?.from || moved.origin || null;
   }
 
   async function battleAction(action, unitId = null, target = null) {
@@ -1075,6 +1161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = `Supply ${state.supply}`;
     document.querySelector("#vp-label").textContent = `VP ${state.vp}`;
+    if (els.finishRegroup) els.finishRegroup.hidden = !regroupingOnMap();
   }
 
   function modeName() {
@@ -1361,19 +1448,23 @@ document.addEventListener("DOMContentLoaded", () => {
   async function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
-    if (unit.owner !== state.active) return;
-    if (state.battle) return;
+    if (regroupingOnMap()) {
+      if (!canRegroupUnit(unit)) return;
+    } else {
+      if (unit.owner !== state.active) return;
+      if (state.battle) return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    if (!state.movement) {
+    if (!regroupingOnMap() && !state.movement) {
       log("Play a card for movement before moving blocks.");
       event.currentTarget.releasePointerCapture(event.pointerId);
       render();
       return;
     }
-    if (!movementAreaActivated(movementOrigin(unit))) {
+    if (!regroupingOnMap() && !movementAreaActivated(movementOrigin(unit))) {
       const activated = await activateMovementArea(movementOrigin(unit));
       if (!activated) {
         event.currentTarget.releasePointerCapture(event.pointerId);
@@ -1421,7 +1512,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const piece = event.currentTarget;
       cleanupPieceDrag(piece, { keepGhost: true });
       try {
-        await moveUnitTo(unitId, target);
+        if (regroupingOnMap()) await regroupUnitTo(unitId, target);
+        else await moveUnitTo(unitId, target);
       } finally {
         cleanupPieceDrag(piece);
         dragState = null;
@@ -1520,6 +1612,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const battle = state.battle;
     if (!battle) {
       if (els.battleDialog.open) els.battleDialog.close();
+      state.regroupUnit = null;
+      return;
+    }
+    if (regroupingOnMap()) {
+      if (els.battleDialog.open) els.battleDialog.close();
       return;
     }
     if (!els.battleDialog.open) {
@@ -1546,7 +1643,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <section class="battle-zone">
         <h3>${title}</h3>
         <div class="battle-unit-list">
-          ${unitIds.length ? unitIds.map((id) => battleUnitButton(id, battle.activeUnit)).join("") : "<span class=\"empty-zone\">None</span>"}
+          ${unitIds.length ? unitIds.map((id) => battleUnitButton(id, battle.activeUnit, battle.phase === "regroup" && id === state.regroupUnit)).join("") : "<span class=\"empty-zone\">None</span>"}
         </div>
       </section>
     `;
@@ -1560,22 +1657,21 @@ document.addEventListener("DOMContentLoaded", () => {
       zone("Reserves", reserves),
       zone("Fort", fort)
     ].join("");
+    wireBattleUnitButtons(battle);
 
     els.battleActions.innerHTML = "";
     if (battle.phase === "regroup") {
+      const regroup = document.createElement("button");
+      regroup.type = "button";
+      regroup.textContent = "Regroup";
+      regroup.addEventListener("click", startMapRegroup);
+      els.battleActions.append(regroup);
+
       const hold = document.createElement("button");
       hold.type = "button";
-      hold.textContent = "Hold";
-      hold.addEventListener("click", () => battleAction("regroup"));
+      hold.textContent = "Hold Area";
+      hold.addEventListener("click", finishRegroup);
       els.battleActions.append(hold);
-
-      areas[battle.area].links.filter((areaId) => !areas[areaId]?.sea).forEach((areaId) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = `Regroup to ${areaName(areaId)}`;
-        button.addEventListener("click", () => battleAction("regroup", null, areaId));
-        els.battleActions.append(button);
-      });
       return;
     }
 
@@ -1594,11 +1690,80 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function battleUnitButton(unitId, activeUnitId) {
+  function wireBattleUnitButtons(battle) {
+    els.battleZones.querySelectorAll("[data-battle-unit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const unit = state.units[button.dataset.battleUnit];
+        if (!unit) return;
+        if (battle.phase !== "regroup") return;
+        if (unit.owner !== battle.winner || unit.location !== battle.area || currentStrength(unit) <= 0) return;
+
+        state.regroupUnit = unit.id;
+        render();
+      });
+    });
+  }
+
+  function regroupingOnMap() {
+    return Boolean(state.regrouping && state.battle?.phase === "regroup");
+  }
+
+  function canRegroupUnit(unit) {
+    return Boolean(
+      regroupingOnMap() &&
+      unit &&
+      unit.owner === state.battle.winner &&
+      unit.location === state.battle.area &&
+      currentStrength(unit) > 0
+    );
+  }
+
+  function startMapRegroup() {
+    if (!state.battle || state.battle.phase !== "regroup") return;
+
+    state.regrouping = true;
+    state.selectedUnit = null;
+    state.selectedArea = state.battle.area;
+    els.selection.textContent = `Regroup from ${areaName(state.battle.area)}. Select or drag victorious units to adjacent legal areas.`;
+    els.areaDetail.textContent = "Click Finished Regroup when done.";
+    if (els.battleDialog?.open) els.battleDialog.close();
+    document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
+    render();
+  }
+
+  async function finishRegroup() {
+    state.regrouping = false;
+    state.regroupUnit = null;
+    state.selectedUnit = null;
+    await battleAction("regroup");
+  }
+
+  function legalRegroupTargets(battle, unit) {
+    return areas[battle.area].links.filter((areaId) => !regroupBlockReason(battle, areaId, unit));
+  }
+
+  function regroupBlockReason(battle, areaId, unit) {
+    if (!areas[areaId] || areas[areaId].sea) return "sea";
+    if (isContestedArea(areaId)) return "pending battle";
+    if (areaUnits(areaId).some((unit) => unit.owner !== battle.winner)) return "enemy or neutral occupied";
+    if (areaId === "germania" && unit?.type !== "german") return "germania";
+
+    const capacity = borderCapacity(borderType(battle.area, areaId));
+    const used = battle.crossings?.[`${battle.area}->${areaId}`] || 0;
+    if (capacity && used + 1 > capacity) return "border capacity";
+    return null;
+  }
+
+  function isContestedArea(areaId) {
+    const owners = new Set(areaUnits(areaId).map((unit) => unit.owner).filter((owner) => owner !== "neutral"));
+    return owners.has("roman") && owners.has("barbarian");
+  }
+
+  function battleUnitButton(unitId, activeUnitId, selected = false) {
     const unit = state.units[unitId];
     if (!unit) return "";
     return `
-      <button type="button" class="battle-unit${unitId === activeUnitId ? " is-active" : ""}" data-battle-unit="${unitId}">
+      <button type="button" class="battle-unit${unitId === activeUnitId || selected ? " is-active" : ""}" data-battle-unit="${unitId}">
         <span>${unit.name}</span>
         <strong>${currentStrength(unit)}</strong>
         <small>${unit.initiative}${unit.fire}${state.battle?.halfHits?.[unitId] ? ` +${state.battle.halfHits[unitId]}/2` : ""}</small>
@@ -1719,6 +1884,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.undoStack ||= [];
     state.diceRolledThisTurn ||= false;
     state.gameSessionId ||= null;
+    if (!state.battle) state.regrouping = false;
     if (state.battle) {
       state.battle.acted ||= [];
       state.battle.actionResults ||= [];
@@ -1727,6 +1893,9 @@ document.addEventListener("DOMContentLoaded", () => {
       state.battle.halfHits ||= {};
       state.battle.retreated ||= [];
       state.battle.crossings ||= {};
+    }
+    if (state.regroupUnit && (!state.battle || state.units[state.regroupUnit]?.location !== state.battle.area)) {
+      state.regroupUnit = null;
     }
   }
 
@@ -1798,6 +1967,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
+  els.finishRegroup?.addEventListener("click", finishRegroup);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
   document.querySelector("#save-game").addEventListener("click", saveGame);

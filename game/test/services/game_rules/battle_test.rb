@@ -105,8 +105,8 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     )
     state["movement"] = {
       "units" => {
-        "legion_vii" => { "origin" => "transalpine_gaul", "steps" => 1, "stopped" => true },
-        "legion_viii" => { "origin" => "helvetii", "steps" => 1, "stopped" => true }
+        "legion_vii" => { "origin" => "transalpine_gaul", "entry" => "transalpine_gaul", "steps" => 1, "stopped" => true },
+        "legion_viii" => { "origin" => "transalpine_gaul", "entry" => "helvetii", "steps" => 2, "stopped" => true }
       }
     }
     session = GameSession.create!(data: state)
@@ -116,6 +116,169 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_includes result.dig("battle", "reserves"), "legion_vii"
     assert_not_includes result.dig("battle", "reserves"), "legion_viii"
     assert_equal "helvetii", result.dig("battle", "mainOrigin")
+    assert_equal "transalpine_gaul", result.dig("battle", "entries", "legion_vii")
+    assert_equal "helvetii", result.dig("battle", "entries", "legion_viii")
+  end
+
+  test "retreats cannot move into an area the enemy used to enter the battle" do
+    state = battle_state
+    state["units"]["legion_vii"]["home"] = "transalpine_gaul"
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "field",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => "allobroges",
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => ["allobroges"],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => nil
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(
+        action: "retreat",
+        unit_id: "allobroges",
+        target: "transalpine_gaul"
+      )
+    end
+
+    assert_match "enemy units entered Allobroges from there", error.message
+  end
+
+  test "victorious units cannot regroup into an unresolved battle area" do
+    state = battle_state
+    state["units"]["allobroges"]["location"] = "eliminated"
+    state["units"]["legion_viii"] = roman_legion("legion_viii", "Legion VIII", "helvetii")
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "helvetii",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [1, 0],
+      "initiative" => "D",
+      "fire" => 1
+    }
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "regroup",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => nil,
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => [],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(
+        action: "regroup",
+        target: "helvetii"
+      )
+    end
+
+    assert_match "battle there is still unresolved", error.message
+  end
+
+  test "victorious units can hold the battle area during regroup" do
+    state = battle_state
+    state["units"]["allobroges"]["location"] = "eliminated"
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "regroup",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => nil,
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => [],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).act!(action: "regroup")
+
+    assert_nil result["battle"]
+    assert_match "holds Allobroges", result["log"].join(" ")
+  end
+
+  test "victorious units regroup individually with fresh battle crossing limits" do
+    state = battle_state
+    state["units"]["allobroges"]["location"] = "eliminated"
+    state["units"]["legion_viii"] = roman_legion("legion_viii", "Legion VIII", "allobroges")
+    state["movement"] = {
+      "crossings" => { "allobroges->helvetii" => 2 },
+      "units" => {}
+    }
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "regroup",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => nil,
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii", "legion_viii"],
+      "defenders" => [],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul", "legion_viii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).act!(
+      action: "regroup",
+      unit_id: "legion_vii",
+      target: "helvetii"
+    )
+
+    assert_equal "helvetii", result.dig("units", "legion_vii", "location")
+    assert_equal "allobroges", result.dig("units", "legion_viii", "location")
+    assert_equal "regroup", result.dig("battle", "phase")
+    assert_equal 1, result.dig("battle", "crossings", "allobroges->helvetii")
   end
 
   test "bot home defender starts in fort and fires during the first round" do

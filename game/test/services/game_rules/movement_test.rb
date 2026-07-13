@@ -121,6 +121,11 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert result.dig("movement", "units", "legion_vii", "stopped")
     assert_equal 1, result.dig("movement", "crossings", "transalpine_gaul->allobroges")
     assert_equal 1, result.dig("movement", "crossings", "allobroges->sequani")
+    assert_equal "allobroges", result.dig("movement", "units", "legion_vii", "entry")
+    assert_equal [
+      { "from" => "transalpine_gaul", "to" => "allobroges", "border" => "regular" },
+      { "from" => "allobroges", "to" => "sequani", "border" => "regular" }
+    ], result.dig("movement", "units", "legion_vii", "path")
   end
 
   test "rejects moving a legion to its current area without marking it stopped" do

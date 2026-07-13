@@ -25,6 +25,7 @@
       <button id="new-game" type="button">New</button>
       <button id="deal-cards" type="button">Deal</button>
       <button id="end-turn" type="button">End Turn</button>
+      <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
       <button id="toggle-pieces" type="button" aria-pressed="false">Hide</button>
       <button id="save-game" type="button">Save</button>
@@ -113,6 +114,15 @@
   <div id="battle-summary" class="battle-summary"></div>
   <div id="battle-zones" class="battle-zones"></div>
   <div id="battle-actions" class="battle-actions"></div>
+</dialog>
+
+<dialog id="main-force-dialog" class="choice-dialog">
+  <h2 id="main-force-title">Choose Main Force</h2>
+  <p id="main-force-message"></p>
+  <div id="main-force-choices" class="choice-list"></div>
+  <div class="dialog-actions">
+    <button type="button" id="main-force-cancel">Cancel</button>
+  </div>
 </dialog>
 
 <dialog id="result-dialog">

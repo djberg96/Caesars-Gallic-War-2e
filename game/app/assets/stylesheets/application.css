@@ -577,6 +577,12 @@ h3 {
   margin-top: 0.7rem;
 }
 
+.battle-action-hint {
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 dialog {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -594,6 +600,26 @@ dialog {
   min-width: 260px;
   height: fit-content;
   margin: auto;
+}
+
+#main-force-dialog {
+  width: min(360px, 92vw);
+}
+
+#main-force-message {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.choice-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.choice-list button {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 #result-message {

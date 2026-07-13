@@ -41,7 +41,7 @@ module GameRules
       when "fort"
         retreat_into_fort!(unit_id)
       when "regroup"
-        regroup!(target.presence)
+        regroup!(target.presence, unit_id: unit_id.presence)
       else
         raise InvalidAction, "Unknown battle action #{action}."
       end
@@ -63,6 +63,7 @@ module GameRules
       attacker_ids = unit_ids.select { |id| unit(id)["owner"] == attacker }
       defender_ids = unit_ids.select { |id| unit(id)["owner"] == defender }
       main_origin ||= inferred_attacker_main_origin(area.key, attacker_ids)
+      entries = movement_entries(unit_ids, area.key)
 
       battle_data = {
         "area" => area.key,
@@ -77,7 +78,8 @@ module GameRules
         "attackers" => attacker_ids,
         "defenders" => defender_ids,
         "mainOrigin" => main_origin,
-        "reserves" => infer_reserves(area.key, attacker_ids, defender_ids, main_origin),
+        "entries" => entries,
+        "reserves" => infer_reserves(area.key, attacker_ids, defender_ids, main_origin, entries),
         "fort" => [],
         "halfHits" => {},
         "retreated" => [],
@@ -112,23 +114,37 @@ module GameRules
 
     def attacker_origins(area_key, attacker_ids)
       attacker_ids.filter_map do |id|
-        origin = movement_origin(id)
+        origin = movement_entry(id, area_key)
         origin if origin.present? && origin != area_key
       end.uniq
     end
 
-    def infer_reserves(area_key, attacker_ids, defender_ids, main_origin)
+    def infer_reserves(area_key, attacker_ids, defender_ids, main_origin, entries)
       defender_reserves = defender_ids.select do |id|
-        origin = movement_origin(id)
+        origin = entries[id] || movement_origin(id)
         origin.present? && origin != area_key
       end
 
       attacker_reserves = attacker_ids.select do |id|
-        origin = movement_origin(id)
+        origin = entries[id] || movement_entry(id, area_key)
         origin.present? && origin != area_key && origin != main_origin
       end
 
       defender_reserves + attacker_reserves
+    end
+
+    def movement_entries(unit_ids, area_key)
+      unit_ids.to_h do |id|
+        [id, movement_entry(id, area_key)]
+      end.compact_blank
+    end
+
+    def movement_entry(unit_id, area_key)
+      moved = (@state.dig("movement", "units") || {})[unit_id] || {}
+      return moved["entry"] if moved["entry"].present?
+
+      path_entry = Array(moved["path"]).reverse.find { |step| step["to"] == area_key }&.fetch("from", nil)
+      path_entry.presence || moved["origin"]
     end
 
     def movement_origin(unit_id)
@@ -228,6 +244,9 @@ module GameRules
 
       border = border(battle_area.key, target)
       raise InvalidAction, "#{unit(unit_id).fetch("name")} cannot retreat to #{area_name(target)}." unless border
+      if blocked_retreat_area?(unit(unit_id), target)
+        raise InvalidAction, "#{unit(unit_id).fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
+      end
 
       apply_retreat_capacity!(target, border)
       unit(unit_id)["location"] = target
@@ -260,23 +279,36 @@ module GameRules
       log("#{unit(unit_id).fetch("name")} withdraws into #{battle_area.fort_name}.")
     end
 
-    def regroup!(target)
+    def regroup!(target, unit_id: nil)
       raise InvalidAction, "No side has won this battle yet." unless battle["phase"] == "regroup"
 
-      winners = live_units.select { |unit| unit["owner"] == battle["winner"] && unit["location"] == battle_area.key }
+      winners = regrouping_units(unit_id)
       if target.present?
         border_to_target = border(battle_area.key, target)
         raise InvalidAction, "Victorious units cannot regroup to #{area_name(target)}." unless border_to_target
+        raise InvalidAction, "Victorious units cannot regroup into #{area_name(target)} because a battle there is still unresolved." if contested_area?(target)
         raise InvalidAction, "Victorious units cannot regroup into an enemy or neutral occupied area." if non_friendly_units_in?(target, battle["winner"])
+        raise InvalidAction, "Only German units may regroup into Germania." if target == "germania" && winners.any? { |winner| winner["type"] != "german" }
         apply_regroup_capacity!(target, border_to_target, winners.length)
 
         winners.each { |winner| winner["location"] = target }
         log("#{player_name(battle["winner"])} regroups #{winners.length} unit#{winners.length == 1 ? "" : "s"} from #{battle_area.name} to #{area_name(target)}.")
+        return if unit_id.present?
       else
         log("#{player_name(battle["winner"])} holds #{battle_area.name} after battle.")
       end
 
       @state["battle"] = nil
+    end
+
+    def regrouping_units(unit_id)
+      winners = live_units.select { |unit| unit["owner"] == battle["winner"] && unit["location"] == battle_area.key }
+      return winners if unit_id.blank?
+
+      unit_to_regroup = winners.find { |unit| unit.fetch("id") == unit_id }
+      raise InvalidAction, "#{unit(unit_id).fetch("name")} is not a victorious unit in #{battle_area.name}." unless unit_to_regroup
+
+      [unit_to_regroup]
     end
 
     def advance_bot_actions!
@@ -425,9 +457,23 @@ module GameRules
       battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find do |target|
         next false if target == "germania" && acting["type"] != "german"
         next false if non_friendly_units_in?(target, acting["owner"])
+        next false if blocked_retreat_area?(acting, target)
 
         true
       end
+    end
+
+    def blocked_retreat_area?(acting, target)
+      enemy_entry_areas(acting["owner"]).include?(target)
+    end
+
+    def enemy_entry_areas(owner)
+      ids = Array(battle["attackers"]) + Array(battle["defenders"]) + Array(battle["retreated"]) + Array(battle["fort"]) + Array(battle["entries"]&.keys)
+      ids.uniq.filter_map do |id|
+        next unless enemy?(unit(id)["owner"], owner)
+
+        battle.dig("entries", id)
+      end.uniq
     end
 
     def apply_retreat_capacity!(target, border)
@@ -445,14 +491,22 @@ module GameRules
       capacity = border.capacity
       return unless capacity
 
-      raise InvalidAction, "No more than #{capacity} unit#{capacity == 1 ? "" : "s"} may regroup across #{battle_area.name} to #{area_name(target)}." if count > capacity
+      key = "#{battle_area.key}->#{target}"
+      used = battle["crossings"].fetch(key, 0).to_i
+      raise InvalidAction, "No more than #{capacity} unit#{capacity == 1 ? "" : "s"} may regroup across #{battle_area.name} to #{area_name(target)}." if used + count > capacity
+
+      battle["crossings"][key] = used + count
     end
 
     def contested_areas
       Area.order(:key).select do |area|
-        owners = area_units(area.key).map { |unit| unit["owner"] }.reject { |owner| owner == "neutral" }
-        owners.include?("roman") && owners.include?("barbarian")
+        contested_area?(area.key)
       end
+    end
+
+    def contested_area?(area_key)
+      owners = area_units(area_key).map { |unit| unit["owner"] }.reject { |owner| owner == "neutral" }
+      owners.include?("roman") && owners.include?("barbarian")
     end
 
     def both_sides?(fighters)
