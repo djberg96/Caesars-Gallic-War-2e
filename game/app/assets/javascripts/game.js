@@ -734,8 +734,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const previousHead = previousLog[0];
     const firstOldIndex = previousHead ? nextLog.indexOf(previousHead) : -1;
     const entries = firstOldIndex >= 0 ? nextLog.slice(0, firstOldIndex) : nextLog.slice(0, 5);
-    const message = entries.reverse().join("\n") || "The bot had no action to resolve.";
-    showResultDialog("Bot Response", message);
+    const revealedCard = entries.find((entry) => entry.startsWith("Bot reveals "))?.replace(/^Bot reveals /, "").replace(/\.$/, "");
+    const actionEntries = entries.filter((entry) => !entry.startsWith("Bot reveals "));
+    const summaries = actionEntries.reverse().map((entry) => botActionSummary(entry, revealedCard));
+    const title = summaries[0]?.title || "Barbarian Action";
+    const message = summaries.map((summary) => summary.message).join("\n") || "Barbarian takes no action.";
+    showResultDialog(title, message);
+  }
+
+  function botActionSummary(entry, revealedCard) {
+    if (entry.startsWith("Barbarian activates ") && revealedCard?.includes("Revolt")) return { title: `Barbarian Action - Event: ${revealedCard}`, message: entry };
+    if (entry.startsWith("Barbarian activates ")) return { title: "Barbarian Action - Neutral Tribe Activation", message: entry };
+    if (entry.startsWith("Bot political action ")) return { title: "Barbarian Action - Political Action", message: entry.replace(/^Bot /, "Barbarian ") };
+    if (entry.startsWith("Bot moves ")) return { title: "Barbarian Action - Movement", message: entry.replace(/^Bot /, "Barbarian ") };
+    if (entry.startsWith("Bot Baggage Train ")) return { title: "Barbarian Action - Event: Baggage Train", message: entry.replace(/^Bot /, "Barbarian ") };
+    if (entry.startsWith("Bot ") && revealedCard) return { title: `Barbarian Action - Event: ${revealedCard}`, message: entry.replace(/^Bot /, "Barbarian ") };
+    return { title: "Barbarian Action", message: entry };
   }
 
   function resolveBotCard(card) {
