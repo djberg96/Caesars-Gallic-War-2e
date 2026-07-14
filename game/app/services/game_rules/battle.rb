@@ -10,10 +10,10 @@ module GameRules
       @rolls = Array(rolls).map(&:to_i)
     end
 
-    def resolve!(main_origin: nil)
+    def resolve!(area_id: nil, main_origin: nil)
       return advance_bot_and_persist! if battle
 
-      area = contested_areas.first
+      area = battle_area_to_resolve(area_id)
       unless area
         log("No battles to resolve.")
         return persist!
@@ -550,6 +550,16 @@ module GameRules
       Area.order(:key).select do |area|
         contested_area?(area.key)
       end
+    end
+
+    def battle_area_to_resolve(area_id)
+      areas = contested_areas
+      return areas.first if area_id.blank?
+
+      area = areas.find { |candidate| candidate.key == area_id }
+      raise InvalidAction, "#{area_name(area_id)} does not have an unresolved battle." unless area
+
+      area
     end
 
     def contested_area?(area_key)

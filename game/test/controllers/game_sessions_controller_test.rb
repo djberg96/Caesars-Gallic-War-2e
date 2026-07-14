@@ -351,6 +351,58 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
   end
 
+  test "opens the requested battle through the session API" do
+    state = base_state.merge(vp: 5)
+    state[:units][:legion_vii] = state[:units][:legion_vii].merge(location: "allobroges")
+    state[:units][:allobroges] = {
+      id: "allobroges",
+      name: "Allobroges",
+      type: "barbarian",
+      owner: "barbarian",
+      location: "allobroges",
+      home: "allobroges",
+      step: 0,
+      strengths: [1, 0],
+      initiative: "D",
+      fire: 1
+    }
+    state[:units][:legion_viii] = {
+      id: "legion_viii",
+      name: "Legion VIII",
+      type: "roman",
+      owner: "roman",
+      location: "helvetii",
+      home: "transalpine_gaul",
+      step: 0,
+      strengths: [1],
+      initiative: "A",
+      fire: 1
+    }
+    state[:units][:helvetii] = {
+      id: "helvetii",
+      name: "Helvetii",
+      type: "barbarian",
+      owner: "barbarian",
+      location: "helvetii",
+      home: "helvetii",
+      step: 0,
+      strengths: [1, 0],
+      initiative: "D",
+      fire: 1
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post resolve_battles_game_session_url(session, host: "localhost"),
+         params: { state: session.data, area_id: "helvetii" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "helvetii", body.dig("state", "battle", "area")
+    assert_includes body.dig("state", "battle", "attackers"), "legion_viii"
+  end
+
   test "draws a bot card through the session API" do
     state = base_state.merge(
       mode: "solitaire",

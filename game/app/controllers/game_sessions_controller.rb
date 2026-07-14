@@ -61,6 +61,7 @@ class GameSessionsController < ApplicationController
   def resolve_battles
     session = GameSession.find(params[:id])
     result = GameRules::Battle.new(session: session, state: state_params, rolls: params[:rolls]).resolve!(
+      area_id: params[:area_id],
       main_origin: params[:main_origin]
     )
 

@@ -48,6 +48,41 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_not result["diceRolledThisTurn"]
   end
 
+  test "opens the requested battle when multiple battles are unresolved" do
+    state = battle_state
+    state["units"]["legion_viii"] = roman_legion("legion_viii", "Legion VIII", "helvetii")
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "helvetii",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [1, 0],
+      "initiative" => "D",
+      "fire" => 1
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!(area_id: "helvetii")
+
+    assert_equal "helvetii", result.dig("battle", "area")
+    assert_includes result.dig("battle", "attackers"), "legion_viii"
+    assert_includes result.dig("battle", "defenders"), "helvetii"
+  end
+
+  test "rejects a requested battle area that is not contested" do
+    session = GameSession.create!(data: battle_state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).resolve!(area_id: "helvetii")
+    end
+
+    assert_match "Helvetii does not have an unresolved battle", error.message
+  end
+
   test "round limit forces the attacker to retreat" do
     state = battle_state
     state["units"]["legion_vii"]["fire"] = 0

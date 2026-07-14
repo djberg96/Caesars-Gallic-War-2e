@@ -935,9 +935,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function resolveBattles() {
     try {
       await ensureGameSession();
-      const mainOrigin = await chooseMainAttackingOrigin();
+      const battleArea = await chooseBattleArea();
+      if (battleArea === false) return;
+      const mainOrigin = await chooseMainAttackingOrigin(battleArea);
       if (mainOrigin === false) return;
-      const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state, main_origin: mainOrigin });
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/resolve_battles`, { state, area_id: battleArea, main_origin: mainOrigin });
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
@@ -947,10 +949,18 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  async function chooseMainAttackingOrigin() {
+  async function chooseBattleArea() {
+    if (state.battle) return null;
+
+    const areasToResolve = contestedAreas();
+    if (areasToResolve.length <= 1) return areasToResolve[0] || null;
+
+    return chooseBattleAreaWithDialog(areasToResolve);
+  }
+
+  async function chooseMainAttackingOrigin(areaId) {
     if (state.battle || !state.movement) return null;
 
-    const areaId = contestedAreas()[0];
     if (!areaId) return null;
 
     const origins = [...new Set(areaUnits(areaId)
@@ -961,6 +971,42 @@ document.addEventListener("DOMContentLoaded", () => {
     if (origins.length <= 1) return origins[0] || null;
 
     return chooseMainForceWithDialog(areaId, origins);
+  }
+
+  function chooseBattleAreaWithDialog(areaIds) {
+    if (!els.mainForceDialog) return false;
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        els.mainForceDialog.removeEventListener("cancel", onCancel);
+        els.mainForceCancel.removeEventListener("click", onCancelClick);
+        if (els.mainForceDialog.open) els.mainForceDialog.close();
+        resolve(value);
+      };
+      const onCancel = (event) => {
+        event.preventDefault();
+        settle(false);
+      };
+      const onCancelClick = () => settle(false);
+
+      els.mainForceTitle.textContent = "Choose Battle";
+      els.mainForceMessage.textContent = "Multiple battles are unresolved. Choose which battle to resolve first.";
+      els.mainForceChoices.innerHTML = "";
+      areaIds.forEach((areaId) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = areaName(areaId);
+        button.addEventListener("click", () => settle(areaId));
+        els.mainForceChoices.append(button);
+      });
+      els.mainForceDialog.addEventListener("cancel", onCancel);
+      els.mainForceCancel.addEventListener("click", onCancelClick);
+      if (els.resultDialog?.open) els.resultDialog.close();
+      els.mainForceDialog.showModal();
+    });
   }
 
   function chooseMainForceWithDialog(areaId, origins) {
