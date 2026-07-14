@@ -73,20 +73,6 @@
     </section>
 
     <section class="panel-block">
-      <h2>Cards</h2>
-      <div class="hands">
-        <div>
-          <h3>Roman Hand</h3>
-          <div id="roman-hand" class="hand"></div>
-        </div>
-        <div>
-          <h3>Barbarian Hand</h3>
-          <div id="barbarian-hand" class="hand"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel-block">
       <h2>Selection</h2>
       <div id="selection" class="selection">Select a unit or area.</div>
       <div id="area-detail" class="area-detail"></div>
@@ -97,6 +83,23 @@
       <ol id="log" class="log"></ol>
     </section>
   </aside>
+
+  <section id="hand-tray" class="hand-tray" aria-label="Player hands">
+    <div class="hand-tray-header">
+      <strong>Cards</strong>
+      <button type="button" id="toggle-hand" aria-pressed="false">Hide Hand</button>
+    </div>
+    <div class="hands">
+      <div class="hand-zone">
+        <h3>Roman Hand</h3>
+        <div id="roman-hand" class="hand"></div>
+      </div>
+      <div class="hand-zone">
+        <h3>Barbarian Hand</h3>
+        <div id="barbarian-hand" class="hand"></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <dialog id="export-dialog">

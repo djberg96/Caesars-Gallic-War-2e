@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedCard: document.querySelector("#selected-card"),
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand"),
+    handTray: document.querySelector("#hand-tray"),
+    toggleHand: document.querySelector("#toggle-hand"),
     battleDialog: document.querySelector("#battle-dialog"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
@@ -40,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let dragState = null;
   let suppressNextPieceClick = false;
   let piecesHidden = false;
+  let handHidden = false;
   let resultDialogQueue = [];
 
   async function newGame() {
@@ -1197,6 +1200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActionButtons();
     renderUndoButton();
     renderPieceToggle();
+    renderHandToggle();
     renderBattleBoard();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
@@ -1621,20 +1625,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderHand(player, container) {
     container.innerHTML = "";
-    state.hands[player].forEach((card) => {
+    const cards = state.hands[player];
+    cards.forEach((card, index) => {
       const button = document.createElement("button");
       const currentPlayer = player === state.active;
       const committed = state.committed[player]?.id === card.id;
       const hidden = state.mode === "hotseat" && !currentPlayer;
+      const tilt = cards.length > 1 ? (index - (cards.length - 1) / 2) * 4 : 0;
+      const lift = Math.abs(index - (cards.length - 1) / 2) * 2;
       button.className = `card${hidden ? " is-hidden" : ""}`;
       button.disabled = hidden || Boolean(state.movement) || Boolean(state.battle) || (state.mode === "hotseat" && (state.revealed || committed));
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
+      button.style.setProperty("--tilt", `${tilt}deg`);
+      button.style.setProperty("--lift", `${lift}px`);
       if (hidden) {
         button.innerHTML = "<span>Hidden card</span>";
       } else if (committed) {
         button.innerHTML = "<strong>Committed</strong><small>Face down</small>";
       } else {
-        button.innerHTML = `<strong>${card.title}</strong><small>AP ${card.ap} ${card.type}</small>`;
+        const image = cardImage(card);
+        button.innerHTML = image ? `<img src="${image}" alt="${card.title} card">` : `<span class="card-title-fallback"><strong>${card.title}</strong><small>${card.ap} ${card.type}</small></span>`;
       }
       button.addEventListener("click", () => {
         if (player !== state.active) return;
@@ -1647,9 +1657,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const marker = document.createElement("button");
       marker.className = "card is-hidden";
       marker.disabled = true;
+      marker.style.setProperty("--tilt", "0deg");
+      marker.style.setProperty("--lift", "0px");
       marker.innerHTML = state.mode === "ai" ? "<span>AI controlled</span>" : `<span>Bot deck: ${state.botDeck.length}</span>`;
       container.append(marker);
     }
+  }
+
+  function toggleHand() {
+    handHidden = !handHidden;
+    renderHandToggle();
+  }
+
+  function renderHandToggle() {
+    if (!els.handTray || !els.toggleHand) return;
+    els.handTray.classList.toggle("is-hidden", handHidden);
+    els.toggleHand.textContent = handHidden ? "Show Hand" : "Hide Hand";
+    els.toggleHand.setAttribute("aria-pressed", handHidden ? "true" : "false");
   }
 
   function renderCommittedCards() {
@@ -2095,6 +2119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
+  els.toggleHand?.addEventListener("click", toggleHand);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
   document.querySelector("#export-game").addEventListener("click", exportGame);
