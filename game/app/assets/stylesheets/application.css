@@ -512,6 +512,13 @@ h3 {
   color: var(--text);
 }
 
+.battle-round-marker {
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .battle-zones {
   display: grid;
   grid-template-columns: 1fr 1fr;

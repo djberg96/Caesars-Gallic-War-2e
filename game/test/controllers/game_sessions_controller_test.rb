@@ -112,7 +112,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "movement", body.dig("state", "currentAction")
     assert_equal "roman", body.dig("state", "movement", "player")
     assert_equal "allobroges", body.dig("state", "movement", "cardId")
-    assert_equal 1, body.dig("state", "movement", "remaining")
+    assert_equal 2, body.dig("state", "movement", "remaining")
     assert_equal "movement", session.data["currentAction"]
     assert_equal 15, session.supply
   end
@@ -198,9 +198,9 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = JSON.parse(response.body)
 
-    assert_equal 16, body.dig("state", "supply")
+    assert_equal 18, body.dig("state", "supply")
     assert_equal "supply", body.dig("state", "currentAction")
-    assert_equal 16, session.reload.supply
+    assert_equal 18, session.reload.supply
   end
 
   test "activates neutral tribes through the session API" do

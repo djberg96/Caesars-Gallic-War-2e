@@ -1855,10 +1855,18 @@ document.addEventListener("DOMContentLoaded", () => {
   function battleActionHistory(battle) {
     const actions = (battle.actionResults || []).slice(-4);
     if (!actions.length) return "";
+    let lastRound = null;
+    const lines = actions.flatMap((action) => {
+      const round = action.round || battle.round;
+      const actionLine = `<span>${battleLastActionText(action)}</span>`;
+      if (round === lastRound) return [actionLine];
+      lastRound = round;
+      return [`<b class="battle-round-marker">Round ${round}</b>`, actionLine];
+    });
 
     return `
       <div class="battle-action-history">
-        ${actions.map((action) => `<span>${battleLastActionText(action)}</span>`).join("")}
+        ${lines.join("")}
       </div>
     `;
   }

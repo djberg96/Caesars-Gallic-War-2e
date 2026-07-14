@@ -15,7 +15,7 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal "movement", result["currentAction"]
     assert_equal "roman", result.dig("movement", "player")
     assert_equal "allobroges", result.dig("movement", "cardId")
-    assert_equal 1, result.dig("movement", "remaining")
+    assert_equal 2, result.dig("movement", "remaining")
     assert_empty result.dig("movement", "areas")
     assert_equal "movement", session.reload.data["currentAction"]
   end
@@ -67,10 +67,10 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
 
     result = GameRules::ActionPhase.new(session: session, state: session.data).supply!
 
-    assert_equal 16, result["supply"]
+    assert_equal 18, result["supply"]
     assert_equal "supply", result["currentAction"]
     assert_match "supply action", result["log"].first
-    assert_equal 16, session.reload.supply
+    assert_equal 18, session.reload.supply
   end
 
   test "activates neutral tribes in the card area" do

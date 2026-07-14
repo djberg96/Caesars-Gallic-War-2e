@@ -24,8 +24,11 @@ class StaticGameDataTest < ActiveSupport::TestCase
 
     allobroges = Card.find_by!(key: "allobroges")
     assert_equal "area", allobroges.kind
-    assert_equal 1, allobroges.ap
+    assert_equal 2, allobroges.ap
     assert_equal "allobroges", allobroges.area.key
+    assert_equal 2, Card.find_by!(key: "belgae").ap
+    assert_equal 3, Card.find_by!(key: "helvetii").ap
+    assert_equal 3, Card.find_by!(key: "bellovaci").ap
 
     massive_revolt = Card.find_by!(key: "event_4_massive_revolt")
     assert_equal "Massive Revolt", massive_revolt.title

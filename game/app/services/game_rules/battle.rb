@@ -376,6 +376,7 @@ module GameRules
     end
 
     def record_action_result(result)
+      result["round"] ||= battle["round"].to_i
       battle["lastAction"] = result
       battle["actionResults"] ||= []
       battle["actionResults"] << result

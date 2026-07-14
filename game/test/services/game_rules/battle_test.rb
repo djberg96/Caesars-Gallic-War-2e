@@ -26,8 +26,10 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_empty result["undoStack"]
     assert_equal "regroup", result.dig("battle", "phase")
     assert_equal "fire", result.dig("battle", "lastAction", "type")
+    assert_equal 1, result.dig("battle", "lastAction", "round")
     assert_equal [1], result.dig("battle", "lastAction", "rolls")
     assert_equal 1, result.dig("battle", "lastAction", "hits")
+    assert_equal 1, result.dig("battle", "actionResults").last.fetch("round")
     assert_match "eliminated", result["log"].join(" ")
 
     session.reload

@@ -7,6 +7,23 @@ module GameData
       "Major Revolt",
       "Massive Revolt"
     ].freeze
+    AP_TWO_AREA_KEYS = %w[
+      aedui
+      allobroges
+      andes
+      arverni
+      bituriges
+      boii
+      cadurci
+      mandubii
+      santones
+      sequani
+      treveri
+    ].freeze
+    AP_THREE_AREA_KEYS = %w[
+      bellovaci
+      helvetii
+    ].freeze
 
     class << self
       def seed!
@@ -43,6 +60,9 @@ module GameData
       end
 
       def card_ap(area)
+        return 3 if AP_THREE_AREA_KEYS.include?(area.key)
+        return 2 if AP_TWO_AREA_KEYS.include?(area.key)
+        return 2 if area.region == "britannia"
         return 3 if area.region == "germania"
         return 2 if area.region == "belgica"
 
