@@ -551,6 +551,19 @@ document.addEventListener("DOMContentLoaded", () => {
     log(`${playerName(owner)} activates ${areaName(areaId)}.`);
   }
 
+  function takeNeutralActivation(areaId, owner) {
+    if (owner === "roman" && (areaId === "germania" || areas[areaId]?.region === "britannia")) {
+      log("Romans may not use neutral activation in Britannia or Germania.");
+      return;
+    }
+
+    areaUnits(areaId).filter((unit) => unit.owner === "neutral").forEach((unit) => {
+      unit.owner = owner;
+      unit.step = 0;
+    });
+    log(`${playerName(owner)} places ${areaName(areaId)} in the neutral tribe activation area.`);
+  }
+
   async function performCardAction(endpoint, extra = {}) {
     try {
       await ensureGameSession();
@@ -829,7 +842,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function botActionSummary(entry, revealedCard) {
     if (entry.startsWith("Barbarian activates ") && revealedCard?.includes("Revolt")) return { title: `Barbarian Action - Event: ${revealedCard}`, message: entry };
-    if (entry.startsWith("Barbarian activates ")) return { title: "Barbarian Action - Neutral Tribe Activation", message: entry };
+    if (entry.startsWith("Barbarian places ") && entry.includes(" neutral tribe activation area")) return { title: "Barbarian Action - Neutral Tribe Activation", message: entry };
     if (entry.startsWith("Bot political action ")) return { title: "Barbarian Action - Political Action", message: entry.replace(/^Bot /, "Barbarian ") };
     if (entry.startsWith("Bot moves ")) return { title: "Barbarian Action - Movement", message: entry.replace(/^Bot /, "Barbarian ") };
     if (entry.startsWith("Bot Baggage Train ")) return { title: "Barbarian Action - Event: Baggage Train", message: entry.replace(/^Bot /, "Barbarian ") };
@@ -839,7 +852,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resolveBotCard(card) {
     if (card.area && isNeutralArea(card.area) && state.botNeutralActivations < 2) {
-      activateArea(card.area, "barbarian");
+      takeNeutralActivation(card.area, "barbarian");
       state.botNeutralActivations += 1;
       return;
     }

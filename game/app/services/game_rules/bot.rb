@@ -125,7 +125,7 @@ module GameRules
         unit["owner"] = owner
         unit["step"] = 0
       end
-      log("#{player_name(owner)} activates #{area_name(area_id)}.")
+      log("#{player_name(owner)} places #{area_name(area_id)} in the neutral tribe activation area.")
     end
 
     def record_neutral_activation_card(card)

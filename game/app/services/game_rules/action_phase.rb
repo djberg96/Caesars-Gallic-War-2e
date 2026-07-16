@@ -86,7 +86,7 @@ module GameRules
         unit["step"] = 0
       end
       record_neutral_activation_card(card)
-      log("#{player_name(active_player)} activates #{area.name}.")
+      log("#{player_name(active_player)} places #{area.name} in the neutral tribe activation area.")
       persist!
     end
 
