@@ -1483,9 +1483,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (cards.length === 0) {
         container.innerHTML = `<span>${slot.player === "roman" ? "Roman" : "German"} NTA</span>`;
       } else {
-        cards.forEach((card) => {
+        container.title = cards.map((card) => `${card.title}, AP ${card.ap}`).join("\n");
+        cards.forEach((card, index) => {
           const marker = document.createElement("div");
           marker.className = "neutral-activation-card";
+          marker.style.setProperty("--stack-index", index);
+          marker.style.zIndex = index + 1;
           const image = cardImage(card);
           if (image) {
             marker.innerHTML = `<img src="${image}" alt="${card.title} card">`;

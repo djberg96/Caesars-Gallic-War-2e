@@ -182,10 +182,10 @@ h3 {
 
 .neutral-activation-slot {
   position: absolute;
-  display: grid;
-  gap: 2.5%;
+  display: block;
   padding: 1.1%;
   color: var(--text);
+  pointer-events: auto;
 }
 
 .neutral-activation-slot-barbarian {
@@ -216,15 +216,26 @@ h3 {
 }
 
 .neutral-activation-card {
+  position: absolute;
+  inset: 7% 9%;
   display: grid;
   align-content: center;
-  min-height: 0;
   overflow: hidden;
   padding: 0;
   border: 1px solid rgba(255, 235, 165, 0.58);
   border-radius: 4px;
   background: rgba(22, 19, 14, 0.68);
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
+  translate: calc(var(--stack-index) * 7%) calc(var(--stack-index) * 6%);
+  transition: translate 120ms ease;
+}
+
+.neutral-activation-slot:hover .neutral-activation-card:first-child:nth-last-child(2) {
+  translate: -12% -8%;
+}
+
+.neutral-activation-slot:hover .neutral-activation-card:nth-child(2):last-child {
+  translate: 14% 10%;
 }
 
 .neutral-activation-card img {
