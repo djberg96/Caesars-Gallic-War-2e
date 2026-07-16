@@ -358,6 +358,21 @@ h3 {
   background: #47505a;
 }
 
+.piece.is-hidden-enemy {
+  border-color: rgba(0, 0, 0, 0.75);
+}
+
+.piece.is-hidden-enemy::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.85rem solid rgba(0, 0, 0, 0.88);
+  border-left: 0.85rem solid transparent;
+}
+
 .piece.is-hidden.hidden-region-celtae {
   background: #4f8b57;
 }
