@@ -37,7 +37,7 @@
 
   <g filter="url(#shadow)">
     <circle cx="210" cy="468" r="46" fill="#15130f" stroke="#f5ddb0" stroke-width="5"/>
-    <text x="210" y="491" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#f9e6b8">2</text>
+    <text x="210" y="491" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#f9e6b8">1</text>
   </g>
 
   <path d="M67 538 H244" stroke="#f5ddb0" stroke-opacity="0.48" stroke-width="3"/>

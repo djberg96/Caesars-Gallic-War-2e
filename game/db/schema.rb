@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_000009) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_15_000000) do
   create_table "areas", force: :cascade do |t|
     t.string "alternate_tribe"
+    t.integer "card_value"
     t.datetime "created_at", null: false
     t.integer "fort_level"
     t.string "fort_name"

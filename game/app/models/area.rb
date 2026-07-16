@@ -20,6 +20,7 @@ class Area < ApplicationRecord
       sea: sea,
       port: port,
       fort: fort,
+      cardValue: card_value,
       tribes: tribes,
       alternate: alternate_tribe,
       links: sorted_outgoing_borders.map { |border| border.to_area.key },
@@ -28,7 +29,7 @@ class Area < ApplicationRecord
   end
 
   def card_area?
-    !sea? && region.present? && region != "roman"
+    card_value.present?
   end
 
   private

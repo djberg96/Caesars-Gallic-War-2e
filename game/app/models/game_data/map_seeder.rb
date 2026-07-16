@@ -40,7 +40,8 @@ module GameData
           fort_level: fort["level"],
           special: point["special"],
           tribes: [key, normalize(point["second_tribe"])].compact,
-          alternate_tribe: normalize(point["alternate_tribe"])
+          alternate_tribe: normalize(point["alternate_tribe"]),
+          card_value: point["card_value"]
         )
       end
 

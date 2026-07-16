@@ -29,6 +29,10 @@ class StaticGameDataTest < ActiveSupport::TestCase
     assert_equal 2, Card.find_by!(key: "belgae").ap
     assert_equal 3, Card.find_by!(key: "helvetii").ap
     assert_equal 3, Card.find_by!(key: "bellovaci").ap
+    assert_equal 2, Card.find_by!(key: "arverni").ap
+    assert_equal 1, Card.find_by!(key: "tarbelli").ap
+    assert_equal 2, Area.find_by!(key: "sequani").card_value
+    assert_nil Area.find_by!(key: "transalpine_gaul").card_value
 
     massive_revolt = Card.find_by!(key: "event_4_massive_revolt")
     assert_equal "Massive Revolt", massive_revolt.title
