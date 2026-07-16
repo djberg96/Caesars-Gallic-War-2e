@@ -140,7 +140,8 @@ class GameSessionsController < ApplicationController
   def event_action
     session = GameSession.find(params[:id])
     result = GameRules::ActionPhase.new(session: session, state: state_params).event!(
-      area_id: params[:area_id]
+      area_id: params[:area_id],
+      unit_id: params[:unit_id]
     )
 
     render json: { game_session_id: session.id, state: result }

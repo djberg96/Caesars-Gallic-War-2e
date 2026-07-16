@@ -528,7 +528,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (action === "political") {
       startPoliticalTargeting();
     } else if (action === "event") {
-      if (await performCardAction("event_action", { area_id: state.selectedArea })) await discardSelectedCard();
+      const eventTarget = await chooseEventTarget(card);
+      if (eventTarget === false) return;
+      if (await performCardAction("event_action", eventTarget)) await discardSelectedCard();
     } else {
       await startMovement();
     }
@@ -735,6 +737,42 @@ document.addEventListener("DOMContentLoaded", () => {
       v.owner = "barbarian";
     }
     log(`${card.title} resolved for ${areaName(state.selectedArea)}. Apply up to ${count} selected areas manually if needed.`);
+  }
+
+  async function chooseEventTarget(card) {
+    if (!card.title?.includes("Revolt") || state.active !== "roman") return { area_id: state.selectedArea };
+
+    const targets = romanRevoltTargets();
+    if (!targets.length) {
+      log(`${card.title} has no active Barbarian-controlled tribe targets.`);
+      return false;
+    }
+
+    const unitId = await chooseOptionWithDialog({
+      title: card.title,
+      message: "Select an active Barbarian-controlled tribe to return home.",
+      options: targets.map((unit) => ({
+        value: unit.id,
+        label: `${unit.name} in ${areaName(unit.location)}`
+      }))
+    });
+    if (!unitId) return false;
+
+    return { unit_id: unitId };
+  }
+
+  function romanRevoltTargets() {
+    return Object.values(state.units)
+      .filter((unit) =>
+        unit.owner === "barbarian" &&
+        unit.type === "barbarian" &&
+        unit.home &&
+        unit.location &&
+        !["eliminated", "offboard"].includes(unit.location) &&
+        currentStrength(unit) > 0 &&
+        areas[unit.home]?.region !== "germania"
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async function discardSelectedCard() {
@@ -992,6 +1030,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function chooseBattleAreaWithDialog(areaIds) {
+    return chooseOptionWithDialog({
+      title: "Choose Battle",
+      message: "Multiple battles are unresolved. Choose which battle to resolve first.",
+      options: areaIds.map((areaId) => ({ value: areaId, label: areaName(areaId) }))
+    });
+  }
+
+  function chooseOptionWithDialog({ title, message, options }) {
     if (!els.mainForceDialog) return false;
 
     return new Promise((resolve) => {
@@ -1010,14 +1056,14 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       const onCancelClick = () => settle(false);
 
-      els.mainForceTitle.textContent = "Choose Battle";
-      els.mainForceMessage.textContent = "Multiple battles are unresolved. Choose which battle to resolve first.";
+      els.mainForceTitle.textContent = title;
+      els.mainForceMessage.textContent = message;
       els.mainForceChoices.innerHTML = "";
-      areaIds.forEach((areaId) => {
+      options.forEach((option) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = areaName(areaId);
-        button.addEventListener("click", () => settle(areaId));
+        button.textContent = option.label;
+        button.addEventListener("click", () => settle(option.value));
         els.mainForceChoices.append(button);
       });
       els.mainForceDialog.addEventListener("cancel", onCancel);

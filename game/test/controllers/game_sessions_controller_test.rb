@@ -299,6 +299,41 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 19, session.reload.supply
   end
 
+  test "performs a roman minor revolt through the session API" do
+    card = card_hash("event_1_minor_revolt")
+    state = base_state.merge(
+      mode: "solitaire",
+      selectedCard: card,
+      hands: { roman: [card], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil
+    )
+    state[:units][:osismi] = {
+      id: "osismi",
+      name: "Osismi",
+      type: "barbarian",
+      owner: "barbarian",
+      location: "veneti",
+      home: "osismi",
+      step: 1
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post event_action_game_session_url(session, host: "localhost"),
+         params: { state: session.data, unit_id: "osismi" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "osismi", body.dig("state", "units", "osismi", "location")
+    assert_equal "neutral", body.dig("state", "units", "osismi", "owner")
+    assert_equal 0, body.dig("state", "units", "osismi", "step")
+    osismi = session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "osismi" })
+    assert_equal "neutral", osismi.owner
+    assert_equal "osismi", osismi.location
+  end
+
   test "opens and acts on battles through the session API" do
     state = base_state.merge(
       vp: 5,

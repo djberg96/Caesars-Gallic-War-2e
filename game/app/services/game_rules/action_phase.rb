@@ -123,7 +123,7 @@ module GameRules
       persist!
     end
 
-    def event!(area_id: nil)
+    def event!(area_id: nil, unit_id: nil)
       raise InvalidAction, "End the current movement action before choosing another card action." if @state["movement"].present?
 
       card = action_card
@@ -137,6 +137,11 @@ module GameRules
           @state["supply"] = [@state.fetch("supply", 0).to_i - 2, 0].max
         end
         log("#{player_name(active_player)} resolves Baggage Train.")
+        return persist!
+      end
+
+      if active_player == "roman"
+        resolve_roman_revolt!(card, unit_id)
         return persist!
       end
 
@@ -161,6 +166,48 @@ module GameRules
     end
 
     private
+
+    def resolve_roman_revolt!(card, unit_id)
+      raise InvalidAction, "#{card.fetch("title")} has no Roman event effect implemented." unless revolt_event?(card)
+      raise InvalidAction, "Select an active Barbarian-controlled tribe for #{card.fetch("title")}." if unit_id.blank?
+
+      target = units[unit_id]
+      raise InvalidAction, "Unknown tribe #{unit_id}." unless target
+      raise InvalidAction, "#{target.fetch("name")} is not an active Barbarian-controlled tribe." unless roman_revolt_target?(target)
+
+      home = target.fetch("home")
+      home_units = units.values.select { |unit| unit["location"] == home && unit["id"] != unit_id }
+      target["location"] = home
+      if home_units.empty?
+        target["owner"] = "neutral"
+        target["step"] = 0
+        log("#{card.fetch("title")}: #{target.fetch("name")} returns home to #{area_name(home)} and becomes neutral at full strength.")
+      else
+        target["owner"] = "barbarian"
+        log("#{card.fetch("title")}: #{target.fetch("name")} returns home to #{area_name(home)} at current strength.")
+      end
+    end
+
+    def revolt_event?(card)
+      card.fetch("title").include?("Revolt")
+    end
+
+    def roman_revolt_target?(unit)
+      unit["owner"] == "barbarian" &&
+        unit["type"] == "barbarian" &&
+        unit["home"].present? &&
+        unit["location"].present? &&
+        !unit["location"].in?(["eliminated", "offboard"]) &&
+        current_strength(unit).positive? &&
+        Area.find_by(key: unit["home"])&.region != "germania"
+    end
+
+    def current_strength(unit)
+      strengths = Array(unit["strengths"])
+      return 1 if strengths.empty?
+
+      strengths[unit.fetch("step", 0).to_i].to_i
+    end
 
     def action_card
       if @state["mode"] == "hotseat"
@@ -224,6 +271,10 @@ module GameRules
 
     def player_name(player)
       player == "roman" ? "Roman" : "Barbarian"
+    end
+
+    def area_name(area_id)
+      Area.find_by(key: area_id)&.name || area_id.to_s.titleize
     end
   end
 end

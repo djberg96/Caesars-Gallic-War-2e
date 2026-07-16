@@ -137,6 +137,82 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal 19, session.reload.supply
   end
 
+  test "roman minor revolt returns an active barbarian tribe home" do
+    card = card_hash("event_1_minor_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["osismi"] = {
+      "id" => "osismi",
+      "name" => "Osismi",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "veneti",
+      "home" => "osismi",
+      "step" => 1
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "osismi")
+
+    assert_equal "osismi", result.dig("units", "osismi", "location")
+    assert_equal "neutral", result.dig("units", "osismi", "owner")
+    assert_equal 0, result.dig("units", "osismi", "step")
+    assert_match "returns home", result["log"].first
+    osismi = session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "osismi" })
+    assert_equal "neutral", osismi.owner
+    assert_equal "osismi", osismi.location
+  end
+
+  test "roman minor revolt can target a barbarian tribe already at home" do
+    card = card_hash("event_1_minor_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["atuatuci"] = {
+      "id" => "atuatuci",
+      "name" => "Atuatuci",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "atuatuci",
+      "home" => "atuatuci",
+      "step" => 1
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "atuatuci")
+
+    assert_equal "atuatuci", result.dig("units", "atuatuci", "location")
+    assert_equal "neutral", result.dig("units", "atuatuci", "owner")
+    assert_equal 0, result.dig("units", "atuatuci", "step")
+  end
+
+  test "roman minor revolt cannot target an eliminated tribe" do
+    card = card_hash("event_1_minor_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "eliminated",
+      "home" => "helvetii",
+      "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "helvetii")
+    end
+
+    assert_match "not an active Barbarian-controlled tribe", error.message
+  end
+
   test "resolves barbarian massive revolt event" do
     card = card_hash("event_4_massive_revolt")
     state = base_state.merge(
