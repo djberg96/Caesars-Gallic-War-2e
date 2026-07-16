@@ -1673,7 +1673,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!els.handTray || !els.toggleHand) return;
     els.handTray.classList.toggle("is-hidden", handHidden);
     els.toggleHand.textContent = handHidden ? "Show Hand" : "Hide Hand";
-    els.toggleHand.setAttribute("aria-pressed", handHidden ? "true" : "false");
+    els.toggleHand.setAttribute("aria-expanded", handHidden ? "false" : "true");
   }
 
   function renderCommittedCards() {

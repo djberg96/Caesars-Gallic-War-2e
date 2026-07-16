@@ -445,11 +445,11 @@ h3 {
   border-top: 1px solid rgba(217, 180, 95, 0.38);
   background: rgba(24, 27, 23, 0.94);
   box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.42);
-  transition: translate 160ms ease;
+  overflow: hidden;
 }
 
 .hand-tray.is-hidden {
-  translate: 0 calc(100% - 42px);
+  grid-template-rows: auto 0;
 }
 
 .hand-tray-header {
@@ -473,6 +473,10 @@ h3 {
   min-height: 0;
   overflow: auto;
   padding: 0.55rem 0.75rem 1rem;
+}
+
+.hand-tray.is-hidden .hands {
+  display: none;
 }
 
 .hand-zone {
