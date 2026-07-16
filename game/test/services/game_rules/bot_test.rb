@@ -22,6 +22,22 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "barbarian", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 
+  test "second bot neutral tribe activation does not start movement" do
+    state = bot_state(bot_deck: [card_hash("allobroges")]).merge("botNeutralActivations" => 1)
+    state["neutralActivationCards"] = { "roman" => [], "barbarian" => [card_hash("andes")] }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_equal 2, result["botNeutralActivations"]
+    assert_nil result["movement"]
+    assert_not_equal "movement", result["currentAction"]
+    assert_equal ["andes", "allobroges"], result.dig("neutralActivationCards", "barbarian").map { |card| card.fetch("id") }
+    assert_no_match "moves", result["log"].join(" ")
+  end
+
   test "draws a bot area card and performs political action after neutral activations are spent" do
     state = bot_state(bot_deck: [card_hash("allobroges")]).merge("botNeutralActivations" => 2)
     state["units"]["allobroges"]["owner"] = "roman"

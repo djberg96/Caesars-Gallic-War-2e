@@ -32,7 +32,7 @@ module GameRules
 
     def resolve_card(card)
       if card["area"].present? && neutral_area?(card["area"]) && @state.fetch("botNeutralActivations", 0).to_i < 2
-        activate_area!(card["area"], "barbarian")
+        neutral_activation!(card["area"])
         @state["botNeutralActivations"] = @state.fetch("botNeutralActivations", 0).to_i + 1
         record_neutral_activation_card(card)
         return
@@ -120,12 +120,12 @@ module GameRules
       candidates.sample&.key
     end
 
-    def activate_area!(area_id, owner)
+    def neutral_activation!(area_id)
       area_units(area_id).select { |unit| unit["owner"] == "neutral" }.each do |unit|
-        unit["owner"] = owner
+        unit["owner"] = "barbarian"
         unit["step"] = 0
       end
-      log("#{player_name(owner)} places #{area_name(area_id)} in the neutral tribe activation area.")
+      log("Barbarian places #{area_name(area_id)} in the neutral tribe activation area.")
     end
 
     def record_neutral_activation_card(card)
