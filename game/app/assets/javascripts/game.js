@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     barbarianHand: document.querySelector("#barbarian-hand"),
     handTray: document.querySelector("#hand-tray"),
     toggleHand: document.querySelector("#toggle-hand"),
+    cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
@@ -43,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let suppressNextPieceClick = false;
   let piecesHidden = false;
   let handHidden = false;
+  let zoomedCardId = null;
   let resultDialogQueue = [];
 
   async function newGame() {
@@ -1637,6 +1639,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderHands() {
     renderHand("roman", els.romanHand);
     renderHand("barbarian", els.barbarianHand);
+    renderCardZoom();
   }
 
   function renderHand(player, container) {
@@ -1652,6 +1655,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.className = `card${hidden ? " is-hidden" : ""}`;
       button.disabled = hidden || Boolean(state.movement) || Boolean(state.battle) || (state.mode === "hotseat" && (state.revealed || committed));
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
+      button.classList.toggle("is-zoomed", zoomedCardId === card.id);
       button.style.setProperty("--tilt", `${tilt}deg`);
       button.style.setProperty("--lift", `${lift}px`);
       if (hidden) {
@@ -1665,6 +1669,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.addEventListener("click", () => {
         if (player !== state.active) return;
         state.selectedCard = card;
+        zoomedCardId = zoomedCardId === card.id ? null : card.id;
         render();
       });
       container.append(button);
@@ -1678,6 +1683,36 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.innerHTML = state.mode === "ai" ? "<span>AI controlled</span>" : `<span>Bot deck: ${state.botDeck.length}</span>`;
       container.append(marker);
     }
+  }
+
+  function zoomedCard() {
+    if (!zoomedCardId) return null;
+
+    return ["roman", "barbarian"].flatMap((player) => state.hands[player] || []).find((card) => card.id === zoomedCardId) || null;
+  }
+
+  function renderCardZoom() {
+    if (!els.cardZoom) return;
+
+    const card = zoomedCard();
+    if (!card) {
+      zoomedCardId = null;
+      els.cardZoom.hidden = true;
+      els.cardZoom.innerHTML = "";
+      return;
+    }
+
+    const image = cardImage(card);
+    els.cardZoom.hidden = false;
+    els.cardZoom.innerHTML = `
+      <button type="button" class="card-zoom-card" aria-label="Close ${card.title} preview">
+        ${image ? `<img src="${image}" alt="${card.title} card">` : `<span class="card-title-fallback"><strong>${card.title}</strong><small>${card.ap} ${card.type}</small></span>`}
+      </button>
+    `;
+    els.cardZoom.querySelector("button").addEventListener("click", () => {
+      zoomedCardId = null;
+      render();
+    });
   }
 
   function toggleHand() {
@@ -2140,6 +2175,16 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#load-game").addEventListener("click", loadGame);
   document.querySelector("#export-game").addEventListener("click", exportGame);
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
+  els.cardZoom?.addEventListener("click", (event) => {
+    if (event.target !== els.cardZoom) return;
+    zoomedCardId = null;
+    render();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !zoomedCardId) return;
+    zoomedCardId = null;
+    render();
+  });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
   document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => playAction(button.dataset.action)));
 
