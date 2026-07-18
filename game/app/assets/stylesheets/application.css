@@ -1130,22 +1130,6 @@ h3 {
   transition: transform 180ms ease;
 }
 
-.battle-strength {
-  position: absolute;
-  right: -0.45rem;
-  bottom: -0.45rem;
-  min-width: 1.45rem;
-  height: 1.45rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid #e5d7b5;
-  border-radius: 999px;
-  background: #0e100e;
-  color: #fff4d8;
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-
 .battle-unit-info {
   min-width: 0;
   display: grid;
@@ -1161,6 +1145,9 @@ h3 {
 
 .battle-unit-status {
   width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.14rem 0.36rem;
   border-radius: 999px;
   background: rgba(217, 180, 95, 0.12);
@@ -1169,6 +1156,13 @@ h3 {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.battle-unit-status b {
+  padding-left: 0.35rem;
+  border-left: 1px solid currentColor;
+  color: #eee0ad;
+  font-size: inherit;
 }
 
 .battle-unit-card.is-fired .battle-unit-status {

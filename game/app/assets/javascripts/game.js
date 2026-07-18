@@ -2283,12 +2283,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return `
       <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
-          <div class="battle-unit-counter">
+          <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
             <img src="${unit.image}" alt="${unit.name}" style="--unit-rotation: ${unitRotation(unit)}deg">
-            <span class="battle-strength">${currentStrength(unit)}</span>
           </div>
           <div class="battle-unit-info">
-            <span class="battle-unit-status">${status}</span>
+            <span class="battle-unit-status"><span>${status}</span><b>Str ${currentStrength(unit)}</b></span>
             <strong>${unit.name}</strong>
             <div class="battle-unit-stats">
               <span><b>${unit.initiative}</b> Initiative</span>
