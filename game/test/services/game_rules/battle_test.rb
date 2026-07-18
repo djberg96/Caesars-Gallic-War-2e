@@ -355,6 +355,38 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_not_includes result.dig("battle", "reserves"), "legion_vii"
   end
 
+  test "announces when reserves enter at the start of round two" do
+    state = battle_state
+    state["units"]["legion_vii"]["fire"] = 0
+    state["units"]["allobroges"]["fire"] = 0
+    state["units"]["legion_viii"] = roman_legion("legion_viii", "Legion VIII", "allobroges")
+    state["movement"] = {
+      "units" => {
+        "legion_vii" => { "origin" => "transalpine_gaul", "entry" => "transalpine_gaul", "steps" => 1, "stopped" => true },
+        "legion_viii" => { "origin" => "helvetii", "entry" => "helvetii", "steps" => 1, "stopped" => true }
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!(main_origin: "transalpine_gaul")
+    assert_includes result.dig("battle", "reserves"), "legion_viii"
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [6]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+    result = GameRules::Battle.new(session: session, state: result, rolls: [6]).act!(
+      action: "fire",
+      unit_id: "allobroges"
+    )
+
+    assert_equal 2, result.dig("battle", "round")
+    announcement = result.dig("battle", "actionResults").last
+    assert_equal "reserves", announcement["type"]
+    assert_equal ["Legion VIII"], announcement["unitNames"]
+    assert_match "Reserve Legion VIII enters the battle", result["log"].join(" ")
+  end
+
   test "attacking player chooses which moved group is main" do
     state = battle_state
     state["units"]["legion_viii"] = state["units"]["legion_vii"].merge(

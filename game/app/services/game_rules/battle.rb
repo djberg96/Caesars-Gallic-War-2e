@@ -203,6 +203,23 @@ module GameRules
       battle["fired"] = []
       discard_non_siege_half_hits!
       log("Battle in #{battle_area.name} continues to round #{battle["round"]}.")
+      announce_entering_reserves! if battle["round"].to_i == 2
+    end
+
+    def announce_entering_reserves!
+      names = Array(battle["reserves"]).filter_map do |unit_id|
+        reserve = unit(unit_id)
+        reserve.fetch("name") if reserve["location"] == battle_area.key && current_strength(reserve).positive?
+      end
+      return if names.empty?
+
+      record_action_result({
+        "type" => "reserves",
+        "unitNames" => names,
+        "round" => battle["round"].to_i
+      })
+      subject = names.one? ? "Reserve #{names.first} enters" : "Reserves #{names.join(", ")} enter"
+      log("#{subject} the battle in #{battle_area.name} and may now act and suffer hits.")
     end
 
     def finish_battle_if_decided!

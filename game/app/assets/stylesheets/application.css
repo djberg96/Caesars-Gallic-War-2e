@@ -810,6 +810,13 @@ h3 {
   font-size: 0.78rem;
 }
 
+.battle-action-history span.battle-reserve-announcement {
+  border-left-color: #83b879;
+  background: rgba(118, 168, 110, 0.12);
+  color: #d7e6cf;
+  font-weight: 700;
+}
+
 .battle-round-marker {
   color: var(--accent);
   font-family: Georgia, serif;

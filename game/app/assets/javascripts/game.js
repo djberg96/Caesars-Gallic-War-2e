@@ -1942,11 +1942,13 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    const reserveIds = new Set(battle.reserves || []);
+    const reserveIds = new Set(battle.round === 1 ? battle.reserves || [] : []);
     const fortIds = new Set(battle.fort || []);
     const attackers = (battle.attackers || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
     const defenders = (battle.defenders || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
-    const reserves = (battle.reserves || []).filter((id) => state.units[id]?.location === battle.area);
+    const reserves = battle.round === 1
+      ? (battle.reserves || []).filter((id) => state.units[id]?.location === battle.area)
+      : [];
     const fort = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
     const attackerReserves = reserves.filter((id) => state.units[id]?.owner === battle.attacker);
     const defenderReserves = reserves.filter((id) => state.units[id]?.owner === battle.defender);
@@ -2302,6 +2304,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function battleLastActionText(action) {
+    if (action.type === "reserves") {
+      const names = (action.unitNames || []).join(", ");
+      return `Reserves enter the battle: ${names}. These units may now act and suffer hits.`;
+    }
     if (action.type === "fire") {
       const rolls = (action.rolls || []).join(", ");
       const hits = action.hits || 0;
@@ -2320,7 +2326,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let lastRound = null;
     const lines = actions.flatMap((action) => {
       const round = action.round || battle.round;
-      const actionLine = `<span>${battleLastActionText(action)}</span>`;
+      const actionClass = action.type === "reserves" ? " class=\"battle-reserve-announcement\"" : "";
+      const actionLine = `<span${actionClass}>${battleLastActionText(action)}</span>`;
       if (round === lastRound) return [actionLine];
       lastRound = round;
       return [`<b class="battle-round-marker">Round ${round}</b>`, actionLine];
