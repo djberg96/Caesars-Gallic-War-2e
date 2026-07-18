@@ -1922,6 +1922,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const activeUnit = battle.activeUnit ? state.units[battle.activeUnit] : null;
     const status = battleStatusText(battle, activeUnit);
+    const defenderFortIds = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
+    const defenseIntel = battleDefenseIntel(battle, defenderFortIds);
+    const actionHistory = battleActionHistory(battle);
     els.battleSummary.innerHTML = `
       <div class="battle-heading">
         <div>
@@ -1931,7 +1934,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="battle-round">Round ${battle.round} / ${battle.maxRounds}</span>
       </div>
       <span class="battle-status">${status}</span>
-      ${battleActionHistory(battle)}
+      <div class="battle-summary-columns">
+        <div class="battle-summary-log" aria-label="Battle log">
+          ${actionHistory || "<span class=\"battle-log-empty\">No battle actions yet.</span>"}
+        </div>
+        ${defenseIntel}
+      </div>
     `;
 
     const reserveIds = new Set(battle.reserves || []);
@@ -2035,6 +2043,64 @@ document.addEventListener("DOMContentLoaded", () => {
         ${reserveZone}
         ${fortZone}
       </section>
+    `;
+  }
+
+  function battleDefenseIntel(battle, fortIds) {
+    const effects = [];
+    if (battle.area === "helvetii") {
+      effects.push({
+        icon: "▲",
+        eyebrow: "Terrain · Alps",
+        title: "Double Defense",
+        detail: "Defending units require 2 hits per strength loss. A 1/2 hit is retained until the end of the battle round."
+      });
+    }
+
+    const areaFort = areas[battle.area]?.fort;
+    if (areaFort) {
+      const occupantNames = fortIds.map((id) => state.units[id]?.name).filter(Boolean);
+      const occupied = occupantNames.length > 0;
+      effects.push({
+        icon: "▰",
+        eyebrow: `Fortress · Capacity ${areaFort.level}`,
+        title: titleCase(areaFort.name),
+        detail: occupied
+          ? `${occupantNames.join(", ")} ${occupantNames.length === 1 ? "receives" : "receive"} improved initiative and double defense. Fort half-hits carry between assault rounds.`
+          : "Unoccupied. No defending unit currently receives fortress protection.",
+        inactive: !occupied
+      });
+    }
+
+    if (!effects.length) {
+      effects.push({
+        icon: "—",
+        eyebrow: "Defensive Position",
+        title: "No Modifier",
+        detail: "No terrain or fortress effect changes damage in this battle.",
+        inactive: true
+      });
+    }
+
+    return `
+      <aside class="battle-defense-intel owner-${battle.defender}" aria-label="Defender advantages">
+        <div class="battle-defense-heading">
+          <span>Defender Advantages</span>
+          <b>${effects.some((effect) => !effect.inactive) ? "Active" : "None"}</b>
+        </div>
+        <div class="battle-defense-effects">
+          ${effects.map((effect) => `
+            <div class="battle-defense-effect${effect.inactive ? " is-inactive" : ""}">
+              <span class="battle-defense-icon" aria-hidden="true">${effect.icon}</span>
+              <div>
+                <span>${effect.eyebrow}</span>
+                <strong>${effect.title}</strong>
+                <p>${effect.detail}</p>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </aside>
     `;
   }
 
@@ -2202,6 +2268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inFort = (battle.fort || []).includes(unitId);
     const fired = (battle.fired || []).includes(unitId);
     const halfHit = battle.halfHits?.[unitId];
+    const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
     const status = hitTarget ? "Choose for hit" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -2224,7 +2291,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="battle-unit-stats">
               <span><b>${unit.initiative}</b> Initiative</span>
               <span><b>${unit.fire}</b> Battle Rating</span>
-              ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> Half hit</span>` : ""}
+              ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> ${halfHitSource}</span>` : ""}
             </div>
           </div>
         </div>
