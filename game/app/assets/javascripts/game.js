@@ -1918,33 +1918,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeUnit = battle.activeUnit ? state.units[battle.activeUnit] : null;
     const status = battleStatusText(battle, activeUnit);
     els.battleSummary.innerHTML = `
-      <strong>${areaName(battle.area)}</strong>
-      <span>Round ${battle.round} of ${battle.maxRounds}</span>
-      <span>${status}</span>
+      <div class="battle-heading">
+        <div>
+          <span class="battle-kicker">Battle for</span>
+          <strong>${areaName(battle.area)}</strong>
+        </div>
+        <span class="battle-round">Round ${battle.round} / ${battle.maxRounds}</span>
+      </div>
+      <span class="battle-status">${status}</span>
       ${battleActionHistory(battle)}
     `;
 
     const reserveIds = new Set(battle.reserves || []);
     const fortIds = new Set(battle.fort || []);
-    const zone = (title, unitIds) => `
-      <section class="battle-zone">
-        <h3>${title}</h3>
-        <div class="battle-unit-list">
-          ${unitIds.length ? unitIds.map((id) => battleUnitButton(id, battle.activeUnit, battle.phase === "regroup" && id === state.regroupUnit)).join("") : "<span class=\"empty-zone\">None</span>"}
-        </div>
-      </section>
-    `;
     const attackers = (battle.attackers || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
     const defenders = (battle.defenders || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
     const reserves = (battle.reserves || []).filter((id) => state.units[id]?.location === battle.area);
     const fort = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
+    const attackerReserves = reserves.filter((id) => state.units[id]?.owner === battle.attacker);
+    const defenderReserves = reserves.filter((id) => state.units[id]?.owner === battle.defender);
     els.battleZones.innerHTML = [
-      zone(`${playerName(battle.attacker)} Active`, attackers),
-      zone(`${playerName(battle.defender)} Active`, defenders),
-      zone("Reserves", reserves),
-      zone("Fort", fort)
+      battleArmy(battle.attacker, "Attacker", attackers, attackerReserves, [], battle),
+      battleArmy(battle.defender, "Defender", defenders, defenderReserves, fort, battle)
     ].join("");
     wireBattleUnitButtons(battle);
+    wireBattleActionButtons();
 
     els.battleActions.innerHTML = "";
     if (battle.phase === "regroup") {
@@ -1969,33 +1967,85 @@ document.addEventListener("DOMContentLoaded", () => {
       els.battleActions.append(retreat);
       return;
     }
-
-    if (!activeUnit || activeUnit.owner !== state.active) return;
-    [
-      ["fire", "Fire"],
-      ["retreat", "Retreat"],
-      ["fort", "Fort"]
-    ].forEach(([action, label]) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      if (action === "fort" && !areas[battle.area].fort) button.disabled = true;
-      button.addEventListener("click", () => battleAction(action, activeUnit.id));
-      els.battleActions.append(button);
-    });
   }
 
   function battleStatusText(battle, activeUnit) {
     if (battle.phase === "regroup") return `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`;
     if (battle.phase === "retreat") return `${playerName(battle.retreating)} is defeated and must retreat.`;
-    if (activeUnit) return `${activeUnit.name} may fire or retreat.`;
+    if (activeUnit) return `${activeUnit.name} is acting.`;
     return "Waiting for the next battle action.";
   }
 
+  function battleArmy(player, role, fieldIds, reserveIds, fortIds, battle) {
+    const areaFort = areas[battle.area]?.fort;
+    const selected = (id) => battle.phase === "regroup" && id === state.regroupUnit;
+    const cards = (unitIds, zone) => unitIds.length
+      ? [...unitIds]
+        .sort((left, right) => Number(right === battle.activeUnit) - Number(left === battle.activeUnit))
+        .map((id) => battleUnitCard(id, battle, selected(id), zone)).join("")
+      : "<span class=\"empty-zone\">No units</span>";
+    const reserveZone = reserveIds.length ? `
+      <div class="battle-subzone battle-reserve-zone">
+        <div class="battle-subzone-heading">
+          <h4>Reserves</h4>
+          <span>Enter next round</span>
+        </div>
+        <div class="battle-unit-list">${cards(reserveIds, "reserve")}</div>
+      </div>
+    ` : "";
+    const fortName = areaFort?.name ? titleCase(areaFort.name) : "Fort";
+    const fortZone = areaFort && player === battle.defender ? `
+      <div class="battle-subzone battle-fort-zone">
+        <div class="battle-subzone-heading">
+          <h4>${fortName}</h4>
+          <span>Fort ${fortIds.length}/${areaFort.level}</span>
+        </div>
+        <div class="battle-unit-list">${fortIds.length ? cards(fortIds, "fort") : "<span class=\"empty-zone\">Unoccupied</span>"}</div>
+      </div>
+    ` : "";
+    const liveCount = [...fieldIds, ...reserveIds, ...fortIds].filter((id) => currentStrength(state.units[id]) > 0).length;
+
+    return `
+      <section class="battle-army owner-${player}">
+        <header class="battle-army-header">
+          <span class="battle-army-standard" aria-hidden="true"></span>
+          <div>
+            <h3>${playerName(player)}</h3>
+            <span>${role}</span>
+          </div>
+          <strong>${liveCount} unit${liveCount === 1 ? "" : "s"}</strong>
+        </header>
+        <div class="battle-subzone battle-field-zone">
+          <div class="battle-subzone-heading">
+            <h4>Battle Line</h4>
+            <span>Active</span>
+          </div>
+          <div class="battle-unit-list">${cards(fieldIds, "field")}</div>
+        </div>
+        ${reserveZone}
+        ${fortZone}
+      </section>
+    `;
+  }
+
+  function titleCase(value) {
+    return String(value).replace(/\b\w/g, (character) => character.toUpperCase());
+  }
+
+  function canEnterBattleFort(unit, battle) {
+    const areaFort = areas[battle.area]?.fort;
+    return Boolean(
+      areaFort &&
+      unit.owner === battle.defender &&
+      !(battle.fort || []).includes(unit.id) &&
+      (battle.fort || []).length < areaFort.level
+    );
+  }
+
   function wireBattleUnitButtons(battle) {
-    els.battleZones.querySelectorAll("[data-battle-unit]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const unit = state.units[button.dataset.battleUnit];
+    els.battleZones.querySelectorAll("[data-battle-unit].is-selectable").forEach((card) => {
+      const select = () => {
+        const unit = state.units[card.dataset.battleUnit];
         if (!unit) return;
         if (!["regroup", "retreat"].includes(battle.phase)) return;
         if (battle.phase === "regroup" && (unit.owner !== battle.winner || unit.location !== battle.area || currentStrength(unit) <= 0)) return;
@@ -2003,6 +2053,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         state.regroupUnit = unit.id;
         render();
+      };
+      card.addEventListener("click", select);
+      card.addEventListener("keydown", (event) => {
+        if (!["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        select();
+      });
+    });
+  }
+
+  function wireBattleActionButtons() {
+    els.battleZones.querySelectorAll("[data-battle-action]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        battleAction(button.dataset.battleAction, button.dataset.unitId);
       });
     });
   }
@@ -2109,15 +2174,45 @@ document.addEventListener("DOMContentLoaded", () => {
     return owners.has("roman") && owners.has("barbarian");
   }
 
-  function battleUnitButton(unitId, activeUnitId, selected = false) {
+  function battleUnitCard(unitId, battle, selected = false, zone = "field") {
     const unit = state.units[unitId];
     if (!unit) return "";
+    const active = unitId === battle.activeUnit;
+    const canAct = battle.phase === "field" && active;
+    const selectable = (
+      (battle.phase === "regroup" && unit.owner === battle.winner) ||
+      (battle.phase === "retreat" && unit.owner === battle.retreating)
+    ) && unit.location === battle.area && currentStrength(unit) > 0;
+    const inFort = (battle.fort || []).includes(unitId);
+    const halfHit = battle.halfHits?.[unitId];
+    const status = zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : active ? "Acting now" : "Ready";
+    const actions = canAct ? `
+      <div class="battle-unit-actions">
+        <button type="button" class="battle-unit-action action-fire" data-battle-action="fire" data-unit-id="${unitId}">Fire</button>
+        ${inFort ? "" : `<button type="button" class="battle-unit-action action-retreat" data-battle-action="retreat" data-unit-id="${unitId}">Retreat</button>`}
+        ${canEnterBattleFort(unit, battle) ? `<button type="button" class="battle-unit-action action-fort" data-battle-action="fort" data-unit-id="${unitId}">Enter ${titleCase(areas[battle.area].fort.name)}</button>` : ""}
+      </div>
+    ` : "";
+
     return `
-      <button type="button" class="battle-unit${unitId === activeUnitId || selected ? " is-active" : ""}" data-battle-unit="${unitId}">
-        <span>${unit.name}</span>
-        <strong>${currentStrength(unit)}</strong>
-        <small>${unit.initiative}${unit.fire}${state.battle?.halfHits?.[unitId] ? ` +${state.battle.halfHits[unitId]}/2` : ""}</small>
-      </button>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+        <div class="battle-unit-body">
+          <div class="battle-unit-counter">
+            <img src="${unit.image}" alt="${unit.name}">
+            <span class="battle-strength">${currentStrength(unit)}</span>
+          </div>
+          <div class="battle-unit-info">
+            <span class="battle-unit-status">${status}</span>
+            <strong>${unit.name}</strong>
+            <div class="battle-unit-stats">
+              <span><b>${unit.initiative}</b> Initiative</span>
+              <span><b>${unit.fire}</b> Fire</span>
+              ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> Fort hit</span>` : ""}
+            </div>
+          </div>
+        </div>
+        ${actions}
+      </article>
     `;
   }
 
