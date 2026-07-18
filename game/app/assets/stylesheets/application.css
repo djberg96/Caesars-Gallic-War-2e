@@ -364,6 +364,8 @@ h3 {
   object-fit: cover;
   display: block;
   margin: 0;
+  transform: rotate(var(--unit-rotation, 0deg));
+  transition: transform 180ms ease;
 }
 
 .piece.is-selected {
@@ -937,6 +939,24 @@ h3 {
   transform: translateY(-2px);
 }
 
+.battle-unit-card.is-hit-target {
+  border-color: #e7c45f;
+  cursor: crosshair;
+  box-shadow: 0 0 0 1px rgba(231, 196, 95, 0.24), 0 0 24px rgba(231, 196, 95, 0.2);
+  animation: battle-target-pulse 1.25s ease-in-out infinite alternate;
+}
+
+.battle-unit-card.is-hit-target:hover,
+.battle-unit-card.is-hit-target:focus-visible {
+  border-color: #fff0a8;
+  box-shadow: 0 0 0 2px rgba(255, 240, 168, 0.25), 0 0 30px rgba(231, 196, 95, 0.34);
+}
+
+@keyframes battle-target-pulse {
+  from { box-shadow: 0 0 0 1px rgba(231, 196, 95, 0.16), 0 0 14px rgba(231, 196, 95, 0.12); }
+  to { box-shadow: 0 0 0 1px rgba(231, 196, 95, 0.3), 0 0 28px rgba(231, 196, 95, 0.25); }
+}
+
 .battle-unit-body {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr);
@@ -969,6 +989,8 @@ h3 {
   height: 100%;
   border-radius: 3px;
   object-fit: cover;
+  transform: rotate(var(--unit-rotation, 0deg));
+  transition: transform 180ms ease;
 }
 
 .battle-strength {
@@ -1026,6 +1048,21 @@ h3 {
 
 .battle-half-hit {
   color: #d3a76c;
+}
+
+.battle-hit-target-prompt {
+  display: block;
+  margin-top: 0.6rem;
+  padding: 0.48rem 0.55rem;
+  border: 1px solid rgba(231, 196, 95, 0.55);
+  border-radius: 5px;
+  background: rgba(111, 86, 28, 0.42);
+  color: #fff0b8;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .battle-unit-actions {

@@ -37,6 +37,160 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
   end
 
+  test "owner chooses which equally strong unit takes a hit" do
+    state = battle_state
+    state["units"]["helvetii"] = state["units"]["allobroges"].merge(
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "home" => "helvetii"
+    )
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal ["allobroges", "helvetii"], result.dig("battle", "pendingHits", "targetIds").sort
+    assert_equal 0, result.dig("units", "allobroges", "step")
+    assert_equal 0, result.dig("units", "helvetii", "step")
+    assert_not_includes result.dig("battle", "acted"), "legion_vii"
+
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "assign_hit",
+      target: "helvetii"
+    )
+
+    assert_nil result.dig("battle", "pendingHits")
+    assert_equal "allobroges", result.dig("units", "allobroges", "location")
+    assert_equal "eliminated", result.dig("units", "helvetii", "location")
+    assert_includes result.dig("battle", "acted"), "legion_vii"
+  end
+
+  test "Roman regular takes a tied hit before a Gallic ally" do
+    state = battle_state
+    state["active"] = "barbarian"
+    state["units"]["allobroges"].merge!("initiative" => "B", "fire" => 6)
+    state["units"]["legion_vii"].merge!("initiative" => "D", "strengths" => [2, 1, 0])
+    state["units"]["volcae"] = {
+      "id" => "volcae",
+      "name" => "Volcae",
+      "type" => "barbarian",
+      "owner" => "roman",
+      "location" => "allobroges",
+      "home" => "volcae",
+      "step" => 0,
+      "strengths" => [2, 1, 0],
+      "initiative" => "D",
+      "fire" => 1
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    assert_equal "allobroges", result.dig("battle", "activeUnit")
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "allobroges"
+    )
+
+    assert_equal 1, result.dig("units", "legion_vii", "step")
+    assert_equal 0, result.dig("units", "volcae", "step")
+    assert_nil result.dig("battle", "pendingHits")
+  end
+
+  test "first-round reserves cannot suffer hits" do
+    state = battle_state
+    state["units"]["helvetii"] = state["units"]["allobroges"].merge(
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "home" => "helvetii",
+      "strengths" => [3, 2, 1, 0]
+    )
+    state["movement"] = {
+      "units" => {
+        "legion_vii" => { "origin" => "transalpine_gaul", "steps" => 1, "stopped" => true },
+        "helvetii" => { "origin" => "helvetii", "steps" => 1, "stopped" => true }
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    assert_includes result.dig("battle", "reserves"), "helvetii"
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal "eliminated", result.dig("units", "allobroges", "location")
+    assert_equal 0, result.dig("units", "helvetii", "step")
+  end
+
+  test "defenders in the Alps require two hits per strength loss" do
+    state = battle_state
+    state["units"].each_value { |unit| unit["location"] = "helvetii" }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!(area_id: "helvetii")
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal 0, result.dig("units", "allobroges", "step")
+    assert_equal 1, result.dig("battle", "halfHits", "allobroges")
+    assert_equal 0, result.dig("battle", "lastAction", "appliedHits")
+  end
+
+  test "field defenders take hits before units inside a fort" do
+    state = battle_state
+    state["units"]["allobroges"]["strengths"] = [2, 1, 0]
+    state["units"]["helvetii"] = state["units"]["allobroges"].merge(
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "home" => "helvetii"
+    )
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result["battle"]["fort"] = ["helvetii"]
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1, 6, 6, 6]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal 1, result.dig("units", "allobroges", "step")
+    assert_equal 0, result.dig("units", "helvetii", "step")
+    assert_nil result.dig("battle", "halfHits", "helvetii")
+  end
+
+  test "battle cannot continue while the owner is assigning a hit" do
+    state = battle_state
+    state["units"]["helvetii"] = state["units"]["allobroges"].merge(
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "home" => "helvetii"
+    )
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: result).act!(
+        action: "pass",
+        unit_id: "legion_vii"
+      )
+    end
+
+    assert_match "Assign the pending hit", error.message
+  end
+
   test "logs when no battles are present" do
     state = battle_state
     state["units"]["allobroges"]["location"] = "helvetii"

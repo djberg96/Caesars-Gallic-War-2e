@@ -31,10 +31,15 @@ module GameRules
       raise InvalidAction, "No battle is in progress." unless battle
       raise InvalidAction, "This battle is ready for regroup." if battle["phase"] == "regroup" && action != "regroup"
       raise InvalidAction, "The defeated army must retreat." if battle["phase"] == "retreat" && !action.to_s.in?(["forced_retreat", "finish_retreat"])
+      if pending_hit_assignment? && action.to_s != "assign_hit"
+        raise InvalidAction, "Assign the pending hit before taking another battle action."
+      end
 
       case action.to_s
       when "fire"
         fire!(unit_id)
+      when "assign_hit"
+        assign_hit!(target.presence)
       when "pass"
         pass!(unit_id)
       when "retreat"
@@ -51,8 +56,10 @@ module GameRules
         raise InvalidAction, "Unknown battle action #{action}."
       end
 
-      advance_battle!
-      advance_bot_actions!
+      unless pending_hit_assignment?
+        advance_battle!
+        advance_bot_actions!
+      end
       persist!
     end
 
@@ -166,6 +173,7 @@ module GameRules
     def advance_battle!
       return unless battle
       return if battle["phase"].in?(["regroup", "retreat"])
+      return if pending_hit_assignment?
 
       eliminate_dead(battle_area.key)
       finish_battle_if_decided!
@@ -191,6 +199,7 @@ module GameRules
 
       battle["round"] = battle["round"].to_i + 1
       battle["acted"] = []
+      discard_non_siege_half_hits!
       log("Battle in #{battle_area.name} continues to round #{battle["round"]}.")
     end
 
@@ -217,17 +226,41 @@ module GameRules
 
       rolls = Array.new(current_strength(acting)) { d6 }
       hits = rolls.count { |roll| roll <= acting.fetch("fire").to_i }
-      applied = hits.positive? ? apply_hits(enemies, hits) : 0
       record_action_result({
         "type" => "fire",
         "unitId" => unit_id,
         "unitName" => acting.fetch("name"),
         "rolls" => rolls,
         "hits" => hits,
-        "appliedHits" => applied
+        "appliedHits" => 0
       })
-      battle["acted"] << unit_id
       log("#{acting.fetch("name")} fires #{rolls.join(", ")} for #{hits} hit#{hits == 1 ? "" : "s"}.")
+
+      if hits.positive?
+        battle["pendingHits"] = {
+          "sourceUnit" => unit_id,
+          "remaining" => hits,
+          "appliedHits" => 0,
+          "targetIds" => []
+        }
+        resolve_pending_hits!
+      else
+        battle["acted"] << unit_id
+      end
+    end
+
+    def assign_hit!(target_id)
+      raise InvalidAction, "There is no pending hit to assign." unless pending_hit_assignment?
+      raise InvalidAction, "Choose a unit to take the pending hit." if target_id.blank?
+
+      pending = battle.fetch("pendingHits")
+      source = unit(pending.fetch("sourceUnit"))
+      candidates = hit_target_candidates(targetable_enemies(source))
+      target = candidates.find { |candidate| candidate.fetch("id") == target_id }
+      raise InvalidAction, "That unit is not eligible to take this hit." unless target
+
+      apply_pending_hit!(target)
+      resolve_pending_hits!
     end
 
     def pass!(unit_id)
@@ -363,6 +396,8 @@ module GameRules
       while battle && battle["phase"] == "field" && bot_controls_active_unit? && guard < 20
         guard += 1
         bot_act!
+        break if pending_hit_assignment?
+
         advance_battle!
       end
     end
@@ -448,27 +483,107 @@ module GameRules
     end
 
     def targetable_enemies(acting)
-      live_combat_units.select { |other| enemy?(other["owner"], acting["owner"]) }
+      enemies = live_combat_units.select do |other|
+        enemy?(other["owner"], acting["owner"]) && !reserve_waiting?(other)
+      end
+      field_enemies = enemies.reject { |enemy| battle["fort"].include?(enemy.fetch("id")) }
+      field_enemies.presence || enemies
     end
 
-    def apply_hits(enemies, hits)
-      applied = 0
-      hits.times do
-        target = enemies
-          .select { |unit| unit["location"] != "eliminated" && current_strength(unit).positive? }
-          .max_by { |unit| current_strength(unit) }
-        return applied unless target
+    def hit_target_candidates(enemies)
+      live = enemies.select { |enemy| enemy["location"] != "eliminated" && current_strength(enemy).positive? }
+      return [] if live.empty?
 
-        if battle["fort"].include?(target.fetch("id"))
-          battle["halfHits"][target.fetch("id")] = battle["halfHits"].fetch(target.fetch("id"), 0).to_i + 1
-          next unless battle["halfHits"][target.fetch("id")].to_i >= 2
+      strongest = live.map { |enemy| current_strength(enemy) }.max
+      candidates = live.select { |enemy| current_strength(enemy) == strongest }
+      regulars = candidates.select { |enemy| enemy["type"].in?(["roman", "german"]) }
+      candidates = regulars if regulars.any?
 
-          battle["halfHits"][target.fetch("id")] = battle["halfHits"][target.fetch("id")].to_i - 2
-        end
-        target["step"] = target.fetch("step", 0).to_i + 1
-        applied += 1
+      half_hit_units = candidates.select do |enemy|
+        double_defense?(enemy) && battle["halfHits"].fetch(enemy.fetch("id"), 0).to_i.positive?
       end
-      applied
+      half_hit_units.presence || candidates
+    end
+
+    def resolve_pending_hits!
+      pending = battle.fetch("pendingHits")
+      pending["targetIds"] = []
+
+      while pending["remaining"].to_i.positive?
+        source = unit(pending.fetch("sourceUnit"))
+        candidates = hit_target_candidates(targetable_enemies(source))
+        if candidates.empty?
+          pending["remaining"] = 0
+          break
+        end
+
+        if candidates.many? && owner_must_choose_hit?(candidates.first.fetch("owner"))
+          pending["targetIds"] = candidates.map { |candidate| candidate.fetch("id") }
+          return
+        end
+
+        apply_pending_hit!(candidates.min_by { |candidate| candidate.fetch("name") })
+      end
+
+      finish_pending_fire!
+    end
+
+    def apply_pending_hit!(target)
+      pending = battle.fetch("pendingHits")
+      pending["remaining"] = pending.fetch("remaining").to_i - 1
+
+      if double_defense?(target)
+        battle["halfHits"][target.fetch("id")] = battle["halfHits"].fetch(target.fetch("id"), 0).to_i + 1
+        if battle["halfHits"][target.fetch("id")].to_i < 2
+          update_pending_fire_result!
+          return
+        end
+
+        battle["halfHits"][target.fetch("id")] = battle["halfHits"][target.fetch("id")].to_i - 2
+      end
+
+      target["step"] = target.fetch("step", 0).to_i + 1
+      pending["appliedHits"] = pending.fetch("appliedHits", 0).to_i + 1
+      eliminate_dead(battle_area.key)
+      update_pending_fire_result!
+    end
+
+    def finish_pending_fire!
+      source_id = battle.dig("pendingHits", "sourceUnit")
+      battle["acted"] << source_id unless battle["acted"].include?(source_id)
+      update_pending_fire_result!
+      battle.delete("pendingHits")
+    end
+
+    def update_pending_fire_result!
+      pending = battle.fetch("pendingHits")
+      applied = pending.fetch("appliedHits", 0).to_i
+      source_id = pending.fetch("sourceUnit")
+      round = battle["round"].to_i
+      result = Array(battle["actionResults"]).reverse.find do |entry|
+        entry["type"] == "fire" && entry["unitId"] == source_id && entry["round"].to_i == round
+      end
+      result["appliedHits"] = applied if result
+      if battle.dig("lastAction", "type") == "fire" && battle.dig("lastAction", "unitId") == source_id
+        battle["lastAction"]["appliedHits"] = applied
+      end
+    end
+
+    def owner_must_choose_hit?(owner)
+      @state.fetch("mode", "hotseat") == "hotseat" || owner == "roman"
+    end
+
+    def double_defense?(target)
+      battle["fort"].include?(target.fetch("id")) ||
+        (battle_area.key == "helvetii" && target["owner"] == battle["defender"])
+    end
+
+    def discard_non_siege_half_hits!
+      battle["halfHits"].select! { |unit_id, _hits| battle["fort"].include?(unit_id) }
+    end
+
+    def pending_hit_assignment?
+      battle&.dig("pendingHits", "remaining").to_i.positive?
     end
 
     def eliminate_dead(area_key)

@@ -78,6 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return unit.strengths[unit.step] || 0;
   }
 
+  function unitRotation(unit) {
+    const halfHit = state.battle?.halfHits?.[unit.id] ? 45 : 0;
+    return -((unit.step || 0) * 90 + halfHit);
+  }
+
   function areaUnits(areaId) {
     return Object.values(state.units).filter((unit) => unit.location === areaId);
   }
@@ -1628,7 +1633,7 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.style.top = `${area.y + offsetY}%`;
         const hiddenLabel = unit.owner === "neutral" ? "Neutral block" : "Enemy block";
         piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
-        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
+        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}" style="--unit-rotation: ${unitRotation(unit)}deg">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {
@@ -1972,6 +1977,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function battleStatusText(battle, activeUnit) {
     if (battle.phase === "regroup") return `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`;
     if (battle.phase === "retreat") return `${playerName(battle.retreating)} is defeated and must retreat.`;
+    if (battle.pendingHits?.targetIds?.length) {
+      const owner = state.units[battle.pendingHits.targetIds[0]]?.owner;
+      const remaining = battle.pendingHits.remaining || 1;
+      return `${playerName(owner)} player: choose a strongest unit to take the pending hit${remaining === 1 ? "" : ` (${remaining} remaining)`}.`;
+    }
     if (activeUnit) return `${activeUnit.name} is acting.`;
     return "Waiting for the next battle action.";
   }
@@ -2047,6 +2057,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const select = () => {
         const unit = state.units[card.dataset.battleUnit];
         if (!unit) return;
+        if ((battle.pendingHits?.targetIds || []).includes(unit.id)) {
+          battleAction("assign_hit", null, unit.id);
+          return;
+        }
         if (!["regroup", "retreat"].includes(battle.phase)) return;
         if (battle.phase === "regroup" && (unit.owner !== battle.winner || unit.location !== battle.area || currentStrength(unit) <= 0)) return;
         if (battle.phase === "retreat" && (unit.owner !== battle.retreating || unit.location !== battle.area || currentStrength(unit) <= 0)) return;
@@ -2178,14 +2192,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const unit = state.units[unitId];
     if (!unit) return "";
     const active = unitId === battle.activeUnit;
-    const canAct = battle.phase === "field" && active;
-    const selectable = (
+    const hitTarget = (battle.pendingHits?.targetIds || []).includes(unitId);
+    const canAct = battle.phase === "field" && active && !battle.pendingHits;
+    const phaseSelectable = (
       (battle.phase === "regroup" && unit.owner === battle.winner) ||
       (battle.phase === "retreat" && unit.owner === battle.retreating)
     ) && unit.location === battle.area && currentStrength(unit) > 0;
+    const selectable = hitTarget || phaseSelectable;
     const inFort = (battle.fort || []).includes(unitId);
     const halfHit = battle.halfHits?.[unitId];
-    const status = zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : active ? "Acting now" : "Ready";
+    const status = hitTarget ? "Choose for hit" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : active ? "Acting now" : "Ready";
     const actions = canAct ? `
       <div class="battle-unit-actions">
         <button type="button" class="battle-unit-action action-fire" data-battle-action="fire" data-unit-id="${unitId}">Fire</button>
@@ -2195,10 +2211,10 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter">
-            <img src="${unit.image}" alt="${unit.name}">
+            <img src="${unit.image}" alt="${unit.name}" style="--unit-rotation: ${unitRotation(unit)}deg">
             <span class="battle-strength">${currentStrength(unit)}</span>
           </div>
           <div class="battle-unit-info">
@@ -2206,11 +2222,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <strong>${unit.name}</strong>
             <div class="battle-unit-stats">
               <span><b>${unit.initiative}</b> Initiative</span>
-              <span><b>${unit.fire}</b> Fire</span>
-              ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> Fort hit</span>` : ""}
+              <span><b>${unit.fire}</b> Battle Rating</span>
+              ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> Half hit</span>` : ""}
             </div>
           </div>
         </div>
+        ${hitTarget ? `<span class="battle-hit-target-prompt">Assign hit to ${unit.name}</span>` : ""}
         ${actions}
       </article>
     `;
