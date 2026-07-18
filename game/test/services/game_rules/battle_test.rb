@@ -37,6 +37,29 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
   end
 
+  test "marks fired units until the next battle round" do
+    state = battle_state
+    state["units"]["legion_vii"]["fire"] = 0
+    state["units"]["allobroges"]["fire"] = 0
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result = GameRules::Battle.new(session: session, state: result, rolls: [6, 6, 6, 6]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal ["legion_vii"], result.dig("battle", "fired")
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [6]).act!(
+      action: "fire",
+      unit_id: "allobroges"
+    )
+
+    assert_equal 2, result.dig("battle", "round")
+    assert_empty result.dig("battle", "fired")
+  end
+
   test "owner chooses which equally strong unit takes a hit" do
     state = battle_state
     state["units"]["helvetii"] = state["units"]["allobroges"].merge(

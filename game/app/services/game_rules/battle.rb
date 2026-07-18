@@ -86,6 +86,7 @@ module GameRules
         "defender" => defender,
         "activeUnit" => nil,
         "acted" => [],
+        "fired" => [],
         "actionResults" => [],
         "attackers" => attacker_ids,
         "defenders" => defender_ids,
@@ -199,6 +200,7 @@ module GameRules
 
       battle["round"] = battle["round"].to_i + 1
       battle["acted"] = []
+      battle["fired"] = []
       discard_non_siege_half_hits!
       log("Battle in #{battle_area.name} continues to round #{battle["round"]}.")
     end
@@ -235,6 +237,8 @@ module GameRules
         "appliedHits" => 0
       })
       log("#{acting.fetch("name")} fires #{rolls.join(", ")} for #{hits} hit#{hits == 1 ? "" : "s"}.")
+      battle["fired"] ||= []
+      battle["fired"] << unit_id unless battle["fired"].include?(unit_id)
 
       if hits.positive?
         battle["pendingHits"] = {
@@ -610,7 +614,7 @@ module GameRules
     end
 
     def remove_from_battle!(unit_id)
-      %w[attackers defenders reserves fort retreated acted].each do |key|
+      %w[attackers defenders reserves fort retreated acted fired].each do |key|
         battle[key]&.delete(unit_id)
       end
     end

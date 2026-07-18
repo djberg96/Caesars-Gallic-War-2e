@@ -2200,8 +2200,9 @@ document.addEventListener("DOMContentLoaded", () => {
     ) && unit.location === battle.area && currentStrength(unit) > 0;
     const selectable = hitTarget || phaseSelectable;
     const inFort = (battle.fort || []).includes(unitId);
+    const fired = (battle.fired || []).includes(unitId);
     const halfHit = battle.halfHits?.[unitId];
-    const status = hitTarget ? "Choose for hit" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : active ? "Acting now" : "Ready";
+    const status = hitTarget ? "Choose for hit" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const actions = canAct ? `
       <div class="battle-unit-actions">
         <button type="button" class="battle-unit-action action-fire" data-battle-action="fire" data-unit-id="${unitId}">Fire</button>
@@ -2211,7 +2212,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter">
             <img src="${unit.image}" alt="${unit.name}" style="--unit-rotation: ${unitRotation(unit)}deg">

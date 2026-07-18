@@ -941,7 +941,7 @@ h3 {
 
 .battle-unit-card.is-hit-target {
   border-color: #e7c45f;
-  cursor: crosshair;
+  cursor: pointer;
   box-shadow: 0 0 0 1px rgba(231, 196, 95, 0.24), 0 0 24px rgba(231, 196, 95, 0.2);
   animation: battle-target-pulse 1.25s ease-in-out infinite alternate;
 }
@@ -1032,6 +1032,11 @@ h3 {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.battle-unit-card.is-fired .battle-unit-status {
+  background: rgba(151, 148, 134, 0.12);
+  color: #aaa697;
 }
 
 .battle-unit-stats {
