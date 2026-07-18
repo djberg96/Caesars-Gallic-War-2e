@@ -163,6 +163,7 @@ h3 {
 }
 
 #area-layer,
+.track-marker-layer,
 .piece-layer,
 .neutral-activation-layer {
   position: absolute;
@@ -174,6 +175,54 @@ h3 {
   left: 50%;
   translate: -50% 0;
   pointer-events: none;
+}
+
+.track-marker-layer {
+  z-index: 30;
+}
+
+.track-marker-stack {
+  position: absolute;
+  width: clamp(22px, 3%, 32px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.track-marker-stack.has-multiple {
+  cursor: zoom-in;
+}
+
+.track-marker-stack.has-multiple:hover,
+.track-marker-stack.has-multiple:focus-visible {
+  z-index: 100;
+}
+
+.track-marker-stack:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.track-marker-stack.turn-marker-stack {
+  width: clamp(22px, 2.8%, 32px);
+}
+
+.track-marker {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  transform: translate(var(--marker-fan-x, 0%), var(--marker-fan-y, 0%)) rotate(var(--marker-rotation, 0deg));
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.track-marker-stack.has-multiple:hover .track-marker,
+.track-marker-stack.has-multiple:focus-visible .track-marker {
+  filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.78));
+  transform: translate(var(--marker-expanded-x, 0%), var(--marker-expanded-y, 0%)) rotate(var(--marker-expanded-rotation, 0deg)) scale(1.45);
 }
 
 .neutral-activation-layer {

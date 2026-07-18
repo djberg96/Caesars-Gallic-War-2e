@@ -2,6 +2,13 @@ class BoardController < ApplicationController
   def index
     @game_data = {
       map: helpers.asset_path("Map/CGW_Map.jpg"),
+      markers: {
+        roman_supply: helpers.asset_path("Blocks/Markers/Roman_Supply.svg"),
+        roman_vp_x1: helpers.asset_path("Blocks/Markers/Roman_VP_x1.svg"),
+        roman_vp_x10: helpers.asset_path("Blocks/Markers/Roman_VP_x10.svg"),
+        tribes_controlled: helpers.asset_path("Blocks/Markers/Tribes_Controlled.svg"),
+        turn: helpers.asset_path("Blocks/Markers/Turn.svg")
+      },
       years: ["58 BC", "57 BC", "56 BC", "55 BC", "54 BC", "53 BC", "52 BC", "51 BC"],
       ai: ai_config,
       areas: areas,

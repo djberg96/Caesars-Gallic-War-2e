@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const els = {
     areaLayer: document.querySelector("#area-layer"),
     boardImage: document.querySelector("#board > img"),
+    trackMarkerLayer: document.querySelector("#track-marker-layer"),
     pieceLayer: document.querySelector("#piece-layer"),
     neutralActivationLayer: document.querySelector("#neutral-activation-layer"),
     log: document.querySelector("#log"),
@@ -1253,6 +1254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function render() {
     renderStatus();
     renderAreas();
+    renderTrackMarkers();
     renderPieces();
     renderNeutralActivationCards();
     renderHands();
@@ -1321,6 +1323,119 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
+  }
+
+  function renderTrackMarkers() {
+    els.trackMarkerLayer.innerHTML = "";
+    if (piecesHidden) return;
+
+    const vp = Math.max(0, state.vp || 0);
+    const tribes = controlledTribes();
+    const markers = [
+      {
+        image: gameData.markers.roman_supply,
+        label: `Roman Supply: ${state.supply}`,
+        position: recordTrackPosition(state.supply)
+      },
+      {
+        image: gameData.markers.tribes_controlled,
+        label: `Tribes Controlled: ${tribes}`,
+        position: recordTrackPosition(tribes)
+      },
+      {
+        image: gameData.markers.roman_vp_x1,
+        label: `Roman VP ×1: ${vp % 10}`,
+        position: recordTrackPosition(vp % 10)
+      },
+      {
+        image: gameData.markers.roman_vp_x10,
+        label: `Roman VP ×10: ${Math.min(Math.floor(vp / 10), 9)}`,
+        position: recordTrackPosition(Math.min(Math.floor(vp / 10), 9))
+      },
+      {
+        image: gameData.markers.turn,
+        label: `Turn: ${gameData.years[state.turn]}`,
+        position: turnTrackPosition(state.turn),
+        turn: true
+      }
+    ];
+
+    const markerGroups = new Map();
+    markers.forEach((marker) => {
+      const key = `${marker.position.x}:${marker.position.y}`;
+      if (!markerGroups.has(key)) markerGroups.set(key, []);
+      markerGroups.get(key).push(marker);
+    });
+
+    markerGroups.forEach((group) => {
+      const stack = document.createElement("div");
+      const multiple = group.length > 1;
+      const labels = group.map((marker) => marker.label);
+      stack.className = `track-marker-stack${group.some((marker) => marker.turn) ? " turn-marker-stack" : ""}${multiple ? " has-multiple" : ""}`;
+      stack.style.left = `${group[0].position.x}%`;
+      stack.style.top = `${group[0].position.y}%`;
+      stack.setAttribute("role", "img");
+      stack.setAttribute("aria-label", labels.join("; "));
+
+      if (multiple) {
+        stack.tabIndex = 0;
+      } else {
+        stack.title = labels[0];
+      }
+
+      group.forEach((marker, index) => {
+        const fan = trackMarkerFan(index, group.length);
+        const image = document.createElement("img");
+        image.className = "track-marker";
+        image.src = marker.image;
+        image.alt = "";
+        image.style.setProperty("--marker-fan-x", `${fan.x}%`);
+        image.style.setProperty("--marker-fan-y", `${fan.y}%`);
+        image.style.setProperty("--marker-rotation", `${fan.rotation}deg`);
+        image.style.setProperty("--marker-expanded-x", `${fan.expandedX}%`);
+        image.style.setProperty("--marker-expanded-y", `${fan.expandedY}%`);
+        image.style.setProperty("--marker-expanded-rotation", `${fan.expandedRotation}deg`);
+        stack.append(image);
+      });
+
+      els.trackMarkerLayer.append(stack);
+    });
+  }
+
+  function trackMarkerFan(index, count) {
+    const fans = {
+      2: [[-10, -3, -2], [10, 3, 2]],
+      3: [[-14, 3, -3], [0, -4, 0], [14, 3, 3]],
+      4: [[-18, -4, -4], [-6, 4, -1.5], [6, -4, 1.5], [18, 4, 4]]
+    };
+    const expandedFans = {
+      2: [[-72, -35, -4], [72, 35, 4]],
+      3: [[-85, -45, -6], [0, 65, 0], [85, -45, 6]],
+      4: [[-75, -75, -6], [75, -75, 6], [-75, 75, 4], [75, 75, -4]]
+    };
+    const [x, y, rotation] = fans[count]?.[index] || [0, 0, 0];
+    const [expandedX, expandedY, expandedRotation] = expandedFans[count]?.[index] || [0, 0, 0];
+    return { x, y, rotation, expandedX, expandedY, expandedRotation };
+  }
+
+  function controlledTribes() {
+    return new Set(Object.values(state.units).filter((unit) => {
+      const area = areas[unit.location];
+      return unit.owner === "roman" && unit.type !== "roman" && area?.region && area.region !== "roman" && !area.sea;
+    }).map((unit) => unit.location)).size;
+  }
+
+  function recordTrackPosition(value) {
+    const tracked = Math.max(0, Math.min(Number(value) || 0, 19));
+    return {
+      x: tracked >= 10 ? 7.78 : 4.61,
+      y: 74.35 - ((tracked % 10) * 2.75)
+    };
+  }
+
+  function turnTrackPosition(turn) {
+    const tracked = Math.max(0, Math.min(Number(turn) || 0, gameData.years.length - 1));
+    return { x: 73.92 + (tracked * 3.18), y: 95.1 };
   }
 
   function areaFromMapClick(event) {

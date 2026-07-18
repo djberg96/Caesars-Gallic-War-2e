@@ -9,6 +9,12 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select "script#game-data"
     assert_includes response.body, "CGW_Map"
     assert_match %r{Cards/allobroges-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Roman_Supply-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Roman_VP_x1-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Roman_VP_x10-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Tribes_Controlled-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Turn-[a-f0-9]+\.svg}, response.body
+    assert_select "#track-marker-layer"
     assert_includes response.body, "Legion X"
   end
 end
