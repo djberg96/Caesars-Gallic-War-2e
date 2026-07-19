@@ -50,6 +50,18 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_match "political action succeeds", result["log"].join(" ")
   end
 
+  test "draws a revolt event and activates its target" do
+    session = GameSession.create!(data: bot_state(bot_deck: [card_hash("event_1_minor_revolt")]))
+    session.sync_from_data!
+
+    result = GameRules::Bot.new(session: session, state: session.data, target: "allobroges").draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_empty result["botDeck"]
+    assert_equal ["event_1_minor_revolt"], result["discard"].map { |card| card.fetch("id") }
+    assert_includes result["log"], "Barbarian activates Allobroges."
+  end
+
   private
 
   def bot_state(bot_deck:)

@@ -128,6 +128,14 @@ module GameRules
       log("Barbarian places #{area_name(area_id)} in the neutral tribe activation area.")
     end
 
+    def activate_area!(area_id, owner)
+      area_units(area_id).select { |unit| unit["owner"] == "neutral" }.each do |unit|
+        unit["owner"] = owner
+        unit["step"] = 0
+      end
+      log("#{player_name(owner)} activates #{area_name(area_id)}.")
+    end
+
     def record_neutral_activation_card(card)
       @state["neutralActivationCards"] ||= { "roman" => [], "barbarian" => [] }
       @state["neutralActivationCards"]["barbarian"] ||= []

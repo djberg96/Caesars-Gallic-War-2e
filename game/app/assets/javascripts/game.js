@@ -1626,6 +1626,20 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   }
 
+  function activeSplayArea() {
+    if (battleMapMode()) return state.battle.area;
+    if (!state.movement) return null;
+
+    const draggingUnit = dragState && state.units[dragState.unitId];
+    if (draggingUnit) return draggingUnit.location;
+
+    const selectedUnit = state.selectedUnit && state.units[state.selectedUnit];
+    if (selectedUnit?.owner === state.active) return selectedUnit.location;
+
+    const activatedAreas = state.movement.areas || [];
+    return activatedAreas[activatedAreas.length - 1] || null;
+  }
+
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
     splayedPieceStack = null;
@@ -1652,6 +1666,8 @@ document.addEventListener("DOMContentLoaded", () => {
       stack.style.setProperty("--splay-width", `${Math.max(72, columns * 62 + 42)}px`);
       stack.style.setProperty("--splay-height", `${Math.max(72, rows * 62 + 42)}px`);
       const keepStackSplayed = () => {
+        const restrictedArea = activeSplayArea();
+        if (restrictedArea && restrictedArea !== areaId) return;
         if (splayedPieceStack && splayedPieceStack !== stack) {
           splayedPieceStack.classList.remove("is-splayed");
         }
@@ -2633,7 +2649,14 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       body: JSON.stringify(body)
     });
-    const payload = await response.json();
+    const responseText = await response.text();
+    let payload;
+    try {
+      payload = JSON.parse(responseText);
+    } catch (_error) {
+      const status = `${response.status} ${response.statusText}`.trim();
+      throw new Error(response.ok ? "The server returned an invalid response." : `Server request failed (${status}).`);
+    }
     if (!response.ok) throw new Error(payload.error || "Request failed.");
     return payload;
   }

@@ -23,6 +23,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "germania", result.dig("units", "german_tencteri", "location")
     assert_equal 5, result.dig("hands", "roman").length
     assert_equal 5, result.dig("hands", "barbarian").length
+    assert_empty result["discard"]
     assert_not result["diceRolledThisTurn"]
     assert_equal [], result["undoStack"]
 
@@ -57,7 +58,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
       "hands" => { "roman" => [], "barbarian" => [] },
       "committed" => { "roman" => nil, "barbarian" => nil },
       "botDeck" => [],
-      "discard" => [],
+      "discard" => [Card.find_by!(key: "allobroges").game_data.stringify_keys],
       "undoStack" => [{ "kind" => "move" }],
       "diceRolledThisTurn" => true,
       "movement" => nil,
