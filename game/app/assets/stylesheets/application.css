@@ -1916,6 +1916,19 @@ dialog {
   width: min(760px, 92vw);
 }
 
+.new-game-dialog {
+  width: min(520px, 92vw);
+}
+
+.new-game-actions {
+  flex-wrap: wrap;
+}
+
+#save-new-game {
+  border-color: rgba(217, 180, 95, 0.72);
+  background: #3c402f;
+}
+
 .dialog-description {
   color: var(--muted);
   font-size: 0.86rem;

@@ -52,7 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
     importForm: document.querySelector("#import-form"),
     importFile: document.querySelector("#import-file"),
     importText: document.querySelector("#import-text"),
-    importError: document.querySelector("#import-error")
+    importError: document.querySelector("#import-error"),
+    newGameDialog: document.querySelector("#new-game-dialog")
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
@@ -77,6 +78,25 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       window.alert(`New game could not be created: ${error.message}`);
     }
+  }
+
+  function requestNewGame() {
+    if (!state?.gameSessionId) {
+      newGame();
+      return;
+    }
+    els.newGameDialog.showModal();
+  }
+
+  async function startNewGameWithoutSaving() {
+    els.newGameDialog.close();
+    await newGame();
+  }
+
+  async function saveAndStartNewGame() {
+    downloadExport(exportedGameJson());
+    els.newGameDialog.close();
+    await newGame();
   }
 
   async function dealCards() {
@@ -2828,8 +2848,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return JSON.stringify(exported, null, 2);
   }
 
-  function downloadExport() {
-    const contents = els.exportText.value || exportedGameJson();
+  function downloadExport(contents = els.exportText.value || exportedGameJson()) {
     const blob = new Blob([contents], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -2929,7 +2948,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return payload;
   }
 
-  document.querySelector("#new-game").addEventListener("click", newGame);
+  document.querySelector("#new-game").addEventListener("click", requestNewGame);
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
@@ -2945,8 +2964,11 @@ document.addEventListener("DOMContentLoaded", () => {
   els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
   document.querySelector("#import-game").addEventListener("click", openImportDialog);
   document.querySelector("#export-game").addEventListener("click", exportGame);
-  document.querySelector("#download-export").addEventListener("click", downloadExport);
+  document.querySelector("#download-export").addEventListener("click", () => downloadExport());
   document.querySelector("#cancel-import").addEventListener("click", () => els.importDialog.close());
+  document.querySelector("#cancel-new-game").addEventListener("click", () => els.newGameDialog.close());
+  document.querySelector("#discard-new-game").addEventListener("click", startNewGameWithoutSaving);
+  document.querySelector("#save-new-game").addEventListener("click", saveAndStartNewGame);
   els.importForm?.addEventListener("submit", importGame);
   els.importFile?.addEventListener("change", (event) => loadImportFile(event.target.files?.[0]));
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
