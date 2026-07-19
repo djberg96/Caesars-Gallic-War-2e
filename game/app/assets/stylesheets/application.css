@@ -655,8 +655,17 @@ h3 {
   display: none;
 }
 
+.card-zoom-content {
+  width: min(700px, 100%);
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(220px, 280px);
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
 .card-zoom-card {
-  width: min(340px, 44vw);
+  width: 100%;
   aspect-ratio: 5 / 7;
   padding: 0;
   overflow: hidden;
@@ -671,6 +680,73 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.card-zoom-actions {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(217, 180, 95, 0.5);
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(54, 59, 48, 0.98), rgba(27, 31, 26, 0.98));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+.card-zoom-actions > span {
+  color: #a99e86;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card-zoom-actions > strong {
+  display: block;
+  margin-top: 0.18rem;
+  color: #f1e5c8;
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.card-zoom-actions > small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #b9b09b;
+  font-size: 0.72rem;
+}
+
+.card-zoom-action-list {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0.75rem;
+}
+
+.card-zoom-action-list button {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.52rem 0.65rem;
+  border-color: rgba(217, 180, 95, 0.4);
+  background: linear-gradient(135deg, rgba(75, 80, 65, 0.92), rgba(44, 48, 40, 0.94));
+  text-align: left;
+}
+
+.card-zoom-action-list button:hover,
+.card-zoom-action-list button:focus-visible {
+  border-color: #dfc36e;
+  background: linear-gradient(135deg, rgba(102, 92, 58, 0.96), rgba(60, 57, 42, 0.96));
+}
+
+.card-zoom-action-list button strong {
+  color: #f1e7cd;
+  font-family: Georgia, serif;
+  font-size: 0.86rem;
+}
+
+.card-zoom-action-list button span {
+  color: #b9b09b;
+  font-size: 0.65rem;
+  line-height: 1.3;
 }
 
 .log {
@@ -1341,6 +1417,16 @@ textarea {
   .battle-unit-list {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   }
+
+  .card-zoom {
+    overflow: auto;
+  }
+
+  .card-zoom-content {
+    width: min(340px, 100%);
+    grid-template-columns: 1fr;
+    padding-block: 1rem;
+  }
 }
 
 @media (max-width: 1050px) {
@@ -1355,10 +1441,6 @@ textarea {
 
   .card-zoom {
     inset: 0;
-  }
-
-  .card-zoom-card {
-    width: min(320px, 72vw);
   }
 
   .hands {

@@ -1869,16 +1869,66 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const image = cardImage(card);
+    const actions = cardZoomActions(card);
     els.cardZoom.hidden = false;
     els.cardZoom.innerHTML = `
-      <button type="button" class="card-zoom-card" aria-label="Close ${card.title} preview">
-        ${image ? `<img src="${image}" alt="${card.title} card">` : `<span class="card-title-fallback"><strong>${card.title}</strong><small>${card.ap} ${card.type}</small></span>`}
-      </button>
+      <div class="card-zoom-content">
+        <button type="button" class="card-zoom-card" aria-label="Close ${card.title} preview">
+          ${image ? `<img src="${image}" alt="${card.title} card">` : `<span class="card-title-fallback"><strong>${card.title}</strong><small>${card.ap} ${card.type}</small></span>`}
+        </button>
+        <section class="card-zoom-actions" aria-label="Actions for ${card.title}">
+          <span>Play this card</span>
+          <strong>${card.title}</strong>
+          <small>AP ${card.ap} · Choose an action</small>
+          <div class="card-zoom-action-list">
+            ${actions.map((action) => `
+              <button type="button" data-card-zoom-action="${action.id}">
+                <strong>${action.label}</strong>
+                <span>${action.detail}</span>
+              </button>
+            `).join("")}
+          </div>
+        </section>
+      </div>
     `;
-    els.cardZoom.querySelector("button").addEventListener("click", () => {
+    els.cardZoom.querySelector(".card-zoom-card").addEventListener("click", () => {
       zoomedCardId = null;
       render();
     });
+    els.cardZoom.querySelectorAll("[data-card-zoom-action]").forEach((button) => {
+      button.addEventListener("click", () => playCardZoomAction(button.dataset.cardZoomAction));
+    });
+  }
+
+  function cardZoomActions(card) {
+    const supplyDetail = state.active === "roman"
+      ? `Gain ${card.ap * 2} Roman Supply`
+      : `Reduce Roman Supply by ${card.ap}`;
+    const actions = [
+      { id: "supply", label: "Supply", detail: supplyDetail }
+    ];
+    if (card.area) {
+      actions.push({
+        id: "activate",
+        label: "Neutral Tribe",
+        detail: `Activate eligible tribes in ${areaName(card.area)}`
+      });
+    }
+    actions.push(
+      { id: "political", label: "Political", detail: `Attempt control using AP ${card.ap}` },
+      { id: "movement", label: "Movement", detail: `Activate up to ${card.ap} group${card.ap === 1 ? "" : "s"}` }
+    );
+    if (card.type === "event") {
+      actions.push({ id: "event", label: "Event", detail: `Resolve ${card.title}` });
+    }
+    return actions;
+  }
+
+  async function playCardZoomAction(action) {
+    zoomedCardId = null;
+    handHidden = true;
+    render();
+    await playAction(action);
   }
 
   function toggleHand() {
