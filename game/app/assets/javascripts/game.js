@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let sidePanelCollapsed = false;
   let zoomedCardId = null;
   let resultDialogQueue = [];
+  let splayedPieceStack = null;
 
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
@@ -785,9 +786,25 @@ document.addEventListener("DOMContentLoaded", () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async function discardSelectedCard() {
-    const played = actionCard();
+  function currentActionCard() {
+    const selected = actionCard();
+    if (selected) return selected;
+
+    const cardId = state.movement?.cardId;
+    if (!cardId) return null;
+    return state.hands?.[state.active]?.find((card) => card.id === cardId) || null;
+  }
+
+  async function discardSelectedCard(played = currentActionCard()) {
     if (!played) return;
+
+    // A battle response can replace the local state just before the action is
+    // discarded. Keep the card that began the action attached long enough to
+    // complete the solitaire handoff to the bot.
+    if (!actionCard() && state.mode !== "hotseat" && state.active === "roman") {
+      state.selectedCard = state.hands?.roman?.find((card) => card.id === played.id) || null;
+    }
+    if (!actionCard()) return;
 
     try {
       await ensureGameSession();
@@ -1131,6 +1148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function battleAction(action, unitId = null, target = null) {
     const hadBattle = Boolean(state.battle);
+    const playedCard = currentActionCard();
     const wasRegrouping = state.regrouping;
     const wasRetreating = state.retreating;
     try {
@@ -1150,7 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (hadBattle && !state.battle) {
         if (contestedAreas().length) await resolveBattles();
-        else await discardSelectedCard();
+        else await discardSelectedCard(playedCard);
       }
     } catch (error) {
       log(error.message);
@@ -1610,6 +1628,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
+    splayedPieceStack = null;
     if (piecesHidden || targetingPoliticalAction()) return;
 
     const byArea = {};
@@ -1621,34 +1640,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
     Object.entries(byArea).forEach(([areaId, units]) => {
       const area = areas[areaId];
+      const canSplay = units.length > 1 && units.every(unitFaceVisibleToActivePlayer);
+      const columns = Math.min(4, units.length);
+      const rows = Math.ceil(units.length / columns);
+      const stack = document.createElement("div");
+      stack.className = `piece-stack${units.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${units.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
+      stack.style.left = `${area.x}%`;
+      stack.style.top = `${area.y}%`;
+      stack.style.setProperty("--compact-width", `${Math.max(64, columns * 18 + 42)}px`);
+      stack.style.setProperty("--compact-height", `${Math.max(64, rows * 22 + 42)}px`);
+      stack.style.setProperty("--splay-width", `${Math.max(72, columns * 62 + 42)}px`);
+      stack.style.setProperty("--splay-height", `${Math.max(72, rows * 62 + 42)}px`);
+      const keepStackSplayed = () => {
+        if (splayedPieceStack && splayedPieceStack !== stack) {
+          splayedPieceStack.classList.remove("is-splayed");
+        }
+        if (!canSplay) {
+          splayedPieceStack = null;
+          return;
+        }
+        stack.classList.add("is-splayed");
+        splayedPieceStack = stack;
+      };
+      stack.addEventListener("pointerenter", keepStackSplayed);
+      stack.addEventListener("focusin", keepStackSplayed);
+      stack.addEventListener("click", (event) => {
+        if (event.target !== stack) return;
+        event.stopPropagation();
+        moveSelectedTo(areaId);
+      });
+
       units.forEach((unit, index) => {
-        const offsetX = ((index % 4) - 1.5) * 1.8;
-        const offsetY = (Math.floor(index / 4) - 0.5) * 2.2;
+        const row = Math.floor(index / columns);
+        const column = index % columns;
+        const columnsInRow = Math.min(columns, units.length - row * columns);
+        const compactX = (column - (columnsInRow - 1) / 2) * 18;
+        const compactY = (row - (rows - 1) / 2) * 22;
+        const splayX = (column - (columnsInRow - 1) / 2) * 62;
+        const splayY = (row - (rows - 1) / 2) * 62;
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
         const faceVisible = unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
         piece.classList.toggle("is-hidden", !faceVisible);
+        piece.classList.toggle("has-visible-strength", faceVisible);
         if (!faceVisible) {
           piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
           piece.classList.add(unit.owner === "neutral" ? "is-hidden-neutral" : "is-hidden-enemy");
         }
-        piece.style.left = `${area.x + offsetX}%`;
-        piece.style.top = `${area.y + offsetY}%`;
+        piece.style.setProperty("--compact-x", `${compactX}px`);
+        piece.style.setProperty("--compact-y", `${compactY}px`);
+        piece.style.setProperty("--splay-x", `${splayX}px`);
+        piece.style.setProperty("--splay-y", `${splayY}px`);
+        piece.style.zIndex = index + 1;
         const hiddenLabel = unit.owner === "neutral" ? "Neutral block" : "Enemy block";
         piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
-        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}" style="--unit-rotation: ${unitRotation(unit)}deg">${faceVisible ? `<span class="strength-badge">${currentStrength(unit)}</span>` : ""}`;
+        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}" style="--unit-rotation: ${unitRotation(unit)}deg">`;
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {
             suppressNextPieceClick = false;
             return;
           }
+          if (piece.dataset.pointerGesture === "true") {
+            delete piece.dataset.pointerGesture;
+            return;
+          }
           selectUnit(unit.id);
         });
         piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
-        els.pieceLayer.append(piece);
+        stack.append(piece);
       });
+      els.pieceLayer.append(stack);
     });
   }
 
@@ -1692,7 +1755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return gameData.cards.find((candidate) => candidate.id === card.id)?.image;
   }
 
-  async function beginPieceDrag(event, unitId) {
+  function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     const unit = state.units[unitId];
     if (battleMapMode()) {
@@ -1705,40 +1768,43 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.dataset.pointerGesture = "true";
+    markUnitSelected(unitId);
+    event.currentTarget.closest(".piece-stack")?.classList.add("has-selected");
+    event.currentTarget.parentElement?.querySelectorAll(".piece").forEach((piece) => {
+      piece.classList.toggle("is-selected", piece === event.currentTarget);
+    });
+    renderAreas();
     if (!battleMapMode() && !state.movement) {
-      log("Play a card for movement before moving blocks.");
       event.currentTarget.releasePointerCapture(event.pointerId);
-      render();
       return;
     }
-    if (!battleMapMode() && !movementAreaActivated(movementOrigin(unit))) {
-      const activated = await activateMovementArea(movementOrigin(unit));
-      if (!activated) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-        render();
-        return;
-      }
-    }
-    markUnitSelected(unitId);
-    renderAreas();
+
     dragState = {
       unitId,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       dragged: false,
-      ghost: createDragGhost(event.currentTarget, event.clientX, event.clientY)
+      ghost: null,
+      activation: null
     };
-    event.currentTarget.classList.add("is-dragging");
     event.currentTarget.addEventListener("pointermove", updatePieceDrag);
     event.currentTarget.addEventListener("pointerup", endPieceDrag);
     event.currentTarget.addEventListener("pointercancel", cancelPieceDrag);
+    dragState.activation = !battleMapMode() && !movementAreaActivated(movementOrigin(unit))
+      ? activateMovementArea(movementOrigin(unit))
+      : Promise.resolve(true);
   }
 
   function updatePieceDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
-    if (distance > 4) dragState.dragged = true;
+    if (!dragState.dragged && distance > 4) {
+      dragState.dragged = true;
+      dragState.ghost = createDragGhost(event.currentTarget, event.clientX, event.clientY);
+      event.currentTarget.classList.add("is-dragging");
+    }
     moveDragGhost(event.clientX, event.clientY);
     if (!dragState.dragged) return;
 
@@ -1751,12 +1817,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function endPieceDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const activeDrag = dragState;
+    const piece = event.currentTarget;
     const target = state.dragArea || areaFromClientPoint(event.clientX, event.clientY);
     const dragged = dragState.dragged;
     const unitId = dragState.unitId;
     if (dragged) suppressNextPieceClick = true;
+    const activated = await activeDrag.activation;
+    if (dragState !== activeDrag) return;
+    if (!activated) {
+      cleanupPieceDrag(piece);
+      dragState = null;
+      render();
+      return;
+    }
     if (dragged && target) {
-      const piece = event.currentTarget;
       cleanupPieceDrag(piece, { keepGhost: true });
       try {
         if (battleMapMode()) await battleMapUnitTo(unitId, target);
@@ -1766,7 +1841,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dragState = null;
       }
     } else {
-      cleanupPieceDrag(event.currentTarget);
+      cleanupPieceDrag(piece);
       dragState = null;
       renderAreas();
     }
