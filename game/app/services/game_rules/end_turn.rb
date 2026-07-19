@@ -13,6 +13,7 @@ module GameRules
     def end_turn!
       raise InvalidAction, "Finish the current movement action before ending the turn." if @state["movement"].present?
       raise InvalidAction, "Finish the current battle before ending the turn." if @state["battle"].present?
+      raise InvalidAction, remaining_cards_message if remaining_cards.positive?
 
       harvest = roll_harvest
       apply_harvest!(harvest)
@@ -28,6 +29,16 @@ module GameRules
     end
 
     private
+
+    def remaining_cards
+      hands = @state.fetch("hands", {})
+      players = @state.fetch("mode", "hotseat") == "hotseat" ? %w[roman barbarian] : %w[roman]
+      players.sum { |player| Array(hands[player]).length }
+    end
+
+    def remaining_cards_message
+      "Play the remaining #{remaining_cards} card#{remaining_cards == 1 ? "" : "s"} before ending the turn."
+    end
 
     def roll_harvest
       return @harvest_roll if @harvest_roll&.between?(1, 6)

@@ -18,6 +18,12 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".side-panel h2", text: "Action", count: 0
     assert_select "#toggle-side-panel[aria-expanded='true']"
     assert_select ".board-toolbar #resolve-battles"
+    assert_select ".board-toolbar #deal-cards", count: 0
+    assert_select ".board-toolbar #save-game", count: 0
+    assert_select ".board-toolbar #load-game", count: 0
+    assert_select ".board-toolbar #import-game"
+    assert_select ".board-toolbar #export-game"
+    assert_select "#import-dialog #import-form"
     assert_select ".command-panel .campaign-status"
     assert_select "#hotseat-controls[hidden]"
     assert_select "#bot-card", count: 0

@@ -45,6 +45,31 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_match "Finish the current movement action", error.message
   end
 
+  test "rejects ending before the solitaire hand is played" do
+    state = base_state
+    state["mode"] = "solitaire"
+    state["hands"]["roman"] = [{ "id" => "allobroges" }]
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::EndTurn::InvalidAction) do
+      GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    end
+
+    assert_equal "Play the remaining 1 card before ending the turn.", error.message
+  end
+
+  test "rejects ending before both hotseat hands are played" do
+    state = base_state
+    state["hands"]["barbarian"] = [{ "id" => "helvetii" }, { "id" => "sequani" }]
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::EndTurn::InvalidAction) do
+      GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    end
+
+    assert_equal "Play the remaining 2 cards before ending the turn.", error.message
+  end
+
   test "scores yearly objectives before units return to winter quarters" do
     state = base_state
     state["turn"] = 2

@@ -45,7 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
     objectiveTitle: document.querySelector("#objective-title"),
     objectiveYear: document.querySelector("#objective-year"),
-    objectiveList: document.querySelector("#objective-list")
+    objectiveList: document.querySelector("#objective-list"),
+    exportDialog: document.querySelector("#export-dialog"),
+    exportText: document.querySelector("#export-text"),
+    importDialog: document.querySelector("#import-dialog"),
+    importForm: document.querySelector("#import-form"),
+    importFile: document.querySelector("#import-file"),
+    importText: document.querySelector("#import-text"),
+    importError: document.querySelector("#import-error")
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
@@ -2698,8 +2705,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderActionButtons() {
     const battleButton = document.querySelector("#resolve-battles");
+    const endTurnButton = document.querySelector("#end-turn");
+    const unresolvedBattles = contestedAreas().length;
     battleButton.classList.toggle("is-active", Boolean(state.battle));
-    battleButton.disabled = Boolean(state.battle) || contestedAreas().length === 0;
+    battleButton.disabled = Boolean(state.battle) || unresolvedBattles === 0;
+
+    if (state.movement) {
+      endTurnButton.textContent = "Finish Movement";
+      endTurnButton.disabled = Boolean(state.battle) || unresolvedBattles > 0;
+      endTurnButton.title = endTurnButton.disabled ? "Resolve all battles before finishing movement." : "Finish this movement action and discard its card.";
+      return;
+    }
+
+    const remaining = remainingCardsForTurn();
+    endTurnButton.textContent = "End Turn";
+    endTurnButton.disabled = Boolean(state.battle) || remaining > 0;
+    if (state.battle) {
+      endTurnButton.title = "Finish the current battle before ending the turn.";
+    } else if (remaining > 0) {
+      endTurnButton.title = `Play the remaining ${remaining} card${remaining === 1 ? "" : "s"} before ending the turn.`;
+    } else {
+      endTurnButton.title = "Score the year and deal the next hand.";
+    }
+  }
+
+  function remainingCardsForTurn() {
+    if (state.mode === "hotseat") {
+      return (state.hands?.roman?.length || 0) + (state.hands?.barbarian?.length || 0);
+    }
+    return state.hands?.roman?.length || 0;
   }
 
   function renderUndoButton() {
@@ -2720,25 +2754,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderLog() {
     els.log.innerHTML = state.log.map((entry) => `<li>${entry}</li>`).join("");
-  }
-
-  function saveGame() {
-    localStorage.setItem("cgw2e-save", JSON.stringify(state));
-    log("Game saved in this browser.");
-    render();
-  }
-
-  function loadGame() {
-    const saved = localStorage.getItem("cgw2e-save");
-    if (!saved) {
-      log("No saved game found.");
-      render();
-      return;
-    }
-    state = JSON.parse(saved);
-    normalizeLoadedState();
-    log("Saved game loaded.");
-    render();
   }
 
   function normalizeLoadedState() {
@@ -2791,15 +2806,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function changeMode(mode) {
     if (mode === state.mode) return;
-    if (window.confirm("Save the current game before switching modes?")) {
-      saveGame();
+    if (!window.confirm("Changing modes deals fresh hands for the current year. Continue?")) {
+      document.querySelector("#play-mode").value = state.mode;
+      return;
     }
     await setMode(mode);
   }
 
   function exportGame() {
-    document.querySelector("#export-text").value = JSON.stringify(state, null, 2);
-    document.querySelector("#export-dialog").showModal();
+    els.exportText.value = exportedGameJson();
+    els.exportDialog.showModal();
+  }
+
+  function exportedGameJson() {
+    const exported = structuredClone(state);
+    exported.gameSessionId = null;
+    exported.dragArea = null;
+    return JSON.stringify(exported, null, 2);
+  }
+
+  function downloadExport() {
+    const contents = els.exportText.value || exportedGameJson();
+    const blob = new Blob([contents], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const year = (gameData.years[state.turn] || `turn-${state.turn + 1}`).toLowerCase().replaceAll(" ", "-");
+    link.href = url;
+    link.download = `caesars-gallic-war-${year}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function openImportDialog() {
+    els.importFile.value = "";
+    els.importText.value = "";
+    setImportError();
+    els.importDialog.showModal();
+  }
+
+  async function loadImportFile(file) {
+    if (!file) return;
+    try {
+      els.importText.value = await file.text();
+      setImportError();
+    } catch (_error) {
+      setImportError("That file could not be read.");
+    }
+  }
+
+  async function importGame(event) {
+    event.preventDefault();
+    try {
+      const imported = validateImportedGame(JSON.parse(els.importText.value));
+      imported.gameSessionId = null;
+      const result = await postJson("/game_sessions", { state: imported });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      log("Imported game loaded.");
+      els.importDialog.close();
+      render();
+    } catch (error) {
+      setImportError(error instanceof SyntaxError ? "The imported file is not valid JSON." : error.message);
+    }
+  }
+
+  function validateImportedGame(imported) {
+    if (!imported || typeof imported !== "object" || Array.isArray(imported)) throw new Error("The imported file does not contain a game.");
+    if (!Number.isInteger(imported.turn) || imported.turn < 0 || imported.turn >= gameData.years.length) throw new Error("The imported game has an invalid turn.");
+    if (!["hotseat", "solitaire", "ai"].includes(imported.mode)) throw new Error("The imported game has an invalid play mode.");
+    if (!imported.units || typeof imported.units !== "object" || Array.isArray(imported.units)) throw new Error("The imported game is missing its units.");
+    if (!imported.hands || !Array.isArray(imported.hands.roman) || !Array.isArray(imported.hands.barbarian)) throw new Error("The imported game is missing its hands.");
+    if (!Array.isArray(imported.log)) throw new Error("The imported game is missing its log.");
+    return imported;
+  }
+
+  function setImportError(message = "") {
+    els.importError.textContent = message;
+    els.importError.hidden = !message;
   }
 
   async function createGameSession() {
@@ -2841,7 +2927,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.querySelector("#new-game").addEventListener("click", newGame);
-  document.querySelector("#deal-cards").addEventListener("click", () => dealCards());
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
@@ -2855,9 +2940,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
   els.toggleHand?.addEventListener("click", toggleHand);
   els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
-  document.querySelector("#save-game").addEventListener("click", saveGame);
-  document.querySelector("#load-game").addEventListener("click", loadGame);
+  document.querySelector("#import-game").addEventListener("click", openImportDialog);
   document.querySelector("#export-game").addEventListener("click", exportGame);
+  document.querySelector("#download-export").addEventListener("click", downloadExport);
+  document.querySelector("#cancel-import").addEventListener("click", () => els.importDialog.close());
+  els.importForm?.addEventListener("submit", importGame);
+  els.importFile?.addEventListener("change", (event) => loadImportFile(event.target.files?.[0]));
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
   els.cardZoom?.addEventListener("click", (event) => {
     if (event.target !== els.cardZoom) return;
