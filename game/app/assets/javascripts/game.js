@@ -83,9 +83,57 @@ document.addEventListener("DOMContentLoaded", () => {
     return unit.strengths[unit.step] || 0;
   }
 
-  function unitRotation(unit) {
-    const halfHit = state.battle?.halfHits?.[unit.id] ? 45 : 0;
-    return -((unit.step || 0) * 90 + halfHit);
+  function romanShieldMarkup() {
+    return `
+      <svg class="roman-counter-shield" viewBox="0 0 100 100" aria-hidden="true">
+        <path class="roman-shield-shell" d="M25 7Q16 10 16 22v56q0 12 9 15 25 7 50 0 9-3 9-15V22Q84 10 75 7 50 1 25 7Z"/>
+        <path class="roman-shield-trim" d="M29 13q-7 2-7 11v52q0 8 7 11 21 6 42 0 7-3 7-11V24q0-9-7-11-21-6-42 0Z"/>
+        <path class="roman-shield-bolt" d="m43 37-13 15h8l-7 14 18-19h-9l8-10Zm14 0 13 15h-8l7 14-18-19h9l-8-10Z"/>
+        <circle class="roman-shield-boss-outer" cx="50" cy="50" r="14"/>
+        <circle class="roman-shield-boss-inner" cx="50" cy="50" r="8"/>
+      </svg>
+    `;
+  }
+
+  function romanGrassCrownMarkup() {
+    return `
+      <svg class="roman-grass-crown" viewBox="0 0 100 42" aria-hidden="true">
+        <path class="roman-grass-crown-band" d="M14 31Q50 8 86 31"/>
+        <path class="roman-grass-crown-weave" d="M18 30 29 20l8 6 13-14 13 14 8-6 11 10"/>
+        <path class="roman-grass-crown-blades" d="m25 25-7-13m17 8-3-15m14 10L46 2m19 18 3-15m7 20 7-13"/>
+      </svg>
+    `;
+  }
+
+  function unitCounterMarkup(unit, { faceVisible = true, showLabel = false, showStats = true } = {}) {
+    const strength = currentStrength(unit);
+    const halfHit = state.battle?.halfHits?.[unit.id];
+    const digitalRomanFace = faceVisible && unit.type === "roman";
+    const caesarCounter = digitalRomanFace && unit.id === "legion_x";
+    return `
+      <span class="unit-counter-art${digitalRomanFace ? " has-digital-roman-face" : ""}">
+        <img src="${unit.image}" alt="${faceVisible ? unit.name : "Hidden block"}">
+        ${digitalRomanFace ? `
+          <span class="roman-counter-face${caesarCounter ? " is-caesar" : ""}">
+            <span class="roman-counter-name">${unit.name}</span>
+            ${caesarCounter ? romanGrassCrownMarkup() : ""}
+            ${romanShieldMarkup()}
+          </span>
+        ` : ""}
+      </span>
+      ${faceVisible ? `
+        <span class="unit-counter-strength" aria-label="Current strength ${strength}">
+          ${showLabel ? "<small>STR</small>" : ""}<b>${strength}</b>
+        </span>
+        ${showStats ? `
+          <span class="unit-counter-stats">
+            <span class="unit-counter-stat unit-counter-initiative" aria-label="Initiative ${unit.initiative}"><b>${unit.initiative}</b></span>
+            <span class="unit-counter-stat unit-counter-battle-rating" aria-label="Battle rating ${unit.fire}"><b>${unit.fire}</b></span>
+          </span>
+        ` : ""}
+        ${halfHit ? `<span class="unit-counter-half-hit" aria-label="One half hit retained">½ <small>HIT</small></span>` : ""}
+      ` : ""}
+    `;
   }
 
   function areaUnits(areaId) {
@@ -1663,8 +1711,8 @@ document.addEventListener("DOMContentLoaded", () => {
       stack.style.top = `${area.y}%`;
       stack.style.setProperty("--compact-width", `${Math.max(64, columns * 18 + 42)}px`);
       stack.style.setProperty("--compact-height", `${Math.max(64, rows * 22 + 42)}px`);
-      stack.style.setProperty("--splay-width", `${Math.max(72, columns * 62 + 42)}px`);
-      stack.style.setProperty("--splay-height", `${Math.max(72, rows * 62 + 42)}px`);
+      stack.style.setProperty("--splay-width", `${Math.max(84, columns * 76 + 48)}px`);
+      stack.style.setProperty("--splay-height", `${Math.max(84, rows * 76 + 48)}px`);
       const keepStackSplayed = () => {
         const restrictedArea = activeSplayArea();
         if (restrictedArea && restrictedArea !== areaId) return;
@@ -1692,14 +1740,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const columnsInRow = Math.min(columns, units.length - row * columns);
         const compactX = (column - (columnsInRow - 1) / 2) * 18;
         const compactY = (row - (rows - 1) / 2) * 22;
-        const splayX = (column - (columnsInRow - 1) / 2) * 62;
-        const splayY = (row - (rows - 1) / 2) * 62;
+        const splayX = (column - (columnsInRow - 1) / 2) * 76;
+        const splayY = (row - (rows - 1) / 2) * 76;
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
         const faceVisible = unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
         piece.classList.toggle("is-hidden", !faceVisible);
-        piece.classList.toggle("has-visible-strength", faceVisible);
         if (!faceVisible) {
           piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
           piece.classList.add(unit.owner === "neutral" ? "is-hidden-neutral" : "is-hidden-enemy");
@@ -1711,7 +1758,7 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.style.zIndex = index + 1;
         const hiddenLabel = unit.owner === "neutral" ? "Neutral block" : "Enemy block";
         piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
-        piece.innerHTML = `<img src="${unit.image}" alt="${faceVisible ? unit.name : hiddenLabel}" style="--unit-rotation: ${unitRotation(unit)}deg">`;
+        piece.innerHTML = unitCounterMarkup(unit, { faceVisible });
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {
@@ -2452,10 +2499,10 @@ document.addEventListener("DOMContentLoaded", () => {
       <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
-            <img src="${unit.image}" alt="${unit.name}" style="--unit-rotation: ${unitRotation(unit)}deg">
+            ${unitCounterMarkup(unit, { showLabel: true, showStats: false })}
           </div>
           <div class="battle-unit-info">
-            <span class="battle-unit-status"><span>${status}</span><b>Str ${currentStrength(unit)}</b></span>
+            <span class="battle-unit-status"><span>${status}</span></span>
             <strong>${unit.name}</strong>
             <div class="battle-unit-stats">
               <span><b>${unit.initiative}</b> Initiative</span>

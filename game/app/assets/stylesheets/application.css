@@ -337,13 +337,13 @@ h3 {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: clamp(30px, 4.2vw, 54px);
+  width: clamp(34px, 4.8vw, 62px);
   aspect-ratio: 1;
   padding: 0;
   border: 0;
-  border-radius: 2px;
+  border-radius: 5px;
   background: transparent;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 4px 9px rgba(0, 0, 0, 0.4);
   transform: translate(calc(-50% + var(--compact-x)), calc(-50% + var(--compact-y)));
   transition: transform 160ms ease, filter 120ms ease;
   cursor: pointer;
@@ -356,38 +356,282 @@ h3 {
   transform: translate(calc(-50% + var(--splay-x)), calc(-50% + var(--splay-y)));
 }
 
-.piece img {
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  object-fit: cover;
+.unit-counter-art {
+  position: absolute;
+  inset: 0;
   display: block;
+  overflow: hidden;
+  border: 1px solid rgba(238, 226, 196, 0.52);
+  border-radius: 5px;
+  background: #272b26;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.34);
+}
+
+.unit-counter-art img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 180%;
+  max-width: none;
+  height: 180%;
+  min-width: 0;
   margin: 0;
-  border-radius: 2px;
-  transform: rotate(var(--unit-rotation, 0deg));
-  transition: transform 180ms ease;
+  object-fit: cover;
+  transform: translate(-50%, -50%);
+}
+
+.unit-counter-art.has-digital-roman-face > img {
+  opacity: 0;
+}
+
+.roman-counter-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 157, 105, 0.24), transparent 42%),
+    linear-gradient(145deg, #e8564d 0%, #c52e2c 55%, #89191e 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 187, 139, 0.4),
+    inset 0 -12px 18px rgba(72, 5, 9, 0.25);
+  pointer-events: none;
+}
+
+.roman-counter-face.is-caesar {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(196, 172, 75, 0.28), transparent 44%),
+    linear-gradient(145deg, #8e3042 0%, #621e35 55%, #351424 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(239, 198, 99, 0.58),
+    inset 0 -12px 18px rgba(29, 4, 17, 0.38);
+}
+
+.roman-counter-face.is-caesar .roman-counter-name {
+  color: #ffe9a6;
+  text-shadow: 0 1px 2px rgba(35, 0, 16, 0.95);
+}
+
+.roman-counter-name {
+  position: absolute;
+  z-index: 2;
+  top: 0.16rem;
+  right: 0.08rem;
+  left: 0.08rem;
+  overflow: hidden;
+  color: #fff5df;
+  font-family: Georgia, serif;
+  font-size: clamp(0.43rem, 0.7vw, 0.58rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(64, 0, 0, 0.9);
+  white-space: nowrap;
+}
+
+.roman-counter-shield {
+  position: absolute;
+  top: 19%;
+  left: 50%;
+  width: 56%;
+  height: 67%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2px rgba(50, 0, 0, 0.65));
+  transform: translateX(-50%);
+}
+
+.roman-grass-crown {
+  position: absolute;
+  z-index: 3;
+  top: 18%;
+  left: 50%;
+  width: 55%;
+  height: 28%;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px rgba(15, 10, 0, 0.75));
+  transform: translateX(-50%);
+}
+
+.roman-grass-crown-band,
+.roman-grass-crown-weave,
+.roman-grass-crown-blades {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.roman-grass-crown-band {
+  stroke: #d3b34c;
+  stroke-width: 7;
+}
+
+.roman-grass-crown-weave {
+  stroke: #75903b;
+  stroke-width: 5;
+}
+
+.roman-grass-crown-blades {
+  stroke: #a9bd59;
+  stroke-width: 4;
+}
+
+.roman-counter-face.is-caesar .roman-counter-shield {
+  top: 24%;
+  width: 53%;
+  height: 62%;
+}
+
+.roman-shield-shell {
+  fill: #7e1117;
+  stroke: #f0bd48;
+  stroke-width: 5;
+}
+
+.roman-shield-trim {
+  fill: #b92127;
+  stroke: #8a5a18;
+  stroke-width: 2;
+}
+
+.roman-shield-bolt {
+  fill: #f4c344;
+  stroke: #7b4811;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.roman-shield-boss-outer {
+  fill: #d99835;
+  stroke: #6f3d12;
+  stroke-width: 3;
+}
+
+.roman-shield-boss-inner {
+  fill: #f0c46e;
+  stroke: #8a541c;
+  stroke-width: 2;
+}
+
+.piece:not(.is-hidden).owner-roman .unit-counter-art,
+.battle-unit-card.owner-roman .unit-counter-art {
+  border-color: color-mix(in srgb, var(--roman) 72%, #f4e9ce);
+}
+
+.piece:not(.is-hidden).owner-barbarian .unit-counter-art,
+.battle-unit-card.owner-barbarian .unit-counter-art {
+  border-color: color-mix(in srgb, var(--barbarian) 72%, #f4e9ce);
+}
+
+.unit-counter-strength {
+  position: absolute;
+  z-index: 4;
+  bottom: -0.66rem;
+  left: 50%;
+  width: 1.45rem;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e8d596;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #3a3524, #151610 68%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 241, 181, 0.1);
+  color: #fff0b5;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.unit-counter-strength small {
+  color: #c4b57f;
+  font-size: 0.43rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.unit-counter-strength b {
+  display: block;
+  font-family: Georgia, serif;
+  font-size: 0.88rem;
+  line-height: 1;
+  transform: translateY(-0.03em);
+}
+
+.unit-counter-stats {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.unit-counter-stat {
+  position: absolute;
+  top: 50%;
+  width: 1.08rem;
+  min-width: 1.08rem;
+  height: 1.08rem;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(50, 35, 19, 0.88);
+  border-radius: 4px;
+  background: rgba(251, 239, 207, 0.94);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  color: #211b12;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.unit-counter-initiative {
+  left: -0.3rem;
+}
+
+.unit-counter-battle-rating {
+  right: -0.3rem;
+}
+
+.unit-counter-stat b {
+  font-family: Georgia, serif;
+  font-size: 0.78rem;
+  line-height: 1;
+  transform: translateY(-0.02em);
+}
+
+.unit-counter-half-hit {
+  position: absolute;
+  z-index: 4;
+  right: -0.38rem;
+  bottom: -0.35rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.12rem;
+  padding: 0.14rem 0.28rem;
+  border: 1px solid #d29b5f;
+  border-radius: 4px;
+  background: #39271c;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  color: #f0c58d;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.unit-counter-half-hit small {
+  font-size: 0.38rem;
+  letter-spacing: 0.05em;
 }
 
 .piece.is-selected {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
   z-index: 50;
-}
-
-.piece.has-visible-strength::after {
-  content: "";
-  position: absolute;
-  z-index: 3;
-  top: -5px;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-right: 4px solid transparent;
-  border-left: 4px solid transparent;
-  border-top: 5px solid #f0d174;
-  filter: drop-shadow(0 0 3px rgba(240, 209, 116, 0.65));
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 
 .piece.is-dragging {
@@ -405,8 +649,12 @@ h3 {
   z-index: 1000;
 }
 
-.piece.is-hidden img {
+.piece.is-hidden .unit-counter-art img {
   opacity: 0;
+}
+
+.piece.is-hidden .unit-counter-art {
+  background: inherit;
 }
 
 .piece.is-hidden {
@@ -422,6 +670,7 @@ h3 {
 .piece.is-hidden-enemy::before {
   content: "";
   position: absolute;
+  z-index: 5;
   top: 0;
   right: 0;
   width: 0;
@@ -449,6 +698,7 @@ h3 {
 .piece.is-hidden-neutral::after {
   content: "?";
   position: absolute;
+  z-index: 5;
   inset: 0;
   display: grid;
   place-items: center;
@@ -1276,38 +1526,45 @@ h3 {
 
 .battle-unit-body {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  gap: 0.65rem;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 0.82rem;
   align-items: center;
 }
 
 .battle-unit-counter {
   position: relative;
-  width: 76px;
+  width: 82px;
   aspect-ratio: 1;
   overflow: visible;
-  border: 2px solid rgba(0, 0, 0, 0.82);
-  border-radius: 5px;
-  background: #30352d;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.46);
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: 0 6px 13px rgba(0, 0, 0, 0.46);
 }
 
-.battle-unit-card.owner-roman .battle-unit-counter {
-  border-color: var(--roman);
+.battle-unit-counter .unit-counter-strength {
+  top: 50%;
+  right: -0.72rem;
+  bottom: auto;
+  left: auto;
+  min-width: 2.05rem;
+  width: 2.05rem;
+  height: 2.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.04rem;
+  transform: translateY(-50%);
 }
 
-.battle-unit-card.owner-barbarian .battle-unit-counter {
-  border-color: var(--barbarian);
+.battle-unit-counter .roman-counter-name {
+  font-size: 0.7rem;
 }
 
-.battle-unit-counter img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 3px;
-  object-fit: cover;
-  transform: rotate(var(--unit-rotation, 0deg));
-  transition: transform 180ms ease;
+.battle-unit-counter .unit-counter-strength small {
+  font-size: 0.45rem;
+}
+
+.battle-unit-counter .unit-counter-strength b {
+  font-size: 1.05rem;
 }
 
 .battle-unit-info {
@@ -1336,13 +1593,6 @@ h3 {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.battle-unit-status b {
-  padding-left: 0.35rem;
-  border-left: 1px solid currentColor;
-  color: #eee0ad;
-  font-size: inherit;
 }
 
 .battle-unit-card.is-fired .battle-unit-status {
