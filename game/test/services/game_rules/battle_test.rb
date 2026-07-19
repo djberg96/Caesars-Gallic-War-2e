@@ -37,6 +37,19 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location
   end
 
+  test "records yearly objective combat in Britannia" do
+    state = battle_state
+    state["options"] = { "yearlyObjectives" => true }
+    state["yearlyObjectiveProgress"] = {}
+    state["units"].each_value { |unit| unit["location"] = "belgae" }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+
+    assert result.dig("yearlyObjectiveProgress", "romanFoughtInBritannia")
+    assert_equal ["legion_vii"], result.dig("yearlyObjectiveProgress", "romanLegionsFoughtInBritannia")
+  end
+
   test "marks fired units until the next battle round" do
     state = battle_state
     state["units"]["legion_vii"]["fire"] = 0

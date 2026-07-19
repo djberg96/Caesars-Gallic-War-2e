@@ -109,6 +109,30 @@ h3 {
   color: var(--muted);
 }
 
+.optional-rule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  margin-left: 0.25rem;
+  padding: 0.36rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.optional-rule-toggle:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(217, 180, 95, 0.12);
+  color: var(--text);
+}
+
+.optional-rule-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .board {
   position: relative;
   min-height: 0;
@@ -937,6 +961,68 @@ h3 {
   color: #e8ddc5;
   font-size: 0.72rem;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objective-panel {
+  border-color: rgba(217, 180, 95, 0.48);
+  background:
+    radial-gradient(circle at 100% 0, rgba(217, 180, 95, 0.12), transparent 42%),
+    #252a24;
+}
+
+.objective-panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.65rem;
+}
+
+.objective-panel-heading h2 {
+  margin: 0.08rem 0 0;
+  color: #f2e8d1;
+  font-family: Georgia, serif;
+  font-size: 1.02rem;
+}
+
+.objective-panel-heading > strong,
+.objective-kicker {
+  color: var(--accent);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.objective-list {
+  display: grid;
+  gap: 0.42rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.objective-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.48rem 0.55rem;
+  border-left: 3px solid var(--barbarian);
+  border-radius: 4px;
+  background: rgba(18, 21, 18, 0.45);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.objective-list li.objective-loss {
+  border-left-color: var(--roman);
+}
+
+.objective-list strong {
+  color: #d9c58d;
   white-space: nowrap;
 }
 

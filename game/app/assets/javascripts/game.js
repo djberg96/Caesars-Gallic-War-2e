@@ -40,7 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
     mainForceMessage: document.querySelector("#main-force-message"),
     mainForceChoices: document.querySelector("#main-force-choices"),
     mainForceCancel: document.querySelector("#main-force-cancel"),
-    finishRegroup: document.querySelector("#finish-regroup")
+    finishRegroup: document.querySelector("#finish-regroup"),
+    yearlyObjectives: document.querySelector("#yearly-objectives"),
+    yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
+    objectiveTitle: document.querySelector("#objective-title"),
+    objectiveYear: document.querySelector("#objective-year"),
+    objectiveList: document.querySelector("#objective-list")
   };
   const hitMapSize = { width: 880, height: 1020 };
   let areaHitMap = null;
@@ -55,8 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
+    const yearlyObjectives = Boolean(els.yearlyObjectives?.checked);
     try {
-      const result = await postJson("/game_sessions", { mode });
+      const result = await postJson("/game_sessions", { mode, yearly_objectives: yearlyObjectives });
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
@@ -590,6 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
       units: structuredClone(state.units),
       supply: state.supply,
       movement: structuredClone(state.movement),
+      yearlyObjectiveProgress: structuredClone(state.yearlyObjectiveProgress || {}),
       selectedUnit: state.selectedUnit,
       selectedArea: state.selectedArea
     });
@@ -1426,6 +1433,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function render() {
     renderStatus();
+    renderYearlyObjectives();
     renderAreas();
     renderTrackMarkers();
     renderPieces();
@@ -1453,10 +1461,32 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = state.supply;
     document.querySelector("#vp-label").textContent = state.vp;
+    const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
+    if (els.yearlyObjectives) els.yearlyObjectives.checked = objectivesEnabled;
     if (els.finishRegroup) {
       els.finishRegroup.hidden = !battleMapMode();
       els.finishRegroup.textContent = state.retreating ? "Retreat Complete" : "Finished Regroup";
     }
+  }
+
+  function renderYearlyObjectives() {
+    const enabled = Boolean(state.options?.yearlyObjectives);
+    if (!els.yearlyObjectivesPanel) return;
+
+    els.yearlyObjectivesPanel.hidden = !enabled;
+    if (!enabled) return;
+
+    const campaign = gameData.yearlyObjectives?.[state.turn];
+    if (!campaign) return;
+
+    els.objectiveTitle.textContent = campaign.title;
+    els.objectiveYear.textContent = gameData.years[state.turn];
+    els.objectiveList.innerHTML = campaign.objectives.map((objective) => `
+      <li class="objective-${objective.vp > 0 ? "gain" : "loss"}">
+        <span>${objective.text}</span>
+        <strong>${objective.vp > 0 ? "+" : ""}${objective.vp} VP</strong>
+      </li>
+    `).join("");
   }
 
   function modeName() {
@@ -2719,6 +2749,10 @@ document.addEventListener("DOMContentLoaded", () => {
     state.neutralActivationCards ||= {};
     state.neutralActivationCards.roman ||= [];
     state.neutralActivationCards.barbarian ||= [];
+    state.options ||= {};
+    state.options.yearlyObjectives ||= false;
+    state.yearlyObjectiveProgress ||= {};
+    state.yearlyObjectiveHistory ||= [];
     state.dragArea = null;
     state.targetingAction ||= null;
     state.undoStack ||= [];

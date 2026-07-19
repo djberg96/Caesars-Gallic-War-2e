@@ -140,12 +140,29 @@ module GameRules
     def apply_move!(plan)
       @unit["location"] = @target
       record_unit_movement!(plan)
+      record_yearly_objective_progress!(plan)
       activate_neutral_units_in_target!
 
       message = "#{unit_name} moved to #{area_name(@target)}"
       message += " by forced march through #{area_name(plan.fetch("via"))}" if plan["force"]
       log("#{message}.")
       @state["selectedUnit"] = nil
+    end
+
+    def record_yearly_objective_progress!(plan)
+      return unless roman_legion?
+      return unless ActiveModel::Type::Boolean.new.cast(@state.dig("options", "yearlyObjectives"))
+
+      progress = @state["yearlyObjectiveProgress"] ||= {}
+      destinations = plan.fetch("steps").map { |_from, to, _border| to }
+      if destinations.include?("germania")
+        progress["romanEnteredGermania"] = true
+        progress["romanLegionsEnteredGermania"] = (Array(progress["romanLegionsEnteredGermania"]) + [@unit_id]).uniq
+      end
+      if destinations.any? { |area_key| Area.find_by(key: area_key)&.region == "britannia" }
+        progress["romanEnteredBritannia"] = true
+        progress["romanLegionsEnteredBritannia"] = (Array(progress["romanLegionsEnteredBritannia"]) + [@unit_id]).uniq
+      end
     end
 
     def record_unit_movement!(plan)

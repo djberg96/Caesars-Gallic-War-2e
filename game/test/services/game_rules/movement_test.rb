@@ -17,6 +17,20 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal 1, result.dig("movement", "crossings", "allobroges->helvetii")
   end
 
+  test "records a yearly objective crossing into Germania" do
+    state = base_state(target_area: "germania")
+    state["options"] = { "yearlyObjectives" => true }
+    state["yearlyObjectiveProgress"] = {}
+    state["units"]["legion_vii"]["location"] = "menapi"
+    state["movement"]["areas"] = ["menapi"]
+    session = GameSession.create!(data: state)
+
+    result = move(session, "legion_vii", "germania")
+
+    assert result.dig("yearlyObjectiveProgress", "romanEnteredGermania")
+    assert_equal ["legion_vii"], result.dig("yearlyObjectiveProgress", "romanLegionsEnteredGermania")
+  end
+
   test "rejects movement before a movement card has been played" do
     state = base_state
     state["movement"] = nil

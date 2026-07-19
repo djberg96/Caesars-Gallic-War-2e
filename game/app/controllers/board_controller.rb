@@ -10,6 +10,7 @@ class BoardController < ApplicationController
         turn: helpers.asset_path("Blocks/Markers/Turn.svg")
       },
       years: ["58 BC", "57 BC", "56 BC", "55 BC", "54 BC", "53 BC", "52 BC", "51 BC"],
+      yearlyObjectives: GameRules::YearlyObjectives::CAMPAIGNS,
       ai: ai_config,
       areas: areas,
       units: units,

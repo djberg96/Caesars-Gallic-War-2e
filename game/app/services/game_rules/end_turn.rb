@@ -16,10 +16,13 @@ module GameRules
 
       harvest = roll_harvest
       apply_harvest!(harvest)
-      reset_units!
       controlled_tribes = score_controlled_tribes!
+      objectives = GameRules::YearlyObjectives.new(state: @state).score!
+      log_objectives!(objectives) if objectives
+      reset_units!
       @state["turn"] = [@state.fetch("turn", 0).to_i + 1, YEARS - 1].min
-      log("End turn complete. Harvest roll #{harvest}. Roman scores #{controlled_tribes} tribal VP.")
+      objective_summary = objectives ? " Yearly Objectives: #{objectives.fetch("vp").positive? ? "+" : ""}#{objectives.fetch("vp")} VP." : ""
+      log("End turn complete. Harvest roll #{harvest}. Roman scores #{controlled_tribes} tribal VP.#{objective_summary}")
 
       GameRules::Deal.new(session: @session, state: @state).deal!
     end
@@ -57,12 +60,22 @@ module GameRules
       controlled = Area.order(:key).count do |area|
         next false if area.region.blank? || area.region == "roman" || area.sea?
 
-        units.values.any? do |unit|
-          unit["location"] == area.key && unit["owner"] == "roman" && unit["type"] != "roman"
+        tribe_ids = (area.tribes + [area.alternate_tribe]).compact
+        tribe_ids.any? do |unit_id|
+          unit = units[unit_id]
+          unit && unit["owner"] == "roman" && !unit["location"].in?(["offboard", "eliminated", nil])
         end
       end
       @state["vp"] = @state.fetch("vp", 0).to_i + controlled
       controlled
+    end
+
+    def log_objectives!(result)
+      result.fetch("objectives").reverse_each do |objective|
+        value = objective.fetch("vp")
+        log("Yearly objective #{value.positive? ? "+" : ""}#{value} VP: #{objective.fetch("text")}")
+      end
+      log("No Yearly Objectives scored for #{result.fetch("title")}.") if result.fetch("objectives").empty?
     end
 
     def units

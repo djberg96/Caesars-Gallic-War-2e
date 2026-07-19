@@ -20,6 +20,7 @@ module GameRules
       @state["movement"] = entry["movement"]
       @state["selectedUnit"] = entry["selectedUnit"]
       @state["selectedArea"] = entry["selectedArea"]
+      @state["yearlyObjectiveProgress"] = entry.fetch("yearlyObjectiveProgress", {})
       log("#{unit_name(entry.fetch("unitId"))} move to #{area_name(entry.fetch("to"))} undone.")
       persist!
     end

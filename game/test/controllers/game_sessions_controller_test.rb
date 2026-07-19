@@ -59,6 +59,19 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, session.bot_neutral_activations
   end
 
+  test "enables yearly objectives when creating a new game" do
+    post game_sessions_url(host: "localhost"),
+         params: { mode: "solitaire", yearly_objectives: true },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert body.dig("state", "options", "yearlyObjectives")
+    assert_empty body.dig("state", "yearlyObjectiveProgress")
+    assert_empty body.dig("state", "yearlyObjectiveHistory")
+    assert_match "Yearly Objectives optional rule enabled", body.dig("state", "log").join(" ")
+  end
+
   test "moves through the session API" do
     session = GameSession.create!(data: base_state)
 

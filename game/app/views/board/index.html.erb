@@ -23,6 +23,10 @@
         <option value="solitaire" selected>Solitaire Roman</option>
         <option value="ai">AI Opponent</option>
       </select>
+      <label class="optional-rule-toggle" title="Apply the optional Yearly Objectives victory-point schedule">
+        <input id="yearly-objectives" type="checkbox">
+        Yearly Objectives
+      </label>
     </div>
 
     <div id="board" class="board">
@@ -51,6 +55,17 @@
           <div><span>Supply</span><strong id="supply-label">15</strong></div>
           <div><span>Roman VP</span><strong id="vp-label">0</strong></div>
         </div>
+      </section>
+
+      <section id="yearly-objectives-panel" class="panel-block objective-panel" hidden>
+        <div class="objective-panel-heading">
+          <div>
+            <span class="objective-kicker">Optional Rule</span>
+            <h2 id="objective-title">Yearly Objectives</h2>
+          </div>
+          <strong id="objective-year"></strong>
+        </div>
+        <ul id="objective-list" class="objective-list"></ul>
       </section>
 
       <section class="panel-block">

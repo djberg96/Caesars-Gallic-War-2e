@@ -45,6 +45,24 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_match "Finish the current movement action", error.message
   end
 
+  test "scores yearly objectives before units return to winter quarters" do
+    state = base_state
+    state["turn"] = 2
+    state["options"] = { "yearlyObjectives" => true }
+    state["yearlyObjectiveProgress"] = {}
+    state["yearlyObjectiveHistory"] = []
+    state["units"]["helvetii"] = unit("helvetii", "barbarian", "roman", "helvetii", "helvetii")
+    state["units"]["legion_vii"]["location"] = "helvetii"
+    session = GameSession.create!(data: state)
+
+    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal 3, result["vp"]
+    assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
+    assert_equal ["t3_helvetii_garrison"], result.dig("yearlyObjectiveHistory", 0, "objectives").map { |objective| objective["id"] }
+    assert_match "Yearly objective +1 VP", result["log"].join(" ")
+  end
+
   private
 
   def base_state

@@ -9,9 +9,10 @@ module GameRules
       @view_context = view_context
     end
 
-    def state(mode: "hotseat")
+    def state(mode: "hotseat", yearly_objectives: false)
       mode = mode.presence || "hotseat"
       deck = shuffled_deck
+      yearly_objectives = ActiveModel::Type::Boolean.new.cast(yearly_objectives)
 
       state = {
         "turn" => 0,
@@ -26,6 +27,9 @@ module GameRules
         "committed" => { "roman" => nil, "barbarian" => nil },
         "revealed" => false,
         "mode" => mode,
+        "options" => { "yearlyObjectives" => yearly_objectives },
+        "yearlyObjectiveProgress" => {},
+        "yearlyObjectiveHistory" => [],
         "botDeck" => [],
         "botNeutralActivations" => 0,
         "neutralActivationCards" => { "roman" => [], "barbarian" => [] },
@@ -43,6 +47,7 @@ module GameRules
 
       deal_opponent_cards!(state, deck)
       state["log"] << "New game set up. Variable tribes were randomly selected."
+      state["log"] << "Yearly Objectives optional rule enabled." if yearly_objectives
       state["log"] << deal_message(mode)
       state
     end

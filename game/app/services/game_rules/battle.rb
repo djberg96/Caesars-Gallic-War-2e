@@ -100,7 +100,27 @@ module GameRules
         "winner" => nil
       }
       assign_initial_fort_defenders!(area, battle_data)
+      record_yearly_objective_battle!(area, battle_data)
       battle_data
+    end
+
+    def record_yearly_objective_battle!(area, battle_data)
+      return unless ActiveModel::Type::Boolean.new.cast(@state.dig("options", "yearlyObjectives"))
+
+      roman_legions = (battle_data.fetch("attackers") + battle_data.fetch("defenders")).select do |unit_id|
+        candidate = unit(unit_id)
+        candidate["owner"] == "roman" && candidate["type"] == "roman"
+      end
+      return if roman_legions.empty?
+
+      progress = @state["yearlyObjectiveProgress"] ||= {}
+      if area.key == "germania"
+        progress["romanFoughtInGermania"] = true
+        progress["romanLegionsFoughtInGermania"] = (Array(progress["romanLegionsFoughtInGermania"]) + roman_legions).uniq
+      elsif area.region == "britannia"
+        progress["romanFoughtInBritannia"] = true
+        progress["romanLegionsFoughtInBritannia"] = (Array(progress["romanLegionsFoughtInBritannia"]) + roman_legions).uniq
+      end
     end
 
     def assign_initial_fort_defenders!(area, battle_data)

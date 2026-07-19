@@ -161,7 +161,10 @@ class GameSessionsController < ApplicationController
   def create_state
     return state_params if params[:state].present?
 
-    GameRules::Setup.new(view_context: helpers).state(mode: params[:mode])
+    GameRules::Setup.new(view_context: helpers).state(
+      mode: params[:mode],
+      yearly_objectives: params[:yearly_objectives]
+    )
   end
 
   def state_params
