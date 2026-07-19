@@ -21,8 +21,8 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".board-toolbar #deal-cards", count: 0
     assert_select ".board-toolbar #save-game", count: 0
     assert_select ".board-toolbar #load-game", count: 0
-    assert_select ".board-toolbar #import-game"
-    assert_select ".board-toolbar #export-game"
+    assert_select ".board-toolbar #import-game", text: "Load"
+    assert_select ".board-toolbar #export-game", text: "Save"
     assert_select "#import-dialog #import-form"
     assert_select ".command-panel .campaign-status"
     assert_select "#hotseat-controls[hidden]"

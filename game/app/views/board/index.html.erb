@@ -13,8 +13,8 @@
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
       <button id="toggle-pieces" type="button" aria-pressed="false">Hide Units</button>
-      <button id="import-game" type="button">Import</button>
-      <button id="export-game" type="button">Export</button>
+      <button id="export-game" type="button">Save</button>
+      <button id="import-game" type="button">Load</button>
       <label class="select-label" for="play-mode">Mode</label>
       <select id="play-mode">
         <option value="hotseat">Hotseat</option>
@@ -109,11 +109,11 @@
 
 <dialog id="export-dialog">
   <form method="dialog">
-    <h2>Export Game</h2>
-    <p class="dialog-description">Download this game as a JSON file. The text below contains the same save data.</p>
+    <h2>Save Game</h2>
+    <p class="dialog-description">Save this game as a JSON file. The text below contains the same save data.</p>
     <textarea id="export-text" spellcheck="false" readonly></textarea>
     <div class="dialog-actions">
-      <button id="download-export" type="button">Download JSON</button>
+      <button id="download-export" type="button">Save JSON File</button>
       <button type="submit">Close</button>
     </div>
   </form>
@@ -121,15 +121,15 @@
 
 <dialog id="import-dialog">
   <form id="import-form">
-    <h2>Import Game</h2>
-    <p class="dialog-description">Choose an exported JSON file, or paste exported game data below.</p>
+    <h2>Load Game</h2>
+    <p class="dialog-description">Choose a saved JSON file, or paste saved game data below.</p>
     <label class="import-file-label" for="import-file">Choose JSON file</label>
     <input id="import-file" type="file" accept="application/json,.json">
     <textarea id="import-text" spellcheck="false" placeholder="Paste exported game JSON here"></textarea>
     <p id="import-error" class="import-error" role="alert" hidden></p>
     <div class="dialog-actions">
       <button id="cancel-import" type="button">Cancel</button>
-      <button type="submit">Import Game</button>
+      <button type="submit">Load Game</button>
     </div>
   </form>
 </dialog>
