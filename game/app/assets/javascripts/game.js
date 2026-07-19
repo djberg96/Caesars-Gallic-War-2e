@@ -1915,6 +1915,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderNeutralActivationCards() {
     els.neutralActivationLayer.innerHTML = "";
+    els.neutralActivationLayer.hidden = battleMapMode();
+    if (els.neutralActivationLayer.hidden) return;
+
     const slots = [
       { player: "barbarian", label: "German player neutral tribe activation", cards: state.neutralActivationCards.barbarian || [] },
       { player: "roman", label: "Roman player neutral tribe activation", cards: state.neutralActivationCards.roman || [] }

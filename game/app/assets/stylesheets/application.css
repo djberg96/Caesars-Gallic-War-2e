@@ -234,7 +234,7 @@ h3 {
   display: block;
   padding: 1.1%;
   color: var(--text);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .neutral-activation-slot-barbarian {
@@ -277,6 +277,7 @@ h3 {
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
   translate: calc(var(--stack-index) * 7%) calc(var(--stack-index) * 6%);
   transition: translate 120ms ease;
+  pointer-events: auto;
 }
 
 .neutral-activation-slot:hover .neutral-activation-card:first-child:nth-last-child(2) {
