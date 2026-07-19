@@ -19,7 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
     log: document.querySelector("#log"),
     selection: document.querySelector("#selection"),
     areaDetail: document.querySelector("#area-detail"),
-    selectedCard: document.querySelector("#selected-card"),
+    shell: document.querySelector(".shell"),
+    sidePanel: document.querySelector("#side-panel"),
+    toggleSidePanel: document.querySelector("#toggle-side-panel"),
+    hotseatControls: document.querySelector("#hotseat-controls"),
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand"),
     handTray: document.querySelector("#hand-tray"),
@@ -45,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let suppressNextPieceClick = false;
   let piecesHidden = false;
   let handHidden = false;
+  let sidePanelCollapsed = false;
   let zoomedCardId = null;
   let resultDialogQueue = [];
 
@@ -1264,16 +1268,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderNeutralActivationCards();
     renderHands();
     renderLog();
-    renderModeHelp();
+    renderModeControls();
     renderActionButtons();
     renderUndoButton();
     renderPieceToggle();
     renderHandToggle();
+    renderSidePanelToggle();
     renderBattleBoard();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
-    els.selectedCard.textContent = state.selectedCard ? `${state.selectedCard.title}, AP ${state.selectedCard.ap}.` : "No card selected.";
     renderCommittedCards();
   }
 
@@ -1816,17 +1820,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const currentPlayer = player === state.active;
       const committed = state.committed[player]?.id === card.id;
       const hidden = state.mode === "hotseat" && !currentPlayer;
+      const hotseatLocked = state.mode === "hotseat" && (state.revealed ? !committed : committed);
       const tilt = cards.length > 1 ? (index - (cards.length - 1) / 2) * 4 : 0;
       const lift = Math.abs(index - (cards.length - 1) / 2) * 2;
       button.className = `card${hidden ? " is-hidden" : ""}`;
-      button.disabled = hidden || Boolean(state.movement) || Boolean(state.battle) || (state.mode === "hotseat" && (state.revealed || committed));
+      button.disabled = hidden || Boolean(state.movement) || Boolean(state.battle) || hotseatLocked;
       button.classList.toggle("is-active", currentPlayer && state.selectedCard?.id === card.id);
       button.classList.toggle("is-zoomed", zoomedCardId === card.id);
       button.style.setProperty("--tilt", `${tilt}deg`);
       button.style.setProperty("--lift", `${lift}px`);
       if (hidden) {
         button.innerHTML = "<span>Hidden card</span>";
-      } else if (committed) {
+      } else if (committed && !state.revealed) {
         button.innerHTML = "<strong>Committed</strong><small>Face down</small>";
       } else {
         const image = cardImage(card);
@@ -1901,6 +1906,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function cardZoomActions(card) {
+    if (state.mode === "hotseat" && !state.revealed) {
+      return [{ id: "commit", label: "Commit Face Down", detail: `Commit ${card.title}, then pass to the other player` }];
+    }
+
     const supplyDetail = state.active === "roman"
       ? `Gain ${card.ap * 2} Roman Supply`
       : `Reduce Roman Supply by ${card.ap}`;
@@ -1928,6 +1937,10 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomedCardId = null;
     handHidden = true;
     render();
+    if (action === "commit") {
+      await commitCard();
+      return;
+    }
     await playAction(action);
   }
 
@@ -1941,6 +1954,20 @@ document.addEventListener("DOMContentLoaded", () => {
     els.handTray.classList.toggle("is-hidden", handHidden);
     els.toggleHand.textContent = handHidden ? "Show Hand" : "Hide Hand";
     els.toggleHand.setAttribute("aria-expanded", handHidden ? "false" : "true");
+  }
+
+  function toggleSidePanel() {
+    sidePanelCollapsed = !sidePanelCollapsed;
+    renderSidePanelToggle();
+  }
+
+  function renderSidePanelToggle() {
+    if (!els.shell || !els.sidePanel || !els.toggleSidePanel) return;
+    els.shell.classList.toggle("is-side-panel-collapsed", sidePanelCollapsed);
+    els.sidePanel.classList.toggle("is-collapsed", sidePanelCollapsed);
+    els.toggleSidePanel.textContent = sidePanelCollapsed ? "‹" : "›";
+    els.toggleSidePanel.setAttribute("aria-expanded", sidePanelCollapsed ? "false" : "true");
+    els.toggleSidePanel.setAttribute("aria-label", sidePanelCollapsed ? "Expand information panel" : "Collapse information panel");
   }
 
   function renderCommittedCards() {
@@ -2389,41 +2416,24 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  function renderModeHelp() {
-    const help = document.querySelector("#mode-help");
+  function renderModeControls() {
     const commitButton = document.querySelector("#commit-card");
     const revealButton = document.querySelector("#reveal-cards");
-    const botButton = document.querySelector("#bot-card");
     const barbarianButton = document.querySelector("[data-player='barbarian']");
-    botButton.disabled = Boolean(state.movement) || Boolean(state.battle);
+    const hotseat = state.mode === "hotseat";
+    els.hotseatControls.hidden = !hotseat;
 
-    if (state.mode === "hotseat") {
-      help.textContent = state.battle ? "Battle: resolve the active unit on the battle board." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : "Hotseat: use the Roman/Barbarian buttons to pass control. Each side commits a hidden card, then reveal both.";
-      commitButton.hidden = false;
-      revealButton.hidden = false;
-      botButton.hidden = true;
+    if (hotseat) {
       barbarianButton.disabled = false;
-    } else if (state.mode === "solitaire") {
-      help.textContent = state.battle ? "Battle: resolve Roman units on the battle board. Barbarian units act automatically." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play and reveal the bot card." : "Solitaire: you play Romans. After each Roman card resolves, the bot reveals the next deck card and follows the solo priority matrix.";
-      commitButton.hidden = true;
-      revealButton.hidden = true;
-      botButton.hidden = false;
-      barbarianButton.disabled = true;
-    } else {
-      help.textContent = state.battle ? "Battle: resolve Roman units on the battle board. Opponent units act automatically." : state.movement ? "Movement: move units from activated green areas, then click End Turn to finish this card play." : gameData.ai.configured ? `AI mode: local config loaded for ${gameData.ai.model || "configured model"}. AI calls are not wired yet.` : "AI mode: copy config/ai.yml.example to config/ai.yml and add a local API key. AI calls are not wired yet.";
-      commitButton.hidden = true;
-      revealButton.hidden = true;
-      botButton.hidden = false;
-      barbarianButton.disabled = true;
+      commitButton.disabled = Boolean(state.movement) || Boolean(state.battle) || Boolean(state.revealed) || !state.selectedCard;
+      revealButton.disabled = Boolean(state.movement) || Boolean(state.battle) || Boolean(state.revealed) || !state.committed.roman || !state.committed.barbarian;
     }
   }
 
   function renderActionButtons() {
-    document.querySelectorAll("[data-action]").forEach((button) => {
-      button.classList.toggle("is-active", button.dataset.action === state.currentAction || button.dataset.action === state.targetingAction);
-      button.disabled = Boolean(state.battle);
-    });
-    document.querySelector("#resolve-battles").classList.toggle("is-active", Boolean(state.battle));
+    const battleButton = document.querySelector("#resolve-battles");
+    battleButton.classList.toggle("is-active", Boolean(state.battle));
+    battleButton.disabled = Boolean(state.battle) || contestedAreas().length === 0;
   }
 
   function renderUndoButton() {
@@ -2557,7 +2567,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#deal-cards").addEventListener("click", () => dealCards());
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
-  document.querySelector("#bot-card").addEventListener("click", drawBotCard);
   els.resultDialog?.addEventListener("close", showNextResultDialog);
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
@@ -2568,6 +2577,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
   els.toggleHand?.addEventListener("click", toggleHand);
+  els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
   document.querySelector("#save-game").addEventListener("click", saveGame);
   document.querySelector("#load-game").addEventListener("click", loadGame);
   document.querySelector("#export-game").addEventListener("click", exportGame);
@@ -2583,7 +2593,6 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
-  document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => playAction(button.dataset.action)));
 
   prepareAreaHitMap();
   newGame();

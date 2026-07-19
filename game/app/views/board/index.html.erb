@@ -25,6 +25,7 @@
       <button id="new-game" type="button">New</button>
       <button id="deal-cards" type="button">Deal</button>
       <button id="end-turn" type="button">End Turn</button>
+      <button id="resolve-battles" type="button">Battles</button>
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
       <button id="toggle-pieces" type="button" aria-pressed="false">Hide</button>
@@ -48,46 +49,34 @@
     </div>
   </section>
 
-  <aside class="side-panel">
-    <section class="panel-block">
-      <h2>Action</h2>
-      <div class="segmented" role="group" aria-label="Current player">
-        <button type="button" data-player="roman" class="player-button is-active">Roman</button>
-        <button type="button" data-player="barbarian" class="player-button">Barbarian</button>
-      </div>
-      <div id="selected-card" class="selected-card">No card selected.</div>
-      <div id="mode-help" class="mode-help"></div>
-      <div class="planning-grid">
-        <button type="button" id="commit-card">Commit Face Down</button>
-        <button type="button" id="reveal-cards">Reveal Cards</button>
-        <button type="button" id="bot-card">Bot Card</button>
-      </div>
-      <div id="committed-cards" class="committed-cards"></div>
-      <div class="action-grid">
-        <button type="button" data-action="supply">Supply</button>
-        <button type="button" data-action="activate">Neutral Tribe</button>
-        <button type="button" data-action="political">Political</button>
-        <button type="button" data-action="movement">Movement</button>
-        <button type="button" data-action="event">Event</button>
-        <button type="button" id="resolve-battles">Battles</button>
-      </div>
-    </section>
+  <aside id="side-panel" class="side-panel" aria-label="Game information">
+    <button type="button" id="toggle-side-panel" class="side-panel-toggle" aria-expanded="true" aria-label="Collapse information panel">›</button>
+    <div class="side-panel-content">
+      <section class="panel-block">
+        <h2>Selection</h2>
+        <div id="selection" class="selection">Select a unit or area.</div>
+        <div id="area-detail" class="area-detail"></div>
+      </section>
 
-    <section class="panel-block">
-      <h2>Selection</h2>
-      <div id="selection" class="selection">Select a unit or area.</div>
-      <div id="area-detail" class="area-detail"></div>
-    </section>
-
-    <section class="panel-block">
-      <h2>Log</h2>
-      <ol id="log" class="log"></ol>
-    </section>
+      <section class="panel-block">
+        <h2>Log</h2>
+        <ol id="log" class="log"></ol>
+      </section>
+    </div>
   </aside>
 
   <section id="hand-tray" class="hand-tray" aria-label="Player hands">
     <div class="hand-tray-header">
       <strong>Cards</strong>
+      <div id="hotseat-controls" class="hotseat-controls" hidden>
+        <div class="segmented" role="group" aria-label="Current player">
+          <button type="button" data-player="roman" class="player-button is-active">Roman</button>
+          <button type="button" data-player="barbarian" class="player-button">Barbarian</button>
+        </div>
+        <button type="button" id="commit-card">Commit</button>
+        <button type="button" id="reveal-cards">Reveal</button>
+        <div id="committed-cards" class="committed-cards"></div>
+      </div>
       <button type="button" id="toggle-hand" aria-expanded="true">Hide Hand</button>
     </div>
     <div class="hands">

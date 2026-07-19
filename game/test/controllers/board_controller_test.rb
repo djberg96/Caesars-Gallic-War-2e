@@ -15,6 +15,11 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_match %r{Blocks/Markers/Tribes_Controlled-[a-f0-9]+\.svg}, response.body
     assert_match %r{Blocks/Markers/Turn-[a-f0-9]+\.svg}, response.body
     assert_select "#track-marker-layer"
+    assert_select ".side-panel h2", text: "Action", count: 0
+    assert_select "#toggle-side-panel[aria-expanded='true']"
+    assert_select ".board-toolbar #resolve-battles"
+    assert_select "#hotseat-controls[hidden]"
+    assert_select "#bot-card", count: 0
     assert_includes response.body, "Legion X"
   end
 end
