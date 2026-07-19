@@ -1287,8 +1287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
     document.querySelector("#phase-label").textContent = state.phase;
     document.querySelector("#active-label").textContent = playerName(state.active);
-    document.querySelector("#supply-label").textContent = `Supply ${state.supply}`;
-    document.querySelector("#vp-label").textContent = `VP ${state.vp}`;
+    document.querySelector("#supply-label").textContent = state.supply;
+    document.querySelector("#vp-label").textContent = state.vp;
     if (els.finishRegroup) {
       els.finishRegroup.hidden = !battleMapMode();
       els.finishRegroup.textContent = state.retreating ? "Retreat Complete" : "Finished Regroup";
@@ -2443,7 +2443,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPieceToggle() {
     const button = document.querySelector("#toggle-pieces");
-    button.textContent = piecesHidden ? "Show" : "Hide";
+    button.textContent = piecesHidden ? "Show Units" : "Hide Units";
     button.setAttribute("aria-pressed", piecesHidden ? "true" : "false");
   }
 

@@ -4,21 +4,6 @@
   <%= raw JSON.pretty_generate(@game_data) %>
 </script>
 
-<header class="topbar">
-  <div>
-    <h1>Caesar's Gallic War</h1>
-    <p>Second edition prototype</p>
-  </div>
-  <div class="status-strip" aria-live="polite">
-    <span id="mode-label">Solitaire</span>
-    <span id="turn-label">58 BC</span>
-    <span id="phase-label">Card Phase</span>
-    <span id="active-label">Roman</span>
-    <span id="supply-label">Supply 15</span>
-    <span id="vp-label">VP 0</span>
-  </div>
-</header>
-
 <main class="shell">
   <section class="board-panel" aria-label="Game board">
     <div class="board-toolbar">
@@ -28,7 +13,7 @@
       <button id="resolve-battles" type="button">Battles</button>
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
-      <button id="toggle-pieces" type="button" aria-pressed="false">Hide</button>
+      <button id="toggle-pieces" type="button" aria-pressed="false">Hide Units</button>
       <button id="save-game" type="button">Save</button>
       <button id="load-game" type="button">Load</button>
       <button id="export-game" type="button">Export</button>
@@ -52,6 +37,22 @@
   <aside id="side-panel" class="side-panel" aria-label="Game information">
     <button type="button" id="toggle-side-panel" class="side-panel-toggle" aria-expanded="true" aria-label="Collapse information panel">›</button>
     <div class="side-panel-content">
+      <section class="panel-block command-panel">
+        <header class="game-brand">
+          <span>Second Edition</span>
+          <h1>Caesar's Gallic War</h1>
+        </header>
+
+        <div class="campaign-status" aria-live="polite">
+          <div><span>Mode</span><strong id="mode-label">Solitaire</strong></div>
+          <div><span>Year</span><strong id="turn-label">58 BC</strong></div>
+          <div><span>Phase</span><strong id="phase-label">Card Phase</strong></div>
+          <div><span>Active</span><strong id="active-label">Roman</strong></div>
+          <div><span>Supply</span><strong id="supply-label">15</strong></div>
+          <div><span>Roman VP</span><strong id="vp-label">0</strong></div>
+        </div>
+      </section>
+
       <section class="panel-block">
         <h2>Selection</h2>
         <div id="selection" class="selection">Select a unit or area.</div>

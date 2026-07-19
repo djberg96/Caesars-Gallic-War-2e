@@ -18,6 +18,7 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".side-panel h2", text: "Action", count: 0
     assert_select "#toggle-side-panel[aria-expanded='true']"
     assert_select ".board-toolbar #resolve-battles"
+    assert_select ".command-panel .campaign-status"
     assert_select "#hotseat-controls[hidden]"
     assert_select "#bot-card", count: 0
     assert_includes response.body, "Legion X"

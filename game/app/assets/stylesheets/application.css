@@ -47,16 +47,6 @@ select:hover {
   background: #3c402f;
 }
 
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid var(--line);
-  background: #181b17;
-}
-
 h1,
 h2,
 h3,
@@ -80,32 +70,12 @@ h3 {
   margin-bottom: 0.35rem;
 }
 
-.topbar p {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.status-strip {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.45rem;
-}
-
-.status-strip span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.25rem 0.55rem;
-  background: #242820;
-  color: var(--muted);
-}
-
 .shell {
   --side-panel-width: 380px;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--side-panel-width);
-  height: calc(100vh - 66px);
+  height: 100vh;
   min-height: 720px;
   transition: grid-template-columns 180ms ease;
 }
@@ -134,17 +104,9 @@ h3 {
   background: #1e211d;
 }
 
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--muted);
-  padding-left: 0.4rem;
-}
-
 .select-label {
-  color: var(--muted);
   margin-left: 0.4rem;
+  color: var(--muted);
 }
 
 .board {
@@ -522,6 +484,68 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 8px;
   margin-bottom: 0.75rem;
+}
+
+.command-panel {
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 90% -10%, rgba(217, 180, 95, 0.18), transparent 38%),
+    linear-gradient(155deg, #30362d, #252a24 64%);
+}
+
+.game-brand {
+  padding: 0.85rem 0.85rem 0.7rem;
+  border-bottom: 1px solid rgba(217, 180, 95, 0.26);
+  background: rgba(12, 15, 12, 0.22);
+}
+
+.game-brand span {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: var(--accent);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.game-brand h1 {
+  color: #f2e8d1;
+  font-size: 1.28rem;
+  letter-spacing: 0.01em;
+}
+
+.campaign-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px 0;
+  background: rgba(76, 80, 63, 0.52);
+}
+
+.campaign-status > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+  padding: 0.42rem 0.52rem;
+  background: rgba(28, 32, 27, 0.96);
+}
+
+.campaign-status span {
+  color: #998f79;
+  font-size: 0.55rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.campaign-status strong {
+  overflow: hidden;
+  color: #e8ddc5;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .segmented {
