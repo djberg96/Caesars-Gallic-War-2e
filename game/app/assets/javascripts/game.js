@@ -105,13 +105,96 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  function unitCounterMarkup(unit, { faceVisible = true, showLabel = false, showStats = true } = {}) {
+  const navalTribes = new Set([
+    "atrebates", "belgae", "bellovaci", "caletes", "cantiaci", "esuvii", "lemovicii",
+    "luxovii", "morini", "osismi", "pictones", "santones", "venelli"
+  ]);
+
+  function barbarianCounterCulture(unit) {
+    const imagePath = unit.image.toLowerCase();
+    if (unit.type === "german" || imagePath.includes("/germania/")) return "german";
+    if (imagePath.includes("/belgae/")) return "belgae";
+    if (imagePath.includes("/aquitani/")) return "aquitani";
+    return "celtae";
+  }
+
+  function barbarianCounterSeed(unit) {
+    return [...unit.id].reduce((seed, character) => ((seed * 31) + character.charCodeAt(0)) >>> 0, 17);
+  }
+
+  function barbarianCounterName(unit) {
+    return unit.name.replace(/^German\s*-\s*/i, "");
+  }
+
+  function barbarianDeviceMarkup(unit) {
+    const seed = barbarianCounterSeed(unit);
+    const shapes = [
+      '<ellipse class="barbarian-device-field" cx="50" cy="53" rx="24" ry="31"/>',
+      '<path class="barbarian-device-field" d="M50 17 76 29 70 69 50 88 30 69 24 29Z"/>',
+      '<path class="barbarian-device-field" d="M29 19h42l9 27-12 37H32L20 46Z"/>',
+      '<circle class="barbarian-device-field" cx="50" cy="53" r="30"/>',
+      '<path class="barbarian-device-field" d="M27 20q23-8 46 0v56q-23 14-46 0Z"/>'
+    ];
+    const motifs = [
+      '<path class="barbarian-device-motif-fill" d="M43 22h14v62H43Z"/>',
+      '<path class="barbarian-device-motif-stroke" d="m29 65 21-25 21 25M31 77l19-23 19 23"/>',
+      '<path class="barbarian-device-motif-fill" d="M44 27h12v20h19v13H56v20H44V60H25V47h19Z"/>',
+      '<circle class="barbarian-device-motif-stroke" cx="50" cy="53" r="17"/><path class="barbarian-device-motif-stroke" d="M50 25v10m0 36v10M22 53h10m36 0h10M30 33l7 7m26 26 7 7m0-40-7 7M37 66l-7 7"/>',
+      '<circle class="barbarian-device-motif-fill" cx="50" cy="38" r="8"/><circle class="barbarian-device-motif-fill" cx="38" cy="62" r="8"/><circle class="barbarian-device-motif-fill" cx="62" cy="62" r="8"/>',
+      '<path class="barbarian-device-motif-stroke" d="M35 75q30-22 0-44m30 44Q35 53 65 31"/>',
+      '<path class="barbarian-device-motif-fill" d="m50 27 18 26-18 26-18-26Z"/>',
+      '<path class="barbarian-device-motif-stroke" d="M29 39q21 20 42 0M29 67q21-20 42 0"/>'
+    ];
+    const palettes = [
+      ["#a43a32", "#edc75e", "#6e451b"],
+      ["#315c78", "#e4c467", "#263c39"],
+      ["#d1bb72", "#7e2f2d", "#614a25"],
+      ["#446f42", "#e4cf86", "#283d28"],
+      ["#704a78", "#e0bd5a", "#463143"],
+      ["#d6773d", "#f0d790", "#754221"],
+      ["#427878", "#e7c85d", "#294343"]
+    ];
+    const palette = palettes[Math.floor(seed / 7) % palettes.length];
+    const shape = shapes[seed % shapes.length];
+    const motif = motifs[Math.floor(seed / shapes.length) % motifs.length];
+    return `
+      <svg class="barbarian-counter-device" viewBox="0 0 100 100" aria-hidden="true"
+           style="--device-field: ${palette[0]}; --device-motif: ${palette[1]}; --device-edge: ${palette[2]}">
+        ${shape}
+        ${motif}
+        <circle class="barbarian-device-boss" cx="50" cy="53" r="7"/>
+      </svg>
+    `;
+  }
+
+  function barbarianSpecialMarkMarkup(unit) {
+    let mark = null;
+    let label = null;
+    if (["helvetii", "vercingetorix"].includes(unit.id)) {
+      mark = "★";
+      label = "Special unit";
+    } else if (unit.id === "nantuates") {
+      mark = "+";
+      label = "Mountain unit";
+    } else if (unit.id === "treveri") {
+      mark = "CAV";
+      label = "Cavalry";
+    } else if (navalTribes.has(unit.id)) {
+      mark = "⚓";
+      label = "Naval unit";
+    }
+    return mark ? `<span class="barbarian-counter-mark${mark.length > 1 ? " is-wide" : ""}" aria-label="${label}">${mark}</span>` : "";
+  }
+
+  function unitCounterMarkup(unit, { faceVisible = true, showStats = true } = {}) {
     const strength = currentStrength(unit);
     const halfHit = state.battle?.halfHits?.[unit.id];
     const digitalRomanFace = faceVisible && unit.type === "roman";
+    const digitalBarbarianFace = faceVisible && unit.type !== "roman";
     const caesarCounter = digitalRomanFace && unit.id === "legion_x";
+    const barbarianName = digitalBarbarianFace ? barbarianCounterName(unit) : "";
     return `
-      <span class="unit-counter-art${digitalRomanFace ? " has-digital-roman-face" : ""}">
+      <span class="unit-counter-art${digitalRomanFace ? " has-digital-roman-face" : ""}${digitalBarbarianFace ? " has-digital-barbarian-face" : ""}">
         <img src="${unit.image}" alt="${faceVisible ? unit.name : "Hidden block"}">
         ${digitalRomanFace ? `
           <span class="roman-counter-face${caesarCounter ? " is-caesar" : ""}">
@@ -120,10 +203,17 @@ document.addEventListener("DOMContentLoaded", () => {
             ${romanShieldMarkup()}
           </span>
         ` : ""}
+        ${digitalBarbarianFace ? `
+          <span class="barbarian-counter-face culture-${barbarianCounterCulture(unit)}${unit.type === "leader" ? " is-leader" : ""}">
+            <span class="barbarian-counter-name${barbarianName.length > 11 ? " is-very-long" : barbarianName.length > 9 ? " is-long" : ""}">${barbarianName}</span>
+            ${barbarianDeviceMarkup(unit)}
+            ${barbarianSpecialMarkMarkup(unit)}
+          </span>
+        ` : ""}
       </span>
       ${faceVisible ? `
         <span class="unit-counter-strength" aria-label="Current strength ${strength}">
-          ${showLabel ? "<small>STR</small>" : ""}<b>${strength}</b>
+          <b>${strength}</b>
         </span>
         ${showStats ? `
           <span class="unit-counter-stats">
@@ -2499,7 +2589,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
-            ${unitCounterMarkup(unit, { showLabel: true, showStats: false })}
+            ${unitCounterMarkup(unit)}
           </div>
           <div class="battle-unit-info">
             <span class="battle-unit-status"><span>${status}</span></span>

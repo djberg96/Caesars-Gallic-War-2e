@@ -381,7 +381,8 @@ h3 {
   transform: translate(-50%, -50%);
 }
 
-.unit-counter-art.has-digital-roman-face > img {
+.unit-counter-art.has-digital-roman-face > img,
+.unit-counter-art.has-digital-barbarian-face > img {
   opacity: 0;
 }
 
@@ -516,6 +517,132 @@ h3 {
   stroke-width: 2;
 }
 
+.barbarian-counter-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 52% 45%, rgba(255, 250, 210, 0.45), transparent 48%),
+    linear-gradient(145deg, #d7cf9b, #9aa36b);
+  box-shadow:
+    inset 0 0 0 2px rgba(250, 238, 185, 0.42),
+    inset 0 -12px 18px rgba(48, 58, 31, 0.22);
+  pointer-events: none;
+}
+
+.barbarian-counter-face.culture-belgae {
+  background:
+    radial-gradient(circle at 52% 45%, rgba(255, 235, 190, 0.45), transparent 48%),
+    linear-gradient(145deg, #d9bd7f, #a47c4c);
+}
+
+.barbarian-counter-face.culture-aquitani {
+  background:
+    radial-gradient(circle at 52% 45%, rgba(235, 250, 240, 0.48), transparent 48%),
+    linear-gradient(145deg, #c9d9d1, #80a99f);
+}
+
+.barbarian-counter-face.culture-german {
+  background:
+    radial-gradient(circle at 52% 45%, rgba(220, 246, 216, 0.4), transparent 48%),
+    linear-gradient(145deg, #a9c99f, #5d8b68);
+}
+
+.barbarian-counter-face.is-leader {
+  box-shadow:
+    inset 0 0 0 2px rgba(242, 202, 95, 0.7),
+    inset 0 -12px 18px rgba(43, 44, 22, 0.3);
+}
+
+.barbarian-counter-name {
+  position: absolute;
+  z-index: 2;
+  top: 0.16rem;
+  right: 0.08rem;
+  left: 0.08rem;
+  overflow: hidden;
+  color: #202d1d;
+  font-family: Georgia, serif;
+  font-size: clamp(0.43rem, 0.7vw, 0.58rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px rgba(255, 248, 211, 0.68);
+  white-space: nowrap;
+}
+
+.barbarian-counter-name.is-long {
+  font-size: clamp(0.38rem, 0.62vw, 0.51rem);
+}
+
+.barbarian-counter-name.is-very-long {
+  font-size: clamp(0.34rem, 0.55vw, 0.45rem);
+}
+
+.barbarian-counter-device {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  width: 62%;
+  height: 67%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2px rgba(33, 31, 16, 0.5));
+  transform: translateX(-50%);
+}
+
+.barbarian-device-field {
+  fill: var(--device-field);
+  stroke: var(--device-edge);
+  stroke-width: 4;
+}
+
+.barbarian-device-motif-fill {
+  fill: var(--device-motif);
+  stroke: var(--device-edge);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.barbarian-device-motif-stroke {
+  fill: none;
+  stroke: var(--device-motif);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.barbarian-device-boss {
+  fill: #e1c77b;
+  stroke: var(--device-edge);
+  stroke-width: 3;
+}
+
+.barbarian-counter-mark {
+  position: absolute;
+  z-index: 3;
+  top: 43%;
+  right: 0.17rem;
+  color: #26341e;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px rgba(255, 245, 196, 0.8);
+}
+
+.barbarian-counter-mark.is-wide {
+  top: 47%;
+  right: 0.1rem;
+  padding: 0.05rem 0.1rem;
+  border-radius: 3px;
+  background: rgba(245, 232, 183, 0.78);
+  font-family: system-ui, sans-serif;
+  font-size: 0.38rem;
+  letter-spacing: 0.02em;
+}
+
 .piece:not(.is-hidden).owner-roman .unit-counter-art,
 .battle-unit-card.owner-roman .unit-counter-art {
   border-color: color-mix(in srgb, var(--roman) 72%, #f4e9ce);
@@ -547,13 +674,6 @@ h3 {
   transform: translateX(-50%);
 }
 
-.unit-counter-strength small {
-  color: #c4b57f;
-  font-size: 0.43rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
 .unit-counter-strength b {
   display: block;
   font-family: Georgia, serif;
@@ -571,13 +691,12 @@ h3 {
 
 .unit-counter-stat {
   position: absolute;
-  top: 50%;
-  width: 1.08rem;
-  min-width: 1.08rem;
-  height: 1.08rem;
+  bottom: 0.12rem;
+  width: 0.96rem;
+  min-width: 0.96rem;
+  height: 0.96rem;
   display: grid;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
   padding: 0;
   border: 1px solid rgba(50, 35, 19, 0.88);
   border-radius: 4px;
@@ -585,22 +704,23 @@ h3 {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   color: #211b12;
   line-height: 1;
-  transform: translateY(-50%);
 }
 
 .unit-counter-initiative {
-  left: -0.3rem;
+  left: 0.12rem;
 }
 
 .unit-counter-battle-rating {
-  right: -0.3rem;
+  right: 0.12rem;
 }
 
 .unit-counter-stat b {
-  font-family: Georgia, serif;
-  font-size: 0.78rem;
+  display: block;
+  font-family: system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 850;
   line-height: 1;
-  transform: translateY(-0.02em);
+  transform: translateY(-0.035em);
 }
 
 .unit-counter-half-hit {
@@ -1527,7 +1647,7 @@ h3 {
 .battle-unit-body {
   display: grid;
   grid-template-columns: 82px minmax(0, 1fr);
-  gap: 0.82rem;
+  gap: 1rem;
   align-items: center;
 }
 
@@ -1542,29 +1662,23 @@ h3 {
 }
 
 .battle-unit-counter .unit-counter-strength {
-  top: 50%;
-  right: -0.72rem;
-  bottom: auto;
-  left: auto;
-  min-width: 2.05rem;
-  width: 2.05rem;
-  height: 2.05rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.04rem;
-  transform: translateY(-50%);
-}
-
-.battle-unit-counter .roman-counter-name {
-  font-size: 0.7rem;
-}
-
-.battle-unit-counter .unit-counter-strength small {
-  font-size: 0.45rem;
+  top: auto;
+  right: auto;
+  bottom: -0.78rem;
+  left: 50%;
+  min-width: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  transform: translateX(-50%);
 }
 
 .battle-unit-counter .unit-counter-strength b {
   font-size: 1.05rem;
+}
+
+.battle-unit-counter .roman-counter-name {
+  font-size: 0.7rem;
 }
 
 .battle-unit-info {
