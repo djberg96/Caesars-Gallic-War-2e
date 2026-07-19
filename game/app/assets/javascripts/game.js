@@ -878,14 +878,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const count = card.title === "Massive Revolt" ? 3 : card.title === "Major Revolt" ? 2 : 1;
+    const effectiveTitle = card.title === "Massive Revolt" && state.active === "barbarian" && state.turn === 0 ? "Minor Revolt" : card.title;
+    const count = effectiveTitle === "Massive Revolt" ? 3 : effectiveTitle === "Major Revolt" ? 2 : 1;
+    if (effectiveTitle !== card.title) log(`Turn 1: ${card.title} is treated as a ${effectiveTitle}.`);
     activateArea(state.selectedArea, state.active === "roman" ? "roman" : "barbarian");
-    if (card.title === "Massive Revolt" && state.active === "barbarian") {
+    if (effectiveTitle === "Massive Revolt" && state.active === "barbarian") {
       const v = state.units.vercingetorix;
       v.location = state.selectedArea;
       v.owner = "barbarian";
     }
-    log(`${card.title} resolved for ${areaName(state.selectedArea)}. Apply up to ${count} selected areas manually if needed.`);
+    log(`${effectiveTitle} resolved for ${areaName(state.selectedArea)}. Apply up to ${count} selected areas manually if needed.`);
   }
 
   async function chooseEventTarget(card) {
@@ -1128,8 +1130,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const effectiveTitle = card.title === "Massive Revolt"
+      ? state.turn < 5 ? "Major Revolt" : "Massive Revolt"
+      : card.title;
+    if (effectiveTitle !== card.title) log(`Turn ${state.turn + 1}: ${card.title} is treated as a ${effectiveTitle}.`);
     activateArea(target, "barbarian");
-    if (card.title === "Massive Revolt" && state.turn >= 5) {
+    if (effectiveTitle === "Minor Revolt") return;
+
+    if (effectiveTitle === "Massive Revolt") {
       const v = state.units.vercingetorix;
       v.location = target;
       v.owner = "barbarian";

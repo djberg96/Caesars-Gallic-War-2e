@@ -217,6 +217,7 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     card = card_hash("event_4_massive_revolt")
     state = base_state.merge(
       "active" => "barbarian",
+      "turn" => 1,
       "mode" => "hotseat",
       "revealed" => true,
       "selectedArea" => "allobroges",
@@ -251,6 +252,46 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal "allobroges", result.dig("units", "vercingetorix", "location")
     assert_equal "barbarian", result.dig("units", "vercingetorix", "owner")
     assert_match "Massive Revolt resolved", result["log"].first
+  end
+
+  test "treats barbarian massive revolt as minor on turn one outside solitaire" do
+    card = card_hash("event_4_massive_revolt")
+    state = base_state.merge(
+      "active" => "barbarian",
+      "turn" => 0,
+      "mode" => "hotseat",
+      "revealed" => true,
+      "selectedArea" => "allobroges",
+      "selectedCard" => nil,
+      "committed" => { "roman" => nil, "barbarian" => card },
+      "hands" => { "roman" => [], "barbarian" => [card] }
+    )
+    state["units"]["allobroges"] = {
+      "id" => "allobroges",
+      "name" => "Allobroges",
+      "type" => "barbarian",
+      "owner" => "neutral",
+      "location" => "allobroges",
+      "home" => "allobroges",
+      "step" => 0
+    }
+    state["units"]["vercingetorix"] = {
+      "id" => "vercingetorix",
+      "name" => "Vercingetorix",
+      "type" => "leader",
+      "owner" => "neutral",
+      "location" => "offboard",
+      "home" => "offboard",
+      "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(area_id: "allobroges")
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_equal "offboard", result.dig("units", "vercingetorix", "location")
+    assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Minor Revolt."
+    assert_match(/Minor Revolt resolved/, result["log"].first)
   end
 
   private

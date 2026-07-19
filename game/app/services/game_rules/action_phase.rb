@@ -151,8 +151,12 @@ module GameRules
       area = Area.find_by(key: area_id)
       raise InvalidAction, "Unknown area #{area_id}." unless area
 
+      effective_title = effective_barbarian_revolt_title(card)
+      if effective_title != card.fetch("title")
+        log("Turn #{@state.fetch("turn", 0).to_i + 1}: #{card.fetch("title")} is treated as a #{effective_title}.")
+      end
       activate_area!(area, active_player == "roman" ? "roman" : "barbarian")
-      if card.fetch("title") == "Massive Revolt" && active_player == "barbarian"
+      if effective_title == "Massive Revolt" && active_player == "barbarian"
         vercingetorix = units["vercingetorix"]
         if vercingetorix
           vercingetorix["location"] = area.key
@@ -160,8 +164,8 @@ module GameRules
         end
       end
 
-      count = card.fetch("title") == "Massive Revolt" ? 3 : card.fetch("title") == "Major Revolt" ? 2 : 1
-      log("#{card.fetch("title")} resolved for #{area.name}. Apply up to #{count} selected areas manually if needed.")
+      count = effective_title == "Massive Revolt" ? 3 : effective_title == "Major Revolt" ? 2 : 1
+      log("#{effective_title} resolved for #{area.name}. Apply up to #{count} selected areas manually if needed.")
       persist!
     end
 
@@ -190,6 +194,14 @@ module GameRules
 
     def revolt_event?(card)
       card.fetch("title").include?("Revolt")
+    end
+
+    def effective_barbarian_revolt_title(card)
+      title = card.fetch("title")
+      return title unless active_player == "barbarian" && title == "Massive Revolt"
+      return "Minor Revolt" if @state.fetch("turn", 0).to_i.zero?
+
+      title
     end
 
     def roman_revolt_target?(unit)

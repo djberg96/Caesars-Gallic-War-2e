@@ -62,6 +62,40 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_includes result["log"], "Barbarian activates Allobroges."
   end
 
+  test "treats turn one massive revolt as a major revolt in solitaire" do
+    state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
+    state["units"]["vercingetorix"] = {
+      "id" => "vercingetorix",
+      "name" => "Vercingetorix",
+      "type" => "leader",
+      "owner" => "neutral",
+      "location" => "offboard",
+      "home" => "offboard",
+      "step" => 0,
+      "strengths" => [4]
+    }
+    state["units"]["boii"] = {
+      "id" => "boii",
+      "name" => "Boii",
+      "type" => "barbarian",
+      "owner" => "neutral",
+      "location" => "boii",
+      "home" => "boii",
+      "step" => 0,
+      "strengths" => [3]
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, target: "allobroges").draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_equal "allobroges", result.dig("units", "allobroges", "location")
+    assert_equal "barbarian", result.dig("units", "boii", "owner")
+    assert_equal "offboard", result.dig("units", "vercingetorix", "location")
+    assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Major Revolt."
+    assert_match(/Bot revolt areas: Allobroges, Boii/, result["log"].join(" "))
+  end
+
   private
 
   def bot_state(bot_deck:)

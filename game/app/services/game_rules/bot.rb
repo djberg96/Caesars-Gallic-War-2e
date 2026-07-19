@@ -101,16 +101,66 @@ module GameRules
         return
       end
 
-      activate_area!(target, "barbarian")
-      if card.fetch("title") == "Massive Revolt" && @state.fetch("turn", 0).to_i >= 5
+      effective_title = effective_revolt_title(card)
+      if effective_title != card.fetch("title")
+        log("Turn #{@state.fetch("turn", 0).to_i + 1}: #{card.fetch("title")} is treated as a #{effective_title}.")
+      end
+      targets = revolt_targets(target, revolt_area_count(effective_title))
+      targets.each { |area_id| activate_area!(area_id, "barbarian") }
+      log("Bot revolt areas: #{targets.map { |area_id| area_name(area_id) }.join(", ")}.") if targets.many?
+      return if effective_title == "Minor Revolt"
+
+      if effective_title == "Massive Revolt"
         vercingetorix = units["vercingetorix"]
         if vercingetorix
-          vercingetorix["location"] = target
+          vercingetorix["location"] = targets.first
           vercingetorix["owner"] = "barbarian"
-          log("Vercingetorix enters at #{area_name(target)}.")
+          log("Vercingetorix enters at #{area_name(targets.first)}.")
         end
       end
-      bot_move_from(target)
+      targets.each { |area_id| bot_move_from(area_id) }
+    end
+
+    def effective_revolt_title(card)
+      title = card.fetch("title")
+      return title unless title == "Massive Revolt"
+
+      turn = @state.fetch("turn", 0).to_i + 1
+      return "Major Revolt" if turn <= 5
+
+      title
+    end
+
+    def revolt_area_count(title)
+      return 3 if title == "Massive Revolt"
+      return 2 if title == "Major Revolt"
+
+      1
+    end
+
+    def revolt_targets(first, count)
+      selected = [first]
+      return selected if count == 1
+
+      area = Area.find_by(key: first)
+      adjacent = area ? area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key) : []
+      adjacent.select { |area_id| revolt_target_area?(area_id) && !selected.include?(area_id) }
+        .sample(count - selected.length)
+        .each { |area_id| selected << area_id }
+
+      if selected.length < count
+        remaining = Area.order(:key).reject(&:sea?).map(&:key).select do |area_id|
+          revolt_target_area?(area_id) && !selected.include?(area_id)
+        end
+        remaining.sample(count - selected.length).each { |area_id| selected << area_id }
+      end
+      selected
+    end
+
+    def revolt_target_area?(area_id)
+      return false if @state.fetch("turn", 0).to_i.zero? && area_id == "helvetii"
+
+      neutral_area?(area_id) || roman_controlled_area?(area_id)
     end
 
     def random_target
