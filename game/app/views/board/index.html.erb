@@ -13,6 +13,14 @@
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
       <button id="toggle-pieces" type="button" aria-pressed="false">Hide Units</button>
+      <label class="select-label" for="map-zoom">Zoom</label>
+      <select id="map-zoom" class="map-zoom" aria-label="Map zoom">
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="1" selected>100%</option>
+        <option value="1.25">125%</option>
+        <option value="1.5">150%</option>
+      </select>
       <button id="export-game" type="button">Save</button>
       <button id="import-game" type="button">Load</button>
       <label class="select-label" for="play-mode">Mode</label>
@@ -28,11 +36,15 @@
     </div>
 
     <div id="board" class="board">
-      <img src="<%= @game_data[:map] %>" alt="Caesar's Gallic War map">
-      <svg id="area-layer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-      <div id="track-marker-layer" class="track-marker-layer" aria-label="Game record markers"></div>
-      <div id="piece-layer" class="piece-layer"></div>
-      <div id="neutral-activation-layer" class="neutral-activation-layer" aria-label="Neutral tribe activation cards"></div>
+      <div id="board-stage" class="board-stage">
+        <div id="board-canvas" class="board-canvas">
+          <img src="<%= @game_data[:map] %>" alt="Caesar's Gallic War map">
+          <svg id="area-layer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div id="track-marker-layer" class="track-marker-layer" aria-label="Game record markers"></div>
+          <div id="piece-layer" class="piece-layer"></div>
+          <div id="neutral-activation-layer" class="neutral-activation-layer" aria-label="Neutral tribe activation cards"></div>
+        </div>
+      </div>
     </div>
   </section>
 

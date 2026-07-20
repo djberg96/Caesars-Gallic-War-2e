@@ -117,6 +117,10 @@ h3 {
   color: var(--muted);
 }
 
+.map-zoom {
+  min-width: 4.8rem;
+}
+
 .optional-rule-toggle {
   display: inline-flex;
   align-items: center;
@@ -154,12 +158,22 @@ h3 {
   height: clamp(120px, 24vh, 260px);
 }
 
-.board > img {
-  display: block;
-  width: min(100%, 980px);
-  min-width: 760px;
-  height: auto;
+.board-stage {
+  position: relative;
   margin: 0 auto;
+}
+
+.board-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+.board-canvas > img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 #area-layer,
@@ -168,12 +182,8 @@ h3 {
 .neutral-activation-layer {
   position: absolute;
   inset: 0;
-  width: min(100%, 980px);
-  min-width: 760px;
-  height: auto;
-  aspect-ratio: 1664 / 2080;
-  left: 50%;
-  translate: -50% 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 

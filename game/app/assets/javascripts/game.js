@@ -11,8 +11,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let state;
 
   const els = {
+    board: document.querySelector("#board"),
+    boardStage: document.querySelector("#board-stage"),
+    boardCanvas: document.querySelector("#board-canvas"),
     areaLayer: document.querySelector("#area-layer"),
-    boardImage: document.querySelector("#board > img"),
+    boardImage: document.querySelector("#board-canvas > img"),
+    mapZoom: document.querySelector("#map-zoom"),
     trackMarkerLayer: document.querySelector("#track-marker-layer"),
     pieceLayer: document.querySelector("#piece-layer"),
     neutralActivationLayer: document.querySelector("#neutral-activation-layer"),
@@ -55,6 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
     importError: document.querySelector("#import-error"),
     newGameDialog: document.querySelector("#new-game-dialog")
   };
+  const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
+  const mapAspectRatio = 2080 / 1664;
   const hitMapSize = { width: 832, height: 1040 };
   let areaHitMap = null;
   let dragState = null;
@@ -65,6 +71,62 @@ document.addEventListener("DOMContentLoaded", () => {
   let zoomedCardId = null;
   let resultDialogQueue = [];
   let splayedPieceStack = null;
+  let boardResizeObserver = null;
+  let mapZoom = storedMapZoom();
+
+  function storedMapZoom() {
+    try {
+      const stored = Number(window.localStorage.getItem("cgw-map-zoom"));
+      return mapZoomLevels.includes(stored) ? stored : 1;
+    } catch (_error) {
+      return 1;
+    }
+  }
+
+  function mapViewportCenter() {
+    const width = els.boardStage.offsetWidth;
+    const height = els.boardStage.offsetHeight;
+    if (!width || !height) return { x: 0.5, y: 0 };
+    return {
+      x: (els.board.scrollLeft + (els.board.clientWidth / 2) - els.boardStage.offsetLeft) / width,
+      y: (els.board.scrollTop + (els.board.clientHeight / 2) - els.boardStage.offsetTop) / height
+    };
+  }
+
+  function layoutMapZoom({ preserveCenter = true } = {}) {
+    if (!els.board || !els.boardStage || !els.boardCanvas) return;
+    const center = preserveCenter ? mapViewportCenter() : null;
+    const baseWidth = Math.min(980, Math.max(760, els.board.clientWidth));
+    const baseHeight = baseWidth * mapAspectRatio;
+    els.boardStage.style.width = `${baseWidth * mapZoom}px`;
+    els.boardStage.style.height = `${baseHeight * mapZoom}px`;
+    els.boardCanvas.style.width = `${baseWidth}px`;
+    els.boardCanvas.style.height = `${baseHeight}px`;
+    els.boardCanvas.style.transform = `scale(${mapZoom})`;
+    if (!center) {
+      els.board.scrollLeft = Math.max(0, els.boardStage.offsetLeft + (els.boardStage.offsetWidth / 2) - (els.board.clientWidth / 2));
+      els.board.scrollTop = 0;
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      els.board.scrollLeft = els.boardStage.offsetLeft + (center.x * els.boardStage.offsetWidth) - (els.board.clientWidth / 2);
+      els.board.scrollTop = els.boardStage.offsetTop + (center.y * els.boardStage.offsetHeight) - (els.board.clientHeight / 2);
+    });
+  }
+
+  function setMapZoom(value) {
+    const requested = Number(value);
+    if (!mapZoomLevels.includes(requested) || requested === mapZoom) return;
+    mapZoom = requested;
+    els.mapZoom.value = String(mapZoom);
+    try {
+      window.localStorage.setItem("cgw-map-zoom", String(mapZoom));
+    } catch (_error) {
+      // Zoom still works when browser storage is unavailable.
+    }
+    layoutMapZoom();
+  }
 
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
@@ -2960,6 +3022,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
+  els.mapZoom?.addEventListener("change", (event) => setMapZoom(event.target.value));
   els.toggleHand?.addEventListener("click", toggleHand);
   els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
   document.querySelector("#import-game").addEventListener("click", openImportDialog);
@@ -2984,6 +3047,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
 
+  if (els.mapZoom) els.mapZoom.value = String(mapZoom);
+  layoutMapZoom({ preserveCenter: false });
+  if (window.ResizeObserver && els.board) {
+    boardResizeObserver = new ResizeObserver(() => layoutMapZoom());
+    boardResizeObserver.observe(els.board);
+  } else {
+    window.addEventListener("resize", () => layoutMapZoom());
+  }
   prepareAreaHitMap();
   newGame();
 });

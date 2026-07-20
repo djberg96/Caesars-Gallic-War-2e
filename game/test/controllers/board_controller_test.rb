@@ -23,6 +23,18 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".board-toolbar #load-game", count: 0
     assert_select ".board-toolbar #import-game", text: "Load"
     assert_select ".board-toolbar #export-game", text: "Save"
+    assert_select ".board-toolbar #map-zoom" do
+      assert_select "option", text: "50%"
+      assert_select "option", text: "75%"
+      assert_select "option[selected]", text: "100%"
+      assert_select "option", text: "125%"
+      assert_select "option", text: "150%"
+    end
+    assert_select "#board > #board-stage > #board-canvas" do
+      assert_select "img[alt=?]", "Caesar's Gallic War map"
+      assert_select "#area-layer"
+      assert_select "#piece-layer"
+    end
     assert_select "#import-dialog #import-form"
     assert_select "#new-game-dialog"
     assert_select "#new-game-dialog #save-new-game", text: "Save & Start New"
