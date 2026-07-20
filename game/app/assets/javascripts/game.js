@@ -1665,7 +1665,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function turnTrackPosition(turn) {
     const tracked = Math.max(0, Math.min(Number(turn) || 0, gameData.years.length - 1));
-    return { x: 73.19 + (tracked * 3.11), y: 93.55 };
+    return { x: 73.19 + (tracked * 3.11), y: 92.78 };
   }
 
   function areaFromMapClick(event) {
