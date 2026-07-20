@@ -82,7 +82,13 @@ module GameRules
       moved = attackers.first(2)
       moved.each { |unit| unit["location"] = target.key }
       log("Bot moves #{moved.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
-      @state = GameRules::Battle.new(session: @session, state: @state).resolve!
+      entry_origins = moved.to_h { |unit| [unit.fetch("id"), area.key] }
+      @state = GameRules::Battle.new(
+        session: @session,
+        state: @state,
+        attacker: "barbarian",
+        entry_origins: entry_origins
+      ).resolve!(main_origin: area.key)
       true
     end
 

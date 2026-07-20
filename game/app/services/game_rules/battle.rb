@@ -4,10 +4,12 @@ module GameRules
 
     INITIATIVE_ORDER = { "A" => 1, "B" => 2, "C" => 3, "D" => 4 }.freeze
 
-    def initialize(session:, state:, rolls: nil)
+    def initialize(session:, state:, rolls: nil, attacker: nil, entry_origins: nil)
       @session = session
       @state = state.deep_dup
       @rolls = Array(rolls).map(&:to_i)
+      @attacker = attacker.presence
+      @entry_origins = (entry_origins || {}).stringify_keys
     end
 
     def resolve!(area_id: nil, main_origin: nil)
@@ -66,7 +68,7 @@ module GameRules
     private
 
     def build_battle(area, main_origin: nil)
-      attacker = @state.fetch("active", "roman")
+      attacker = @attacker || @state.fetch("active", "roman")
       defender = attacker == "roman" ? "barbarian" : "roman"
       unit_ids = area_units(area.key)
         .select { |unit| unit["owner"].in?(["roman", "barbarian"]) && current_strength(unit).positive? }
@@ -75,7 +77,7 @@ module GameRules
       attacker_ids = unit_ids.select { |id| unit(id)["owner"] == attacker }
       defender_ids = unit_ids.select { |id| unit(id)["owner"] == defender }
       main_origin ||= inferred_attacker_main_origin(area.key, attacker_ids)
-      entries = movement_entries(unit_ids, area.key)
+      entries = movement_entries(unit_ids, area.key).merge(@entry_origins.slice(*unit_ids))
 
       battle_data = {
         "area" => area.key,
@@ -673,11 +675,13 @@ module GameRules
 
     def enemy_entry_areas(owner)
       ids = Array(battle["attackers"]) + Array(battle["defenders"]) + Array(battle["retreated"]) + Array(battle["fort"]) + Array(battle["entries"]&.keys)
-      ids.uniq.filter_map do |id|
+      areas = ids.uniq.filter_map do |id|
         next unless enemy?(unit(id)["owner"], owner)
 
         battle.dig("entries", id)
-      end.uniq
+      end
+      areas << battle["mainOrigin"] if owner == battle["defender"] && battle["mainOrigin"].present?
+      areas.compact.uniq
     end
 
     def apply_retreat_capacity!(target, border)

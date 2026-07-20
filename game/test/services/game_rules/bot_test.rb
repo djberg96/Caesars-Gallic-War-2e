@@ -62,6 +62,42 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_includes result["log"], "Barbarian activates Allobroges."
   end
 
+  test "records the bot entry border and prevents the defender retreating through it" do
+    state = bot_state(bot_deck: [card_hash("boii")])
+    state["units"] = {
+      "volcae" => barbarian_unit("volcae", "Volcae", "volcae", "roman", [2, 1], fire: 1),
+      "boii" => barbarian_unit("boii", "Boii", "boii", "barbarian", [3, 2, 1], fire: 2),
+      "helvii" => barbarian_unit("helvii", "Helvii", "boii", "barbarian", [2, 1], fire: 1),
+      "tolosates" => barbarian_unit("tolosates", "Tolosates", "tolosates", "neutral", [2, 1], fire: 1),
+      "cadurci" => barbarian_unit("cadurci", "Cadurci", "cadurci", "neutral", [2, 1], fire: 1),
+      "arverni" => barbarian_unit("arverni", "Arverni", "arverni", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_equal "boii", result.dig("battle", "mainOrigin")
+    assert_equal({ "boii" => "boii", "helvii" => "boii" }, result.dig("battle", "entries"))
+    assert_equal "volcae", result.dig("battle", "activeUnit")
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: result).act!(
+        action: "retreat",
+        unit_id: "volcae",
+        target: "boii"
+      )
+    end
+    assert_match "enemy units entered Volcae from there", error.message
+
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "retreat",
+      unit_id: "volcae"
+    )
+    assert_equal "transalpine_gaul", result.dig("units", "volcae", "location")
+  end
+
   test "treats turn one massive revolt as a major revolt in solitaire" do
     state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
     state["units"]["vercingetorix"] = {
@@ -130,5 +166,20 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
   def card_hash(key)
     Card.find_by!(key: key).game_data.stringify_keys
+  end
+
+  def barbarian_unit(id, name, home, owner, strengths, fire:)
+    {
+      "id" => id,
+      "name" => name,
+      "type" => "barbarian",
+      "owner" => owner,
+      "location" => home,
+      "home" => home,
+      "step" => 0,
+      "strengths" => strengths,
+      "initiative" => "C",
+      "fire" => fire
+    }
   end
 end

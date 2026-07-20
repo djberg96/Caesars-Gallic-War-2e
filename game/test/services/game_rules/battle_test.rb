@@ -461,6 +461,42 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "enemy units entered Allobroges from there", error.message
   end
 
+  test "the attacking main origin blocks a defender retreat when per-unit entries are unavailable" do
+    state = battle_state
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "field",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => "allobroges",
+      "acted" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => ["allobroges"],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => {},
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => nil
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(
+        action: "retreat",
+        unit_id: "allobroges",
+        target: "transalpine_gaul"
+      )
+    end
+
+    assert_match "enemy units entered Allobroges from there", error.message
+  end
+
   test "victorious units cannot regroup into an unresolved battle area" do
     state = battle_state
     state["units"]["allobroges"]["location"] = "eliminated"
