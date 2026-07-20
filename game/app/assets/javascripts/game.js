@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     importError: document.querySelector("#import-error"),
     newGameDialog: document.querySelector("#new-game-dialog")
   };
-  const hitMapSize = { width: 880, height: 1020 };
+  const hitMapSize = { width: 832, height: 1040 };
   let areaHitMap = null;
   let dragState = null;
   let suppressNextPieceClick = false;
@@ -1658,14 +1658,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function recordTrackPosition(value) {
     const tracked = Math.max(0, Math.min(Number(value) || 0, 19));
     return {
-      x: tracked >= 10 ? 7.78 : 4.61,
-      y: 74.35 - ((tracked % 10) * 2.75)
+      x: tracked >= 10 ? 7.81 : 4.54,
+      y: 72.19 - ((tracked % 10) * 2.7)
     };
   }
 
   function turnTrackPosition(turn) {
     const tracked = Math.max(0, Math.min(Number(turn) || 0, gameData.years.length - 1));
-    return { x: 73.92 + (tracked * 3.18), y: 95.1 };
+    return { x: 73.19 + (tracked * 3.11), y: 93.55 };
   }
 
   function areaFromMapClick(event) {
@@ -1864,10 +1864,10 @@ document.addEventListener("DOMContentLoaded", () => {
       stack.className = `piece-stack${units.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${units.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
       stack.style.left = `${area.x}%`;
       stack.style.top = `${area.y}%`;
-      stack.style.setProperty("--compact-width", `${Math.max(64, columns * 18 + 42)}px`);
-      stack.style.setProperty("--compact-height", `${Math.max(64, rows * 22 + 42)}px`);
-      stack.style.setProperty("--splay-width", `${Math.max(84, columns * 76 + 48)}px`);
-      stack.style.setProperty("--splay-height", `${Math.max(84, rows * 76 + 48)}px`);
+      stack.style.setProperty("--compact-width", `${Math.max(58, columns * 16 + 38)}px`);
+      stack.style.setProperty("--compact-height", `${Math.max(58, rows * 20 + 38)}px`);
+      stack.style.setProperty("--splay-width", `${Math.max(78, columns * 68 + 44)}px`);
+      stack.style.setProperty("--splay-height", `${Math.max(78, rows * 68 + 44)}px`);
       const keepStackSplayed = () => {
         const restrictedArea = activeSplayArea();
         if (restrictedArea && restrictedArea !== areaId) return;
@@ -1893,10 +1893,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const row = Math.floor(index / columns);
         const column = index % columns;
         const columnsInRow = Math.min(columns, units.length - row * columns);
-        const compactX = (column - (columnsInRow - 1) / 2) * 18;
-        const compactY = (row - (rows - 1) / 2) * 22;
-        const splayX = (column - (columnsInRow - 1) / 2) * 76;
-        const splayY = (row - (rows - 1) / 2) * 76;
+        const compactX = (column - (columnsInRow - 1) / 2) * 16;
+        const compactY = (row - (rows - 1) / 2) * 20;
+        const splayX = (column - (columnsInRow - 1) / 2) * 68;
+        const splayY = (row - (rows - 1) / 2) * 68;
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
         const faceVisible = unitFaceVisibleToActivePlayer(unit);
@@ -1935,8 +1935,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderNeutralActivationCards() {
     els.neutralActivationLayer.innerHTML = "";
-    els.neutralActivationLayer.hidden = battleMapMode();
-    if (els.neutralActivationLayer.hidden) return;
+    els.neutralActivationLayer.hidden = false;
+    els.neutralActivationLayer.classList.toggle("is-passive", battleMapMode());
 
     const slots = [
       { player: "barbarian", label: "German player neutral tribe activation", cards: state.neutralActivationCards.barbarian || [] },

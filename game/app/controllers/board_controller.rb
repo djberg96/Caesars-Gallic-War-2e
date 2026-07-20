@@ -1,7 +1,7 @@
 class BoardController < ApplicationController
   def index
     @game_data = {
-      map: helpers.asset_path("Map/CGW_Map.jpg"),
+      map: helpers.asset_path("Map/CGW_Map_atlas.png"),
       markers: {
         roman_supply: helpers.asset_path("Blocks/Markers/Roman_Supply.svg"),
         roman_vp_x1: helpers.asset_path("Blocks/Markers/Roman_VP_x1.svg"),

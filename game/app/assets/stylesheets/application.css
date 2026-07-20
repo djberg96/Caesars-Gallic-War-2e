@@ -171,7 +171,7 @@ h3 {
   width: min(100%, 980px);
   min-width: 760px;
   height: auto;
-  aspect-ratio: 8800 / 10200;
+  aspect-ratio: 1664 / 2080;
   left: 50%;
   translate: -50% 0;
   pointer-events: none;
@@ -232,23 +232,22 @@ h3 {
 .neutral-activation-slot {
   position: absolute;
   display: block;
-  padding: 1.1%;
   color: var(--text);
   pointer-events: none;
 }
 
 .neutral-activation-slot-barbarian {
-  left: 87.2%;
-  top: 43.4%;
-  width: 10.2%;
-  height: 14.8%;
+  left: 86.18%;
+  top: 41.54%;
+  width: 12.62%;
+  height: 14.42%;
 }
 
 .neutral-activation-slot-roman {
-  left: 87.2%;
-  top: 58.5%;
-  width: 10.2%;
-  height: 13.7%;
+  left: 86.18%;
+  top: 56.15%;
+  width: 12.62%;
+  height: 14.42%;
 }
 
 .neutral-activation-slot > span {
@@ -266,7 +265,7 @@ h3 {
 
 .neutral-activation-card {
   position: absolute;
-  inset: 7% 9%;
+  inset: 2%;
   display: grid;
   align-content: center;
   overflow: hidden;
@@ -275,9 +274,13 @@ h3 {
   border-radius: 4px;
   background: rgba(22, 19, 14, 0.68);
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
-  translate: calc(var(--stack-index) * 7%) calc(var(--stack-index) * 6%);
+  translate: calc(var(--stack-index) * 2%) calc(var(--stack-index) * 2%);
   transition: translate 120ms ease;
   pointer-events: auto;
+}
+
+.neutral-activation-layer.is-passive .neutral-activation-card {
+  pointer-events: none;
 }
 
 .neutral-activation-slot:hover .neutral-activation-card:first-child:nth-last-child(2) {
@@ -370,7 +373,7 @@ h3 {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: clamp(34px, 4.8vw, 62px);
+  width: clamp(32px, 4.3vw, 56px);
   aspect-ratio: 1;
   padding: 0;
   border: 0;
