@@ -2245,7 +2245,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <small>AP ${card.ap} · Choose an action</small>
           <div class="card-zoom-action-list">
             ${actions.map((action) => `
-              <button type="button" data-card-zoom-action="${action.id}">
+              <button type="button" data-card-zoom-action="${action.id}"${action.disabled ? " disabled aria-disabled=\"true\"" : ""}>
                 <strong>${action.label}</strong>
                 <span>${action.detail}</span>
               </button>
@@ -2275,10 +2275,16 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "supply", label: "Supply", detail: supplyDetail }
     ];
     if (card.area) {
+      const activationLimit = neutralActivationLimit(state.active);
+      const activationsUsed = neutralActivationsUsed(state.active);
+      const activationLimitReached = activationsUsed >= activationLimit;
       actions.push({
         id: "activate",
         label: "Neutral Tribe",
-        detail: `Activate eligible tribes in ${areaName(card.area)}`
+        detail: activationLimitReached
+          ? `Yearly limit reached (${activationsUsed} of ${activationLimit} used)`
+          : `Activate eligible tribes in ${areaName(card.area)} · ${activationsUsed} of ${activationLimit} used`,
+        disabled: activationLimitReached
       });
     }
     actions.push(
@@ -2289,6 +2295,14 @@ document.addEventListener("DOMContentLoaded", () => {
       actions.push({ id: "event", label: "Event", detail: `Resolve ${card.title}` });
     }
     return actions;
+  }
+
+  function neutralActivationLimit(player) {
+    return player === "roman" ? 1 : 2;
+  }
+
+  function neutralActivationsUsed(player) {
+    return state.neutralActivationCards?.[player]?.length || 0;
   }
 
   async function playCardZoomAction(action) {

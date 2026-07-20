@@ -95,6 +95,44 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal "roman", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 
+  test "rejects a second Roman neutral tribe activation in the same year" do
+    state = base_state.merge(
+      "neutralActivationCards" => { "roman" => [card_hash("andes")], "barbarian" => [] }
+    )
+    state["units"]["allobroges"] = neutral_allobroges
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).activate_neutral!
+    end
+
+    assert_match "yearly neutral tribe activation limit (1)", error.message
+    assert_equal "neutral", session.reload.data.dig("units", "allobroges", "owner")
+  end
+
+  test "rejects a third Barbarian neutral tribe activation in the same year" do
+    card = card_hash("allobroges")
+    state = base_state.merge(
+      "active" => "barbarian",
+      "mode" => "hotseat",
+      "revealed" => true,
+      "committed" => { "roman" => nil, "barbarian" => card },
+      "neutralActivationCards" => {
+        "roman" => [],
+        "barbarian" => [card_hash("andes"), card_hash("veneti")]
+      }
+    )
+    state["units"]["allobroges"] = neutral_allobroges
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).activate_neutral!
+    end
+
+    assert_match "yearly neutral tribe activation limit (2)", error.message
+    assert_equal "neutral", session.reload.data.dig("units", "allobroges", "owner")
+  end
+
   test "performs a political action and locks undo after rolling dice" do
     state = base_state
     state["selectedArea"] = "allobroges"
@@ -295,6 +333,17 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
   end
 
   private
+
+  def neutral_allobroges
+    {
+      "id" => "allobroges",
+      "name" => "Allobroges",
+      "type" => "barbarian",
+      "owner" => "neutral",
+      "location" => "allobroges",
+      "step" => 1
+    }
+  end
 
   def base_state
     {

@@ -1319,6 +1319,20 @@ h3 {
   background: linear-gradient(135deg, rgba(102, 92, 58, 0.96), rgba(60, 57, 42, 0.96));
 }
 
+.card-zoom-action-list button:disabled,
+.card-zoom-action-list button:disabled:hover,
+.card-zoom-action-list button:disabled:focus-visible {
+  border-color: rgba(104, 101, 86, 0.45);
+  background: linear-gradient(135deg, rgba(48, 51, 44, 0.88), rgba(35, 38, 33, 0.9));
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.card-zoom-action-list button:disabled strong,
+.card-zoom-action-list button:disabled span {
+  color: #777568;
+}
+
 .card-zoom-action-list button strong {
   color: #f1e7cd;
   font-family: Georgia, serif;

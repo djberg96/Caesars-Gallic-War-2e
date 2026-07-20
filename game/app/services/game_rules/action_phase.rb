@@ -1,5 +1,7 @@
 module GameRules
   class ActionPhase
+    NEUTRAL_ACTIVATION_LIMITS = { "roman" => 1, "barbarian" => 2 }.freeze
+
     class InvalidAction < StandardError; end
 
     def initialize(session:, state:)
@@ -72,6 +74,8 @@ module GameRules
 
       card = action_card
       raise InvalidAction, card_prompt unless card
+      raise InvalidAction, neutral_activation_limit_message if neutral_activation_limit_reached?
+
       area_id = card["area"]
       raise InvalidAction, "Event cards cannot activate neutral tribes." if area_id.blank?
 
@@ -237,6 +241,19 @@ module GameRules
       @state["neutralActivationCards"] ||= { "roman" => [], "barbarian" => [] }
       @state["neutralActivationCards"][active_player] ||= []
       @state["neutralActivationCards"][active_player] << card
+    end
+
+    def neutral_activation_limit_reached?
+      neutral_activation_count >= NEUTRAL_ACTIVATION_LIMITS.fetch(active_player)
+    end
+
+    def neutral_activation_count
+      Array(@state.dig("neutralActivationCards", active_player)).length
+    end
+
+    def neutral_activation_limit_message
+      limit = NEUTRAL_ACTIVATION_LIMITS.fetch(active_player)
+      "#{player_name(active_player)} has reached the yearly neutral tribe activation limit (#{limit})."
     end
 
     def active_player
