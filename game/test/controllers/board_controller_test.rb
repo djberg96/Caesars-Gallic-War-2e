@@ -33,6 +33,7 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select "#board > #board-stage > #board-canvas" do
       assert_select "img[alt=?]", "Caesar's Gallic War map"
       assert_select "#area-layer"
+      assert_select "#movement-arrow-layer[aria-label='Battle entry arrows']"
       assert_select "#piece-layer"
     end
     assert_select "#import-dialog #import-form"

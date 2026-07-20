@@ -177,6 +177,7 @@ h3 {
 }
 
 #area-layer,
+.movement-arrow-layer,
 .track-marker-layer,
 .piece-layer,
 .neutral-activation-layer {
@@ -185,6 +186,46 @@ h3 {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.movement-entry-arrow {
+  opacity: 0.95;
+}
+
+.movement-entry-arrow-outline,
+.movement-entry-arrow-line {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.movement-entry-arrow-outline {
+  stroke: rgba(15, 16, 13, 0.82);
+  stroke-width: 0.9;
+}
+
+.movement-entry-arrow-line {
+  stroke-width: 0.48;
+  filter: drop-shadow(0 0.15px 0.2px rgba(0, 0, 0, 0.75));
+}
+
+.movement-entry-arrow.owner-roman .movement-entry-arrow-line {
+  stroke: #ed735b;
+}
+
+.movement-entry-arrow.owner-barbarian .movement-entry-arrow-line {
+  stroke: #79b875;
+}
+
+.movement-arrowhead-roman {
+  fill: #ed735b;
+  stroke: rgba(15, 16, 13, 0.82);
+  stroke-width: 0.9;
+}
+
+.movement-arrowhead-barbarian {
+  fill: #79b875;
+  stroke: rgba(15, 16, 13, 0.82);
+  stroke-width: 0.9;
 }
 
 .track-marker-layer {

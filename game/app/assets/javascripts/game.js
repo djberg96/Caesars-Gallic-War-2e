@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     areaLayer: document.querySelector("#area-layer"),
     boardImage: document.querySelector("#board-canvas > img"),
     mapZoom: document.querySelector("#map-zoom"),
+    movementArrowLayer: document.querySelector("#movement-arrow-layer"),
     trackMarkerLayer: document.querySelector("#track-marker-layer"),
     pieceLayer: document.querySelector("#piece-layer"),
     neutralActivationLayer: document.querySelector("#neutral-activation-layer"),
@@ -1524,6 +1525,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderStatus();
     renderYearlyObjectives();
     renderAreas();
+    renderMovementArrows();
     renderTrackMarkers();
     renderPieces();
     renderNeutralActivationCards();
@@ -1615,6 +1617,144 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
+  }
+
+  function renderMovementArrows() {
+    if (!els.movementArrowLayer) return;
+    els.movementArrowLayer.innerHTML = "";
+    if (!state.movement || piecesHidden) return;
+
+    const routes = battleEntryRoutes();
+    if (!routes.length) return;
+
+    const definitions = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    ["roman", "barbarian"].forEach((owner) => {
+      const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+      marker.id = `movement-arrowhead-${owner}`;
+      marker.setAttribute("viewBox", "0 0 10 10");
+      marker.setAttribute("refX", "8.4");
+      marker.setAttribute("refY", "5");
+      marker.setAttribute("markerWidth", "4");
+      marker.setAttribute("markerHeight", "4");
+      marker.setAttribute("orient", "auto-start-reverse");
+      const arrowhead = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      arrowhead.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+      arrowhead.classList.add(`movement-arrowhead-${owner}`);
+      marker.append(arrowhead);
+      definitions.append(marker);
+    });
+    els.movementArrowLayer.append(definitions);
+
+    routes.forEach((route) => {
+      const from = areas[route.from];
+      const to = areas[route.to];
+      const border = battleEntryBorderPoint(route.from, route.to);
+      const start = entryArrowPoint(from, border, 0.28);
+      const end = entryArrowPoint(border, to, 0.52);
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      const unitLabel = `${route.count} ${playerName(route.owner)} unit${route.count === 1 ? "" : "s"}`;
+      group.classList.add("movement-entry-arrow", `owner-${route.owner}`);
+      group.setAttribute("role", "img");
+      group.setAttribute("aria-label", `${unitLabel} entered ${areaName(route.to)} from ${areaName(route.from)}.`);
+
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = `${unitLabel} entered ${areaName(route.to)} from ${areaName(route.from)}.`;
+      group.append(title);
+
+      const outline = entryArrowPath(start, border, end, "movement-entry-arrow-outline");
+      const line = entryArrowPath(start, border, end, "movement-entry-arrow-line");
+      line.setAttribute("marker-end", `url(#movement-arrowhead-${route.owner})`);
+      group.append(outline, line);
+      els.movementArrowLayer.append(group);
+    });
+  }
+
+  function battleEntryRoutes() {
+    const battleAreas = new Set(contestedAreas());
+    if (state.battle?.area) battleAreas.add(state.battle.area);
+    const routes = new Map();
+
+    battleAreas.forEach((areaId) => {
+      const currentBattle = state.battle?.area === areaId ? state.battle : null;
+      const unitIds = currentBattle
+        ? [...(currentBattle.attackers || []), ...(currentBattle.defenders || [])]
+        : areaUnits(areaId).map((unit) => unit.id);
+
+      unitIds.forEach((unitId) => {
+        const unit = state.units[unitId];
+        if (!unit || !state.movement?.units?.[unitId]) return;
+        const origin = currentBattle?.entries?.[unitId] || movementEntry(unit, areaId);
+        if (!origin || origin === areaId || !areas[origin]?.links?.includes(areaId)) return;
+
+        const key = `${unit.owner}:${origin}->${areaId}`;
+        const route = routes.get(key) || { owner: unit.owner, from: origin, to: areaId, count: 0 };
+        route.count += 1;
+        routes.set(key, route);
+      });
+    });
+
+    return [...routes.values()];
+  }
+
+  function entryArrowPoint(from, to, progress) {
+    return {
+      x: from.x + ((to.x - from.x) * progress),
+      y: from.y + ((to.y - from.y) * progress)
+    };
+  }
+
+  function entryArrowPath(start, border, end, className) {
+    const tangent = {
+      x: (end.x - start.x) * 0.14,
+      y: (end.y - start.y) * 0.14
+    };
+    const firstControl = entryArrowPoint(start, border, 0.48);
+    const lastControl = entryArrowPoint(end, border, 0.48);
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", [
+      `M ${start.x.toFixed(3)} ${start.y.toFixed(3)}`,
+      `C ${firstControl.x.toFixed(3)} ${firstControl.y.toFixed(3)}`,
+      `${(border.x - tangent.x).toFixed(3)} ${(border.y - tangent.y).toFixed(3)}`,
+      `${border.x.toFixed(3)} ${border.y.toFixed(3)}`,
+      `C ${(border.x + tangent.x).toFixed(3)} ${(border.y + tangent.y).toFixed(3)}`,
+      `${lastControl.x.toFixed(3)} ${lastControl.y.toFixed(3)}`,
+      `${end.x.toFixed(3)} ${end.y.toFixed(3)}`
+    ].join(" "));
+    path.classList.add(className);
+    return path;
+  }
+
+  function areaPairKey(left, right) {
+    return [left, right].sort().join("<->");
+  }
+
+  function battleEntryBorderPoint(fromAreaId, toAreaId) {
+    const detected = areaHitMap?.borderPoints?.get(areaPairKey(fromAreaId, toAreaId));
+    if (detected) return detected;
+
+    const from = areas[fromAreaId];
+    const to = areas[toAreaId];
+    const midpoint = entryArrowPoint(from, to, 0.5);
+    const commonNeighbors = (from.links || [])
+      .filter((areaId) => areaId !== fromAreaId && areaId !== toAreaId && to.links?.includes(areaId))
+      .map((areaId) => areas[areaId])
+      .filter(Boolean);
+    if (!commonNeighbors.length) return midpoint;
+
+    const neighborCenter = commonNeighbors.reduce((center, area) => ({
+      x: center.x + (area.x / commonNeighbors.length),
+      y: center.y + (area.y / commonNeighbors.length)
+    }), { x: 0, y: 0 });
+    const awayX = midpoint.x - neighborCenter.x;
+    const awayY = (midpoint.y - neighborCenter.y) * mapAspectRatio;
+    const distance = Math.hypot(awayX, awayY);
+    if (!distance) return midpoint;
+
+    const offset = 3;
+    return {
+      x: midpoint.x + ((awayX / distance) * offset),
+      y: midpoint.y + (((awayY / distance) * offset) / mapAspectRatio)
+    };
   }
 
   function renderTrackMarkers() {
@@ -1824,6 +1964,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const componentSeeds = new Map();
+    const areaSeeds = [];
     Object.values(areas).filter((area) => !area.sea).forEach((area) => {
       const x = Math.round((area.x / 100) * (canvas.width - 1));
       const y = Math.round((area.y / 100) * (canvas.height - 1));
@@ -1832,11 +1973,102 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const seedComponent = labels[index];
       if (seedComponent < 0) return;
+      areaSeeds.push({ areaId: area.id, index });
       if (!componentSeeds.has(seedComponent)) componentSeeds.set(seedComponent, []);
       componentSeeds.get(seedComponent).push({ areaId: area.id, x: index % canvas.width, y: Math.floor(index / canvas.width) });
     });
 
-    areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds };
+    const territories = buildHitTerritories(labels, canvas.width, areaSeeds);
+    const borderPoints = findSharedBorderPoints(labels, territories, canvas.width, canvas.height);
+    areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds, borderPoints };
+    if (state) renderMovementArrows();
+  }
+
+  function buildHitTerritories(labels, width, areaSeeds) {
+    const territoryIds = areaSeeds.map((seed) => seed.areaId);
+    const territoryLabels = new Int16Array(labels.length);
+    territoryLabels.fill(-1);
+    const queue = new Int32Array(labels.length);
+    let head = 0;
+    let tail = 0;
+
+    areaSeeds.forEach((seed, territoryIndex) => {
+      territoryLabels[seed.index] = territoryIndex;
+      queue[tail] = seed.index;
+      tail += 1;
+    });
+
+    while (head < tail) {
+      const index = queue[head];
+      head += 1;
+      const territoryIndex = territoryLabels[index];
+      const x = index % width;
+      if (x > 0) tail = enqueueTerritory(index - 1, territoryIndex, labels, territoryLabels, queue, tail);
+      if (x < width - 1) tail = enqueueTerritory(index + 1, territoryIndex, labels, territoryLabels, queue, tail);
+      if (index >= width) tail = enqueueTerritory(index - width, territoryIndex, labels, territoryLabels, queue, tail);
+      if (index < labels.length - width) tail = enqueueTerritory(index + width, territoryIndex, labels, territoryLabels, queue, tail);
+    }
+
+    return { ids: territoryIds, labels: territoryLabels };
+  }
+
+  function enqueueTerritory(index, territoryIndex, labels, territoryLabels, queue, tail) {
+    if (labels[index] < 0 || territoryLabels[index] >= 0) return tail;
+    territoryLabels[index] = territoryIndex;
+    queue[tail] = index;
+    return tail + 1;
+  }
+
+  function findSharedBorderPoints(labels, territories, width, height) {
+    const connectedAreas = new Set();
+    Object.values(areas).forEach((area) => {
+      (area.links || []).forEach((linkedAreaId) => {
+        connectedAreas.add(areaPairKey(area.id, linkedAreaId));
+      });
+    });
+
+    const totals = new Map();
+    for (let y = 4; y < height - 4; y += 1) {
+      for (let x = 4; x < width - 4; x += 1) {
+        if (labels[(y * width) + x] !== -1) continue;
+        const touching = nearbyHitTerritories(territories.labels, width, x, y);
+        for (let left = 0; left < touching.length; left += 1) {
+          for (let right = left + 1; right < touching.length; right += 1) {
+            const pairKey = areaPairKey(territories.ids[touching[left]], territories.ids[touching[right]]);
+            if (!connectedAreas.has(pairKey)) continue;
+            const total = totals.get(pairKey) || { x: 0, y: 0, count: 0 };
+            total.x += x;
+            total.y += y;
+            total.count += 1;
+            totals.set(pairKey, total);
+          }
+        }
+      }
+    }
+
+    const points = new Map();
+    totals.forEach((total, pairKey) => {
+      if (!total.count) return;
+      points.set(pairKey, {
+        x: ((total.x / total.count) / (width - 1)) * 100,
+        y: ((total.y / total.count) / (height - 1)) * 100
+      });
+    });
+    return points;
+  }
+
+  function nearbyHitTerritories(territoryLabels, width, x, y) {
+    const territoryIndexes = new Set();
+    for (let radius = 1; radius <= 4; radius += 1) {
+      [
+        [radius, 0], [-radius, 0], [0, radius], [0, -radius],
+        [radius, radius], [radius, -radius], [-radius, radius], [-radius, -radius]
+      ].forEach(([dx, dy]) => {
+        const territoryIndex = territoryLabels[((y + dy) * width) + x + dx];
+        if (territoryIndex >= 0) territoryIndexes.add(territoryIndex);
+      });
+    }
+    return [...territoryIndexes];
   }
 
   function isBorderPixel(red, green, blue) {
