@@ -725,6 +725,26 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "discard").joins(:card).pluck("cards.key")
   end
 
+  test "does not discard a card while its battle is unresolved" do
+    state = base_state.merge(
+      mode: "solitaire",
+      active: "roman",
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      selectedCard: card_hash("allobroges"),
+      committed: { roman: nil, barbarian: nil },
+      battle: { area: "allobroges", phase: "field" }
+    )
+    session = GameSession.create!(data: state)
+
+    post discard_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data, player: "roman" },
+         as: :json
+
+    assert_response :unprocessable_entity
+    assert_match "Resolve the battle", JSON.parse(response.body).fetch("error")
+    assert_equal ["allobroges"], session.reload.data.dig("hands", "roman").map { |card| card.fetch("id") }
+  end
+
   private
 
   def card_hash(key)

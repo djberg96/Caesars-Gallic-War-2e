@@ -38,6 +38,7 @@ module GameRules
     def discard!(player:)
       @player = player.to_s
       validate_player!
+      raise InvalidAction, "Resolve the battle before discarding the played card." if @state["battle"].present?
 
       played = action_card
       raise InvalidAction, "No card is ready to discard." unless played

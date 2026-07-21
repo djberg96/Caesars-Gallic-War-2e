@@ -857,7 +857,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.targetingAction = null;
       normalizeLoadedState();
       showResultDialog(resultMessage.includes("succeeds") ? "Political Success" : "Political Failure", resultMessage);
-      await discardSelectedCard();
+      if (!state.battle) await discardSelectedCard();
     } catch (error) {
       log(error.message);
     }

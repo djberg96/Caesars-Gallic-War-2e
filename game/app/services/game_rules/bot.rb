@@ -67,6 +67,7 @@ module GameRules
           unit["location"] = unit.fetch("home")
         end
         log("Bot political action succeeds in #{area.name} on roll #{roll}.")
+        resolve_bot_battle!(area.key, { "attacker" => "barbarian", "entries" => {} }) if contested_area?(area.key)
       else
         log("Bot political action fails in #{area.name} on roll #{roll}.")
       end

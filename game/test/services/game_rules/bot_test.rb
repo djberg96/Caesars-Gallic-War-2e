@@ -50,6 +50,34 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_match "political action succeeds", result["log"].join(" ")
   end
 
+  test "a successful bot political action attacks Romans occupying the tribe's home" do
+    state = bot_state(bot_deck: [card_hash("allobroges")]).merge("botNeutralActivations" => 2)
+    state["units"]["allobroges"]["owner"] = "roman"
+    state["units"]["legion_vii"] = {
+      "id" => "legion_vii",
+      "name" => "Legion VII",
+      "type" => "roman",
+      "owner" => "roman",
+      "location" => "allobroges",
+      "home" => "roman_off_map",
+      "step" => 0,
+      "strengths" => [4, 3, 2, 1],
+      "initiative" => "A",
+      "fire" => 2
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, roll: 1).draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_equal "allobroges", result.dig("units", "allobroges", "location")
+    assert_equal "allobroges", result.dig("battle", "area")
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_includes result.dig("battle", "attackers"), "allobroges"
+    assert_includes result.dig("battle", "defenders"), "legion_vii"
+  end
+
   test "uses a political action instead of treating an unplayable area card as a revolt" do
     state = bot_state(bot_deck: [card_hash("leuci")]).merge("botNeutralActivations" => 2)
     state["units"] = {

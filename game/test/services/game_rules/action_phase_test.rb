@@ -159,6 +159,45 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert session.reload.dice_rolled_this_turn
   end
 
+  test "a successful political action returns the home tribe as the attacker" do
+    state = base_state
+    state["units"]["allobroges"] = {
+      "id" => "allobroges",
+      "name" => "Allobroges",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "helvetii",
+      "home" => "allobroges",
+      "step" => 0,
+      "strengths" => [2, 1],
+      "initiative" => "C",
+      "fire" => 2
+    }
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "allobroges",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [2, 1],
+      "initiative" => "C",
+      "fire" => 2
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).political!(area_id: "allobroges", roll: 2)
+
+    assert_equal "roman", result.dig("units", "allobroges", "owner")
+    assert_equal "allobroges", result.dig("units", "allobroges", "location")
+    assert_equal "allobroges", result.dig("battle", "area")
+    assert_equal "roman", result.dig("battle", "attacker")
+    assert_equal "barbarian", result.dig("battle", "defender")
+    assert_includes result.dig("battle", "attackers"), "allobroges"
+    assert_includes result.dig("battle", "defenders"), "helvetii"
+  end
+
   test "resolves baggage train event" do
     state = base_state.merge(
       "supply" => 14,
