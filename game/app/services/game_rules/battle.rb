@@ -323,19 +323,24 @@ module GameRules
 
     def retreat!(unit_id, target)
       validate_active_unit!(unit_id)
-      raise InvalidAction, "#{unit(unit_id).fetch("name")} is inside the fort and cannot retreat from the field." if battle["fort"].include?(unit_id)
+      acting = unit(unit_id)
+      raise InvalidAction, "#{acting.fetch("name")} is inside the fort and cannot retreat from the field." if battle["fort"].include?(unit_id)
 
       target ||= retreat_target(unit_id)
-      raise InvalidAction, "#{unit(unit_id).fetch("name")} has no legal retreat area." unless target
+      raise InvalidAction, "#{acting.fetch("name")} has no legal retreat area." unless target
 
+      destination = Area.find_by(key: target)
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless destination && !destination.sea?
       border = border(battle_area.key, target)
-      raise InvalidAction, "#{unit(unit_id).fetch("name")} cannot retreat to #{area_name(target)}." unless border
-      if blocked_retreat_area?(unit(unit_id), target)
-        raise InvalidAction, "#{unit(unit_id).fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless border
+      raise InvalidAction, "Only German units may retreat into Germania." if target == "germania" && acting["type"] != "german"
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat into an enemy or neutral occupied area." if non_friendly_units_in?(target, acting["owner"])
+      if blocked_retreat_area?(acting, target)
+        raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
       end
 
       apply_retreat_capacity!(target, border)
-      unit(unit_id)["location"] = target
+      acting["location"] = target
       battle["retreated"] << unit_id
       record_action_result({
         "type" => "retreat",
@@ -357,6 +362,8 @@ module GameRules
       raise InvalidAction, "#{acting.fetch("name")} is inside the fort and cannot retreat from the field." if battle["fort"].include?(unit_id)
       raise InvalidAction, "#{acting.fetch("name")} has no legal retreat area." if target.blank?
 
+      destination = Area.find_by(key: target)
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless destination && !destination.sea?
       border = border(battle_area.key, target)
       raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless border
       raise InvalidAction, "Only German units may retreat into Germania." if target == "germania" && acting["type"] != "german"
@@ -447,6 +454,15 @@ module GameRules
 
         advance_battle!
       end
+
+      regroup!(nil) if bot_must_finish_regroup?
+    end
+
+    def bot_must_finish_regroup?
+      battle &&
+        battle["phase"] == "regroup" &&
+        battle["winner"] == "barbarian" &&
+        @state.fetch("mode", "hotseat") != "hotseat"
     end
 
     def bot_controls_active_unit?

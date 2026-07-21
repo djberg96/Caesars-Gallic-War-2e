@@ -2860,11 +2860,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function wireBattleActionButtons() {
     els.battleZones.querySelectorAll("[data-battle-action]").forEach((button) => {
-      button.addEventListener("click", (event) => {
+      button.addEventListener("click", async (event) => {
         event.stopPropagation();
-        battleAction(button.dataset.battleAction, button.dataset.unitId);
+        const action = button.dataset.battleAction;
+        const unitId = button.dataset.unitId;
+        if (action !== "retreat") {
+          await battleAction(action, unitId);
+          return;
+        }
+
+        const unit = state.units[unitId];
+        const targets = legalVoluntaryRetreatTargets(state.battle, unit);
+        if (!targets.length) {
+          log(`${unit.name} has no legal retreat area.`);
+          render();
+          return;
+        }
+
+        const target = await chooseOptionWithDialog({
+          title: `Retreat ${unit.name}`,
+          message: "Choose an adjacent friendly or empty area. The enemy's entry area is prohibited.",
+          options: targets.map((areaId) => ({ value: areaId, label: areaName(areaId) }))
+        });
+        if (target) await battleAction("retreat", unitId, target);
       });
     });
+  }
+
+  function legalVoluntaryRetreatTargets(battle, unit) {
+    if (!battle || !unit) return [];
+
+    return areas[battle.area].links.filter((areaId) => !voluntaryRetreatBlockReason(battle, unit, areaId));
+  }
+
+  function voluntaryRetreatBlockReason(battle, unit, areaId) {
+    if (!areas[areaId] || areas[areaId].sea) return "sea";
+    if (areaId === "germania" && unit.type !== "german") return "germania";
+    if (areaUnits(areaId).some((occupant) => occupant.owner !== unit.owner)) return "enemy or neutral occupied";
+    if (enemyBattleEntryAreas(battle, unit.owner).includes(areaId)) return "enemy entry area";
+
+    const capacity = borderCapacity(borderType(battle.area, areaId));
+    const used = battle.crossings?.[`${battle.area}->${areaId}`] || 0;
+    if (capacity && used + 1 > capacity) return "border capacity";
+    return null;
+  }
+
+  function enemyBattleEntryAreas(battle, owner) {
+    const opposingIds = [
+      ...(battle.attackers || []),
+      ...(battle.defenders || []),
+      ...(battle.retreated || []),
+      ...(battle.fort || []),
+      ...Object.keys(battle.entries || {})
+    ].filter((unitId, index, ids) => ids.indexOf(unitId) === index && state.units[unitId]?.owner !== owner);
+    const origins = opposingIds.map((unitId) => battle.entries?.[unitId]).filter(Boolean);
+    if (owner === battle.defender && battle.mainOrigin) origins.push(battle.mainOrigin);
+    return [...new Set(origins)];
   }
 
   function regroupingOnMap() {
@@ -2985,10 +3036,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const halfHit = battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
     const status = hitTarget ? "Choose for hit" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
         <button type="button" class="battle-unit-action action-fire" data-battle-action="fire" data-unit-id="${unitId}">Fire</button>
-        ${inFort ? "" : `<button type="button" class="battle-unit-action action-retreat" data-battle-action="retreat" data-unit-id="${unitId}">Retreat</button>`}
+        ${inFort ? "" : `<button type="button" class="battle-unit-action action-retreat" data-battle-action="retreat" data-unit-id="${unitId}"${retreatTargets.length ? "" : " disabled title=\"No legal retreat area\""}>Retreat</button>`}
         ${canEnterBattleFort(unit, battle) ? `<button type="button" class="battle-unit-action action-fort" data-battle-action="fort" data-unit-id="${unitId}">Enter ${titleCase(areas[battle.area].fort.name)}</button>` : ""}
       </div>
     ` : "";

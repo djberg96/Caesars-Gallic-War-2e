@@ -497,6 +497,55 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "enemy units entered Allobroges from there", error.message
   end
 
+  test "a voluntary retreat cannot enter an enemy or neutral occupied area" do
+    state = battle_state
+    state["units"]["neutral_helvetii"] = {
+      "id" => "neutral_helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "neutral",
+      "location" => "helvetii",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [1],
+      "initiative" => "C",
+      "fire" => 1
+    }
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 1,
+      "maxRounds" => 3,
+      "phase" => "field",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => "legion_vii",
+      "acted" => [],
+      "fired" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => ["allobroges"],
+      "mainOrigin" => "transalpine_gaul",
+      "entries" => { "legion_vii" => "transalpine_gaul" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => nil
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(
+        action: "retreat",
+        unit_id: "legion_vii",
+        target: "helvetii"
+      )
+    end
+
+    assert_match "cannot retreat into an enemy or neutral occupied area", error.message
+  end
+
   test "victorious units cannot regroup into an unresolved battle area" do
     state = battle_state
     state["units"]["allobroges"]["location"] = "eliminated"

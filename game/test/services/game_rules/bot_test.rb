@@ -122,6 +122,61 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "transalpine_gaul", result.dig("units", "volcae", "location")
   end
 
+  test "a bot attack into the Alps preserves attacker and origin data for Roman defense and retreat" do
+    state = bot_state(bot_deck: [card_hash("leuci")])
+    state["units"] = {
+      "legion_viii" => {
+        "id" => "legion_viii",
+        "name" => "Legion VIII",
+        "type" => "roman",
+        "owner" => "roman",
+        "location" => "helvetii",
+        "home" => "transalpine_gaul",
+        "step" => 0,
+        "strengths" => [4, 3, 2, 1],
+        "initiative" => "A",
+        "fire" => 0
+      },
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "barbarian", [4, 3, 2, 1], fire: 2)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_equal "leuci", result.dig("battle", "mainOrigin")
+    assert_equal "leuci", result.dig("battle", "entries", "leuci")
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: result).act!(
+        action: "retreat",
+        unit_id: "legion_viii",
+        target: "leuci"
+      )
+    end
+    assert_match "enemy units entered Helvetii from there", error.message
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1, 1, 6, 6]).act!(
+      action: "pass",
+      unit_id: "legion_viii"
+    )
+    assert_equal 1, result.dig("units", "legion_viii", "step")
+    leuci_fire = result.dig("battle", "actionResults").find { |entry| entry["unitId"] == "leuci" }
+    assert_equal 2, leuci_fire["hits"]
+    assert_equal 1, leuci_fire["appliedHits"]
+
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "retreat",
+      unit_id: "legion_viii",
+      target: "transalpine_gaul"
+    )
+    assert_nil result["battle"]
+    assert_equal "transalpine_gaul", result.dig("units", "legion_viii", "location")
+    assert_equal "helvetii", result.dig("units", "leuci", "location")
+    assert_match "Barbarian holds Helvetii after battle", result["log"].join(" ")
+  end
+
   test "a neutral tribe joins the Roman player and fights when the bot enters its area" do
     state = bot_state(bot_deck: [card_hash("boii")])
     state["units"] = {

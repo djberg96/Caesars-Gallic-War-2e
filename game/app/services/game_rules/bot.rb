@@ -111,7 +111,20 @@ module GameRules
     def resolve_next_bot_battle!
       return if @state["battle"].present?
 
-      @state = GameRules::Battle.new(session: @session, state: @state).resolve!
+      pending = @state.fetch("pendingBattleEntries", {})
+      area_id = pending.keys.find { |candidate| contested_area?(candidate) }
+      entry = pending.fetch(area_id, {})
+      @state = GameRules::Battle.new(
+        session: @session,
+        state: @state,
+        attacker: entry["attacker"],
+        entry_origins: entry["entries"]
+      ).resolve!(area_id: area_id, main_origin: entry["mainOrigin"])
+    end
+
+    def contested_area?(area_id)
+      owners = area_units(area_id).map { |unit| unit["owner"] }.uniq
+      owners.include?("roman") && owners.include?("barbarian")
     end
 
     def resolve_event(card)
