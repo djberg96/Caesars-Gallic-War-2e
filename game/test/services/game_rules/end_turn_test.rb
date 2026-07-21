@@ -104,6 +104,23 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "The campaign is already complete.", error.message
   end
 
+  test "deals the 51 BC hand after completing 52 BC" do
+    state = base_state
+    state["turn"] = 6
+    state["mode"] = "solitaire"
+    state["hands"] = { "roman" => [], "barbarian" => [] }
+    state["units"]["legion_vii"]["location"] = "transalpine_gaul"
+    session = GameSession.create!(data: state)
+
+    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal 7, result["turn"]
+    assert_equal "Card Phase", result["phase"]
+    assert_nil result["gameOver"]
+    assert_equal 5, result.dig("hands", "roman").length
+    assert_equal 28, result["botDeck"].length
+  end
+
   test "scores yearly objectives before units return to winter quarters" do
     state = base_state
     state["turn"] = 2

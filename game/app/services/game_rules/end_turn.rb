@@ -69,14 +69,15 @@ module GameRules
       objectives = GameRules::YearlyObjectives.new(state: @state).score!
       log_objectives!(objectives) if objectives
 
-      @state["turn"] = [@state.fetch("turn", 0).to_i + 1, YEARS - 1].min
+      campaign_finished = final_turn?
       @state["phase"] = "Card Phase"
       @state["endTurn"] = nil
       objective_summary = objectives ? " Yearly Objectives: #{objectives.fetch("vp").positive? ? "+" : ""}#{objectives.fetch("vp")} VP." : ""
       log("End turn complete. Roman scores #{controlled_tribes} tribal VP.#{objective_summary}")
 
-      return complete_campaign! if final_turn?
+      return complete_campaign! if campaign_finished
 
+      @state["turn"] = @state.fetch("turn", 0).to_i + 1
       GameRules::Deal.new(session: @session, state: @state).deal!
     end
 
