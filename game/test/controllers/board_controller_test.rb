@@ -40,6 +40,12 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select "#new-game-dialog"
     assert_select "#new-game-dialog #save-new-game", text: "Save & Start New"
     assert_select "#new-game-dialog #discard-new-game", text: "Start Without Saving"
+    assert_select "dialog#winter-quarters-dialog", count: 0
+    assert_select "form#winter-quarters-form.winter-quarters-panel[hidden]" do
+      assert_select "#winter-quarters-summary"
+      assert_select "#winter-quarters-selection"
+      assert_select "button[type='submit']", text: "Continue End Turn"
+    end
     assert_select ".command-panel .campaign-status"
     assert_select "#hotseat-controls[hidden]"
     assert_select "#bot-card", count: 0

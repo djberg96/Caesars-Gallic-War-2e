@@ -35,6 +35,22 @@
       </label>
     </div>
 
+    <form id="winter-quarters-form" class="winter-quarters-panel" hidden>
+      <div class="winter-quarters-heading">
+        <span class="dialog-kicker">End of Year</span>
+        <strong>Choose Roman Winter Quarters</strong>
+      </div>
+      <div class="winter-quarters-instructions">
+        <p id="winter-quarters-summary"></p>
+        <p class="winter-quarters-note">Select highlighted legions directly on the map. Unselected legions return to Transalpine Gaul.</p>
+      </div>
+      <div class="winter-quarters-status">
+        <strong id="winter-quarters-selection">No legions selected</strong>
+        <p id="winter-quarters-error" class="import-error" role="alert" hidden></p>
+      </div>
+      <button type="submit" class="winter-quarters-continue">Continue End Turn</button>
+    </form>
+
     <div id="board" class="board">
       <div id="board-stage" class="board-stage">
         <div id="board-canvas" class="board-canvas">
@@ -171,20 +187,6 @@
   <div class="dialog-actions">
     <button type="button" id="main-force-cancel">Cancel</button>
   </div>
-</dialog>
-
-<dialog id="winter-quarters-dialog" class="winter-quarters-dialog">
-  <form id="winter-quarters-form">
-    <span class="dialog-kicker">End of Year</span>
-    <h2>Roman Winter Quarters</h2>
-    <p id="winter-quarters-summary" class="dialog-description"></p>
-    <div id="winter-quarters-list" class="winter-quarters-list"></div>
-    <p class="winter-quarters-note">Unchecked legions return to Transalpine Gaul. Each selected legion costs 1 supply; Caesar is free.</p>
-    <p id="winter-quarters-error" class="import-error" role="alert" hidden></p>
-    <div class="dialog-actions">
-      <button type="submit">Continue End Turn</button>
-    </div>
-  </form>
 </dialog>
 
 <dialog id="result-dialog">

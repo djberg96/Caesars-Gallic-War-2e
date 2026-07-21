@@ -197,10 +197,12 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_match "Roman Winter Quarters: Legion Vii remain", result["log"].join(" ")
   end
 
-  test "does not offer legions in Germania as winter-quarter choices" do
+  test "only offers legions in eligible Gallic winter quarters" do
     state = base_state
     state["units"]["legion_vii"]["location"] = "germania"
     state["units"]["legion_viii"] = unit("legion_viii", "roman", "roman", "allobroges", "transalpine_gaul")
+    state["units"]["legion_ix"] = unit("legion_ix", "roman", "roman", "transalpine_gaul", "transalpine_gaul")
+    state["units"]["legion_x"] = unit("legion_x", "roman", "roman", "roman_off_map", "transalpine_gaul")
     session = GameSession.create!(data: state)
 
     pending = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
@@ -209,6 +211,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal ["legion_viii"], pending.dig("endTurn", "eligibleLegions")
     assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
     assert_equal "allobroges", result.dig("units", "legion_viii", "location")
+    assert_equal "transalpine_gaul", result.dig("units", "legion_ix", "location")
+    assert_equal "roman_off_map", result.dig("units", "legion_x", "location")
   end
 
   test "enforces the harvest garrison limit for winter quarters" do

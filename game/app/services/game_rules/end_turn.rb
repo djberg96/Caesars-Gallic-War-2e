@@ -219,7 +219,7 @@ module GameRules
     def return_roman_legions!(wintering_ids)
       returning = units.values.select do |unit|
         unit["type"] == "roman" &&
-          !unit["location"].in?(["offboard", "eliminated", "transalpine_gaul"]) &&
+          !unit["location"].in?(["roman_off_map", "offboard", "eliminated", "transalpine_gaul"]) &&
           !wintering_ids.include?(unit.fetch("id"))
       end
       returning.each { |unit| unit["location"] = "transalpine_gaul" }
