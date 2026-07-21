@@ -1186,6 +1186,10 @@ h3 {
   padding: 0.55rem 0.75rem 1rem;
 }
 
+.hand-tray.is-hotseat .hands {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .hand-tray.is-hidden .hands {
   display: none;
 }

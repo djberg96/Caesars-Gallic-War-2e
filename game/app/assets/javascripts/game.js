@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand"),
     handTray: document.querySelector("#hand-tray"),
+    handTrayTitle: document.querySelector("#hand-tray-title"),
     toggleHand: document.querySelector("#toggle-hand"),
     cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
@@ -156,6 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      handHidden = false;
+      zoomedCardId = null;
       render();
     } catch (error) {
       window.alert(`New game could not be created: ${error.message}`);
@@ -419,9 +422,19 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
       return;
     }
+    if (state.mode === "hotseat" && !state.revealed && state.committed?.[player]) {
+      log(`${playerName(player)} has already committed a card.`);
+      render();
+      return;
+    }
+    const changingPlayer = player !== state.active;
     state.active = player;
     state.selectedUnit = null;
     state.selectedCard = null;
+    if (changingPlayer && state.mode === "hotseat") {
+      handHidden = true;
+      zoomedCardId = null;
+    }
     log(`${playerName(player)} player is active. Only that player's hand is visible.`);
     render();
   }
@@ -1155,6 +1168,10 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      handHidden = true;
+      zoomedCardId = null;
+      const otherPlayer = state.active === "roman" ? "barbarian" : "roman";
+      if (!state.committed[otherPlayer]) state.active = otherPlayer;
     } catch (error) {
       log(error.message);
     }
@@ -2625,8 +2642,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderHands() {
-    renderHand("roman", els.romanHand);
-    renderHand("barbarian", els.barbarianHand);
+    const hotseat = state.mode === "hotseat";
+    els.handTray.classList.toggle("is-hotseat", hotseat);
+    [["roman", els.romanHand], ["barbarian", els.barbarianHand]].forEach(([player, container]) => {
+      const activeHand = !hotseat || player === state.active;
+      container.closest(".hand-zone").hidden = !activeHand;
+      if (activeHand) renderHand(player, container);
+      else container.replaceChildren();
+    });
     renderCardZoom();
   }
 
@@ -2793,26 +2816,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function playCardZoomAction(action) {
-    zoomedCardId = null;
-    handHidden = true;
-    render();
     if (action === "commit") {
       await commitCard();
       return;
     }
+    zoomedCardId = null;
+    handHidden = true;
+    render();
     await playAction(action);
   }
 
   function toggleHand() {
+    if (hotseatHandLocked()) return;
     handHidden = !handHidden;
+    if (handHidden) zoomedCardId = null;
     renderHandToggle();
+    renderCardZoom();
   }
 
   function renderHandToggle() {
     if (!els.handTray || !els.toggleHand) return;
+    const playerHand = state?.mode === "hotseat" ? `${playerName(state.active)} Hand` : "Hand";
+    const locked = hotseatHandLocked();
     els.handTray.classList.toggle("is-hidden", handHidden);
-    els.toggleHand.textContent = handHidden ? "Show Hand" : "Hide Hand";
+    els.toggleHand.textContent = locked ? "Cards Committed" : `${handHidden ? "Show" : "Hide"} ${playerHand}`;
+    els.toggleHand.disabled = locked;
     els.toggleHand.setAttribute("aria-expanded", handHidden ? "false" : "true");
+    els.handTrayTitle.textContent = state?.mode === "hotseat" ? `${playerName(state.active)} Cards` : "Cards";
+    els.handTray.setAttribute("aria-label", playerHand);
+  }
+
+  function hotseatHandLocked() {
+    return Boolean(state?.mode === "hotseat" && !state.revealed && state.committed?.[state.active]);
   }
 
   function toggleSidePanel() {
@@ -3366,12 +3401,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderModeControls() {
     const commitButton = document.querySelector("#commit-card");
     const revealButton = document.querySelector("#reveal-cards");
-    const barbarianButton = document.querySelector("[data-player='barbarian']");
+    const playerButtons = document.querySelectorAll(".player-button");
     const hotseat = state.mode === "hotseat";
     els.hotseatControls.hidden = !hotseat;
 
     if (hotseat) {
-      barbarianButton.disabled = false;
+      playerButtons.forEach((button) => {
+        button.disabled = !state.revealed && Boolean(state.committed[button.dataset.player]);
+      });
       commitButton.disabled = Boolean(state.movement) || Boolean(state.battle) || Boolean(state.revealed) || !state.selectedCard;
       revealButton.disabled = Boolean(state.movement) || Boolean(state.battle) || Boolean(state.revealed) || !state.committed.roman || !state.committed.barbarian;
     }
@@ -3576,6 +3613,8 @@ document.addEventListener("DOMContentLoaded", () => {
     state.movement = null;
     state.battle = null;
     state.currentAction = null;
+    handHidden = false;
+    zoomedCardId = null;
     log(`Mode changed to ${modeName()}. Dealing a fresh hand for this mode.`);
     await dealCards();
   }
