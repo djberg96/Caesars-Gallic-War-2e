@@ -13,6 +13,7 @@ module GameRules
     end
 
     def end_turn!
+      raise InvalidAction, "The campaign is already complete." if @state["gameOver"].present?
       return resume_end_turn! if end_turn_in_progress?
 
       raise InvalidAction, "Finish the current movement action before ending the turn." if @state["movement"].present?
@@ -74,7 +75,38 @@ module GameRules
       objective_summary = objectives ? " Yearly Objectives: #{objectives.fetch("vp").positive? ? "+" : ""}#{objectives.fetch("vp")} VP." : ""
       log("End turn complete. Roman scores #{controlled_tribes} tribal VP.#{objective_summary}")
 
+      return complete_campaign! if final_turn?
+
       GameRules::Deal.new(session: @session, state: @state).deal!
+    end
+
+    def final_turn?
+      @state.fetch("turn", 0).to_i >= YEARS - 1
+    end
+
+    def complete_campaign!
+      vp = @state.fetch("vp", 0).to_i
+      result, winner = if vp >= 110
+        ["Massive Roman Victory", "roman"]
+      elsif vp >= 100
+        ["Major Roman Victory", "roman"]
+      elsif vp >= 90
+        ["Minor Roman Victory", "roman"]
+      else
+        ["Barbarian Victory", "barbarian"]
+      end
+
+      @state["phase"] = "Game Over"
+      @state["gameOver"] = {
+        "winner" => winner,
+        "result" => result,
+        "vp" => vp
+      }
+      @state["selectedCard"] = nil
+      @state["currentAction"] = nil
+      @state["botDeck"] = []
+      log("Campaign complete: #{result} with #{vp} Roman VP.")
+      persist!
     end
 
     def end_turn_in_progress?

@@ -1513,6 +1513,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      showCampaignResult();
     } catch (error) {
       log(`Turn could not be ended: ${error.message}`);
     }
@@ -1534,6 +1535,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
       els.winterQuartersDialog.close();
+      showCampaignResult();
       render();
     } catch (error) {
       setWinterQuartersError(error.message);
@@ -3125,6 +3127,14 @@ document.addEventListener("DOMContentLoaded", () => {
     battleButton.classList.toggle("is-active", Boolean(state.battle));
     battleButton.disabled = Boolean(state.battle) || unresolvedBattles === 0;
 
+    if (state.gameOver) {
+      battleButton.disabled = true;
+      endTurnButton.textContent = "Campaign Complete";
+      endTurnButton.disabled = true;
+      endTurnButton.title = `${state.gameOver.result}: ${state.gameOver.vp} Roman VP.`;
+      return;
+    }
+
     if (state.endTurn?.phase === "romanWintering") {
       endTurnButton.textContent = "Choose Winter Quarters";
       endTurnButton.disabled = false;
@@ -3157,6 +3167,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return (state.hands?.roman?.length || 0) + (state.hands?.barbarian?.length || 0);
     }
     return state.hands?.roman?.length || 0;
+  }
+
+  function showCampaignResult() {
+    if (!state.gameOver) return;
+
+    showResultDialog(
+      state.gameOver.result,
+      `The campaign has ended with ${state.gameOver.vp} Roman victory points.`
+    );
   }
 
   function renderWinterQuarters() {
