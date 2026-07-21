@@ -70,8 +70,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
-  const hitMapSize = { width: 832, height: 1040 };
+  const hitMapSize = { width: 1664, height: 2080 };
+  const minimumHitComponentSize = 2000;
+  const territorySupplementalSeeds = {
+    germania: [[94, 38]]
+  };
+  const territoryEdgeDirections = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   let areaHitMap = null;
+  const areaOverlayCache = new Map();
   let dragState = null;
   let suppressNextPieceClick = false;
   let piecesHidden = false;
@@ -379,8 +385,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function unitFaceVisibleToActivePlayer(unit) {
-    if (state.battle && unit.location === state.battle.area) return true;
-    return unit.owner === state.active || enemyInCombatWithActivePlayer(unit);
+    if (battleMapMode()) {
+      const mapOwner = retreatingOnMap() ? state.battle.retreating : state.battle.winner;
+      return unit.owner === mapOwner;
+    }
+    return unit.owner === state.active;
   }
 
   function hiddenBlockRegion(unit) {
@@ -398,11 +407,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (unitFaceVisibleToActivePlayer(unit)) return `${unit.name} ${unit.owner} ${currentStrength(unit)}`;
     if (unit.owner === "neutral") return "Neutral block, strength hidden";
     return null;
-  }
-
-  function enemyInCombatWithActivePlayer(unit) {
-    if (unit.owner === "neutral" || unit.owner === state.active) return false;
-    return areaUnits(unit.location).some((other) => other.owner === state.active);
   }
 
   function isEnemy(left, right) {
@@ -1700,6 +1704,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     els.areaLayer.append(clickCatcher);
 
+    const territoryOverlay = areaTerritoryOverlay();
+    if (territoryOverlay) {
+      const overlay = document.createElementNS("http://www.w3.org/2000/svg", "image");
+      overlay.setAttribute("x", 0);
+      overlay.setAttribute("y", 0);
+      overlay.setAttribute("width", 100);
+      overlay.setAttribute("height", 100);
+      overlay.setAttribute("preserveAspectRatio", "none");
+      overlay.setAttribute("href", territoryOverlay);
+      overlay.setAttribute("pointer-events", "none");
+      overlay.classList.add("area-territory-overlay");
+      els.areaLayer.append(overlay);
+      return;
+    }
+
     Object.values(areas).forEach((area) => {
       if (area.sea) return;
 
@@ -1720,6 +1739,83 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
+  }
+
+  function areaTerritoryOverlay() {
+    const territories = areaHitMap?.territories;
+    if (!territories) return null;
+
+    const styles = territories.ids.map((areaId) => areaHighlightStyle(areas[areaId]));
+    if (!styles.some(Boolean)) return null;
+    const signature = styles.map((style, index) => style ? `${territories.ids[index]}:${style.name}` : "").join("|");
+    if (areaOverlayCache.has(signature)) return areaOverlayCache.get(signature);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = areaHitMap.width;
+    canvas.height = areaHitMap.height;
+    const context = canvas.getContext("2d");
+    const overlay = context.createImageData(canvas.width, canvas.height);
+    const pixels = overlay.data;
+    const territoryLabels = territories.labels;
+
+    for (let index = 0; index < territoryLabels.length; index += 1) {
+      const territoryIndex = territoryLabels[index];
+      const style = styles[territoryIndex];
+      if (!style) continue;
+
+      const edge = territoryPixelIsEdge(territoryLabels, canvas.width, canvas.height, index, territoryIndex);
+      const color = edge ? style.edge : style.fill;
+      const pixelIndex = index * 4;
+      pixels[pixelIndex] = color[0];
+      pixels[pixelIndex + 1] = color[1];
+      pixels[pixelIndex + 2] = color[2];
+      pixels[pixelIndex + 3] = color[3];
+    }
+
+    context.putImageData(overlay, 0, 0);
+    const image = canvas.toDataURL("image/png");
+    if (areaOverlayCache.size >= 24) areaOverlayCache.delete(areaOverlayCache.keys().next().value);
+    areaOverlayCache.set(signature, image);
+    return image;
+  }
+
+  function territoryPixelIsEdge(labels, width, height, index, territoryIndex) {
+    const x = index % width;
+    const y = Math.floor(index / width);
+
+    return territoryEdgeDirections.some(([dx, dy]) => {
+      for (let radius = 1; radius <= 3; radius += 1) {
+        const nextX = x + (dx * radius);
+        const nextY = y + (dy * radius);
+        if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) break;
+        const neighboringTerritory = labels[(nextY * width) + nextX];
+        if (neighboringTerritory >= 0 && neighboringTerritory !== territoryIndex) return true;
+      }
+      return false;
+    });
+  }
+
+  function areaHighlightStyle(area) {
+    if (!area || area.sea) return null;
+    const targeting = targetingPoliticalAction();
+    const blocked = targeting && state.active === "roman" && Boolean(romanSpecialTargetBlockReason(area.id, "political action"));
+
+    if (state.dragArea === area.id) {
+      return { name: "drag", fill: [255, 224, 116, 68], edge: [255, 235, 158, 220] };
+    }
+    if (blocked) {
+      return { name: "disabled", fill: [104, 102, 94, 28], edge: [142, 138, 126, 125] };
+    }
+    if (targeting) {
+      return { name: "targeting", fill: [255, 230, 140, 34], edge: [255, 230, 140, 160] };
+    }
+    if (state.selectedArea === area.id) {
+      return { name: "selected", fill: [255, 230, 140, 35], edge: [255, 235, 158, 195] };
+    }
+    if (movementAreaActivated(area.id)) {
+      return { name: "movement", fill: [72, 190, 145, 34], edge: [72, 220, 155, 145] };
+    }
+    return null;
   }
 
   function renderMovementArrows() {
@@ -1987,6 +2083,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const index = nearestOpenHitPixel(x, y);
     if (index === null) return nearestArea(point.x, point.y);
 
+    const territoryIndex = areaHitMap.territories?.labels[index];
+    const territoryAreaId = areaHitMap.territories?.ids[territoryIndex];
+    if (territoryAreaId) return territoryAreaId;
+
     const componentId = areaHitMap.labels[index];
     const seeds = areaHitMap.componentSeeds.get(componentId) || [];
     if (!seeds.length) return nearestArea(point.x, point.y);
@@ -2059,43 +2159,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let componentId = 0;
+    const componentSizes = [];
     const queue = new Int32Array(labels.length);
     for (let index = 0; index < labels.length; index += 1) {
       if (labels[index] !== -2) continue;
-      floodFillHitComponent(index, componentId, labels, queue, canvas.width, canvas.height);
+      componentSizes[componentId] = floodFillHitComponent(index, componentId, labels, queue, canvas.width, canvas.height);
       componentId += 1;
     }
 
     const componentSeeds = new Map();
     const areaSeeds = [];
     Object.values(areas).filter((area) => !area.sea).forEach((area) => {
-      const x = Math.round((area.x / 100) * (canvas.width - 1));
-      const y = Math.round((area.y / 100) * (canvas.height - 1));
-      const index = nearestLabeledHitPixel(labels, canvas.width, canvas.height, x, y);
-      if (index === null) return;
+      const seeds = [[area.x, area.y], ...(territorySupplementalSeeds[area.id] || [])];
+      seeds.forEach(([seedX, seedY]) => {
+        const x = Math.round((seedX / 100) * (canvas.width - 1));
+        const y = Math.round((seedY / 100) * (canvas.height - 1));
+        const index = nearestLabeledHitPixel(labels, componentSizes, canvas.width, canvas.height, x, y);
+        if (index === null) return;
 
-      const seedComponent = labels[index];
-      if (seedComponent < 0) return;
-      areaSeeds.push({ areaId: area.id, index });
-      if (!componentSeeds.has(seedComponent)) componentSeeds.set(seedComponent, []);
-      componentSeeds.get(seedComponent).push({ areaId: area.id, x: index % canvas.width, y: Math.floor(index / canvas.width) });
+        const seedComponent = labels[index];
+        if (seedComponent < 0) return;
+        areaSeeds.push({ areaId: area.id, index });
+        if (!componentSeeds.has(seedComponent)) componentSeeds.set(seedComponent, []);
+        componentSeeds.get(seedComponent).push({ areaId: area.id, x: index % canvas.width, y: Math.floor(index / canvas.width) });
+      });
     });
 
     const territories = buildHitTerritories(labels, canvas.width, areaSeeds);
     const borderPoints = findSharedBorderPoints(labels, territories, canvas.width, canvas.height);
-    areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds, borderPoints };
-    if (state) renderMovementArrows();
+    areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds, territories, borderPoints };
+    areaOverlayCache.clear();
+    if (state) {
+      renderAreas();
+      renderMovementArrows();
+    }
   }
 
   function buildHitTerritories(labels, width, areaSeeds) {
-    const territoryIds = areaSeeds.map((seed) => seed.areaId);
+    const territoryIds = [...new Set(areaSeeds.map((seed) => seed.areaId))];
+    const territoryIndexes = new Map(territoryIds.map((areaId, index) => [areaId, index]));
     const territoryLabels = new Int16Array(labels.length);
     territoryLabels.fill(-1);
     const queue = new Int32Array(labels.length);
     let head = 0;
     let tail = 0;
 
-    areaSeeds.forEach((seed, territoryIndex) => {
+    areaSeeds.forEach((seed) => {
+      const territoryIndex = territoryIndexes.get(seed.areaId);
       territoryLabels[seed.index] = territoryIndex;
       queue[tail] = seed.index;
       tail += 1;
@@ -2176,8 +2286,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function isBorderPixel(red, green, blue) {
     const average = (red + green + blue) / 3;
-    const whiteLine = red > 225 && green > 220 && blue > 205 && (red - blue) < 55;
-    return average < 72 || whiteLine;
+    const chroma = Math.max(red, green, blue) - Math.min(red, green, blue);
+    return average < 100 || (average < 175 && chroma < 24);
   }
 
   function floodFillHitComponent(start, componentId, labels, queue, width, height) {
@@ -2198,6 +2308,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (y > 0) tail = enqueueHitNeighbor(index - width, componentId, labels, queue, tail);
       if (y < height - 1) tail = enqueueHitNeighbor(index + width, componentId, labels, queue, tail);
     }
+
+    return tail;
   }
 
   function enqueueHitNeighbor(index, componentId, labels, queue, tail) {
@@ -2207,9 +2319,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return tail + 1;
   }
 
-  function nearestLabeledHitPixel(labels, width, height, x, y) {
+  function nearestLabeledHitPixel(labels, componentSizes, width, height, x, y) {
     const direct = y * width + x;
-    if (labels[direct] >= 0) return direct;
+    if (labels[direct] >= 0 && componentSizes[labels[direct]] >= minimumHitComponentSize) return direct;
 
     for (let radius = 1; radius <= 24; radius += 1) {
       for (let dy = -radius; dy <= radius; dy += 1) {
@@ -2219,7 +2331,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const nextY = y + dy;
           if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) continue;
           const index = nextY * width + nextX;
-          if (labels[index] >= 0) return index;
+          if (labels[index] >= 0 && componentSizes[labels[index]] >= minimumHitComponentSize) return index;
         }
       }
     }

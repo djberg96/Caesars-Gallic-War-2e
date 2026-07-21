@@ -642,8 +642,8 @@ h3 {
 
 .barbarian-counter-face.culture-german {
   background:
-    radial-gradient(circle at 52% 45%, rgba(220, 246, 216, 0.4), transparent 48%),
-    linear-gradient(145deg, #a9c99f, #5d8b68);
+    radial-gradient(circle at 52% 45%, rgba(223, 239, 255, 0.48), transparent 48%),
+    linear-gradient(145deg, #91b5dc, #2f66a5);
 }
 
 .barbarian-counter-face.is-leader {
