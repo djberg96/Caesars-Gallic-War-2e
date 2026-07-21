@@ -41,6 +41,7 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select "#new-game-dialog #save-new-game", text: "Save & Start New"
     assert_select "#new-game-dialog #discard-new-game", text: "Start Without Saving"
     assert_select "#battle-dialog #battle-zones + #battle-details"
+    assert_select "#battle-dialog #battle-roll-toast[aria-live='polite']"
     assert_select "dialog#winter-quarters-dialog", count: 0
     assert_select "form#winter-quarters-form.winter-quarters-panel[hidden]" do
       assert_select "#winter-quarters-summary"

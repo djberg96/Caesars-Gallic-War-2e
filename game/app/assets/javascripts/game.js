@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
     battleRoundHeader: document.querySelector("#battle-round-header"),
+    battleRollToast: document.querySelector("#battle-roll-toast"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
     battleDetails: document.querySelector("#battle-details"),
@@ -81,6 +82,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
+  let battleToastBattleKey = null;
+  let battleToastTimer = null;
+  let battleToastHideTimer = null;
+  let battleToastQueue = [];
+  let seenBattleRolls = new Set();
 
   function storedMapZoom() {
     try {
@@ -2728,11 +2734,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (els.battleDialog.open) els.battleDialog.close();
       if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
       if (els.battleDetails) els.battleDetails.replaceChildren();
+      resetBattleRollToasts();
       state.regroupUnit = null;
       return;
     }
     if (battleMapMode()) {
       if (els.battleDialog.open) els.battleDialog.close();
+      resetBattleRollToasts();
       return;
     }
     if (!els.battleDialog.open) {
@@ -2745,6 +2753,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const defenderFortIds = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
     const defenseAdvantages = battleDefenseAdvantages(battle, defenderFortIds);
     const actionHistory = battleActionHistory(battle);
+    queueBattleRollToasts(battle);
     els.battleRoundHeader.textContent = `Round ${battle.round} / ${battle.maxRounds}`;
     els.battleSummary.innerHTML = `
       <div class="battle-heading">
@@ -2810,6 +2819,70 @@ document.addEventListener("DOMContentLoaded", () => {
       els.battleActions.append(retreat);
       return;
     }
+  }
+
+  function queueBattleRollToasts(battle) {
+    if (!els.battleRollToast) return;
+
+    const battleKey = `${battle.area}:${battle.attacker}:${battle.defender}`;
+    if (battleToastBattleKey !== battleKey) {
+      resetBattleRollToasts();
+      battleToastBattleKey = battleKey;
+    }
+
+    (battle.actionResults || []).filter((action) => action.type === "fire").forEach((action) => {
+      const rollKey = [
+        battleKey,
+        action.round || battle.round,
+        action.unitId,
+        (action.rolls || []).join(",")
+      ].join(":");
+      if (seenBattleRolls.has(rollKey)) return;
+
+      seenBattleRolls.add(rollKey);
+      battleToastQueue.push({
+        message: action.hits > 0
+          ? `${action.unitName} scored ${action.hits} hit${action.hits === 1 ? "" : "s"}`
+          : `${action.unitName} scored no hits`,
+        hit: action.hits > 0
+      });
+    });
+
+    showNextBattleRollToast();
+  }
+
+  function showNextBattleRollToast() {
+    if (!els.battleRollToast || battleToastTimer || !battleToastQueue.length) return;
+
+    const notice = battleToastQueue.shift();
+    els.battleRollToast.textContent = notice.message;
+    els.battleRollToast.classList.toggle("is-hit", notice.hit);
+    els.battleRollToast.hidden = false;
+    window.requestAnimationFrame(() => els.battleRollToast.classList.add("is-visible"));
+
+    battleToastTimer = window.setTimeout(() => {
+      els.battleRollToast.classList.remove("is-visible");
+      battleToastHideTimer = window.setTimeout(() => {
+        els.battleRollToast.hidden = true;
+        battleToastHideTimer = null;
+        battleToastTimer = null;
+        showNextBattleRollToast();
+      }, 180);
+    }, 1650);
+  }
+
+  function resetBattleRollToasts() {
+    if (battleToastTimer) window.clearTimeout(battleToastTimer);
+    if (battleToastHideTimer) window.clearTimeout(battleToastHideTimer);
+    battleToastTimer = null;
+    battleToastHideTimer = null;
+    battleToastQueue = [];
+    seenBattleRolls = new Set();
+    battleToastBattleKey = null;
+    if (!els.battleRollToast) return;
+    els.battleRollToast.hidden = true;
+    els.battleRollToast.classList.remove("is-visible", "is-hit");
+    els.battleRollToast.textContent = "";
   }
 
   function battleStatusText(battle, activeUnit) {

@@ -1411,14 +1411,15 @@ h3 {
 }
 
 #battle-dialog {
+  position: relative;
   width: min(1080px, 96vw);
   max-height: 92vh;
   padding: 1.15rem;
   overflow: auto;
   border: 1px solid rgba(217, 180, 95, 0.72);
   background:
-    radial-gradient(circle at 50% -20%, rgba(217, 180, 95, 0.18), transparent 38%),
-    linear-gradient(145deg, #1c211c, #151915 72%);
+    radial-gradient(circle at 50% -20%, rgba(237, 205, 127, 0.22), transparent 40%),
+    linear-gradient(145deg, #343b32, #252c26 72%);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72), inset 0 1px rgba(255, 239, 185, 0.1);
 }
 
@@ -1444,13 +1445,52 @@ h3 {
   text-transform: uppercase;
 }
 
+.battle-roll-toast {
+  position: fixed;
+  z-index: 20;
+  top: 5.1rem;
+  left: 50%;
+  min-width: min(23rem, 76vw);
+  padding: 0.7rem 1.1rem;
+  border: 1px solid rgba(203, 196, 171, 0.55);
+  border-radius: 999px;
+  background: rgba(54, 61, 52, 0.96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48);
+  color: #f2ead7;
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -0.55rem) scale(0.97);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.battle-roll-toast[hidden] {
+  display: none;
+}
+
+.battle-roll-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.battle-roll-toast.is-hit {
+  border-color: rgba(238, 193, 79, 0.88);
+  background: linear-gradient(135deg, rgba(111, 65, 42, 0.98), rgba(82, 48, 33, 0.98));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 22px rgba(238, 193, 79, 0.2);
+  color: #fff0bd;
+}
+
 .battle-summary {
   display: grid;
   gap: 0.25rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid rgba(217, 180, 95, 0.28);
   border-radius: 9px;
-  background: rgba(10, 13, 10, 0.46);
+  background: rgba(25, 30, 25, 0.42);
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.3;
@@ -1534,7 +1574,7 @@ h3 {
   padding: 0.6rem 0.7rem;
   border: 1px solid rgba(217, 180, 95, 0.24);
   border-radius: 8px;
-  background: rgba(7, 10, 8, 0.2);
+  background: rgba(30, 36, 30, 0.48);
 }
 
 .battle-log-panel .battle-action-history {
@@ -1616,7 +1656,7 @@ h3 {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--army-color) 48%, #34392f);
   border-radius: 10px;
-  background: linear-gradient(155deg, var(--army-wash), rgba(18, 22, 18, 0.82) 46%);
+  background: linear-gradient(155deg, var(--army-wash), rgba(37, 44, 37, 0.88) 46%);
 }
 
 .battle-army.owner-roman {
@@ -1636,7 +1676,7 @@ h3 {
   align-items: center;
   padding: 0.65rem 0.75rem;
   border-bottom: 1px solid color-mix(in srgb, var(--army-color) 36%, transparent);
-  background: color-mix(in srgb, var(--army-color) 10%, rgba(20, 24, 20, 0.84));
+  background: color-mix(in srgb, var(--army-color) 10%, rgba(42, 49, 41, 0.9));
 }
 
 .battle-army-standard {
@@ -1725,7 +1765,7 @@ h3 {
   padding: 0.55rem;
   border: 1px solid rgba(139, 142, 124, 0.36);
   border-radius: 8px;
-  background: linear-gradient(145deg, rgba(49, 54, 46, 0.92), rgba(30, 34, 29, 0.94));
+  background: linear-gradient(145deg, rgba(67, 75, 63, 0.94), rgba(47, 54, 46, 0.96));
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
