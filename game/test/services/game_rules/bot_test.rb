@@ -98,6 +98,49 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "transalpine_gaul", result.dig("units", "volcae", "location")
   end
 
+  test "a neutral tribe joins the Roman player and fights when the bot enters its area" do
+    state = bot_state(bot_deck: [card_hash("boii")])
+    state["units"] = {
+      "boii" => barbarian_unit("boii", "Boii", "boii", "barbarian", [3, 2, 1], fire: 2),
+      "volcae" => barbarian_unit("volcae", "Volcae", "volcae", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal "roman", result.dig("units", "volcae", "owner")
+    assert_equal "volcae", result.dig("battle", "area")
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal ["boii"], result.dig("battle", "attackers")
+    assert_equal ["volcae"], result.dig("battle", "defenders")
+    assert_equal "boii", result.dig("battle", "entries", "boii")
+    assert_match "Volcae joins the Roman player", result["log"].join(" ")
+    assert_no_match "No battles to resolve", result["log"].join(" ")
+  end
+
+  test "keeps entry data for multiple bot battles created by one event" do
+    state = bot_state(bot_deck: [])
+    state["units"] = {
+      "mandubii" => barbarian_unit("mandubii", "Mandubii", "mandubii", "barbarian", [2, 1], fire: 1),
+      "atuatuci" => barbarian_unit("atuatuci", "Atuatuci", "atuatuci", "barbarian", [2, 1], fire: 1),
+      "carnutes" => barbarian_unit("carnutes", "Carnutes", "carnutes", "neutral", [2, 1], fire: 1),
+      "atrebates" => barbarian_unit("atrebates", "Atrebates", "atrebates", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+    bot = GameRules::Bot.new(session: session, state: session.data)
+
+    assert bot.send(:bot_move_from, "mandubii", resolve_battle: false)
+    assert bot.send(:bot_move_from, "atuatuci", resolve_battle: false)
+    result = bot.send(:resolve_next_bot_battle!)
+
+    assert_equal 2, result.fetch("pendingBattleEntries").length + 1
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    remaining = result.fetch("pendingBattleEntries").values.first
+    assert_equal "barbarian", remaining.fetch("attacker")
+    assert_equal 1, remaining.fetch("entries").length
+  end
+
   test "treats turn one massive revolt as a major revolt in solitaire" do
     state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
     state["units"]["vercingetorix"] = {

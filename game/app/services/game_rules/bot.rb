@@ -66,7 +66,7 @@ module GameRules
       end
     end
 
-    def bot_move_from(area_id)
+    def bot_move_from(area_id, resolve_battle: true)
       area = Area.find_by(key: area_id)
       return false unless area
 
@@ -80,16 +80,37 @@ module GameRules
       return false unless target
 
       moved = attackers.first(2)
+      activate_neutral_defenders!(target, attacker: "barbarian", entering_units: moved)
       moved.each { |unit| unit["location"] = target.key }
       log("Bot moves #{moved.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
-      entry_origins = moved.to_h { |unit| [unit.fetch("id"), area.key] }
-      @state = GameRules::Battle.new(
-        session: @session,
-        state: @state,
-        attacker: "barbarian",
-        entry_origins: entry_origins
-      ).resolve!(main_origin: area.key)
+      queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
+      resolve_next_bot_battle! if resolve_battle
       true
+    end
+
+    def activate_neutral_defenders!(target, attacker:, entering_units:)
+      defender = attacker == "roman" ? "barbarian" : "roman"
+      entrant_names = entering_units.map { |unit| unit.fetch("name") }.join(", ")
+      area_units(target.key).select { |unit| unit["owner"] == "neutral" }.each do |unit|
+        unit["owner"] = defender
+        log("#{unit.fetch("name")} joins the #{player_name(defender)} player as #{entrant_names} enters #{target.name}.")
+      end
+    end
+
+    def queue_battle_entry!(area_id, attacker:, origin:, units:)
+      pending = (@state["pendingBattleEntries"] ||= {})
+      entry = (pending[area_id] ||= {
+        "attacker" => attacker,
+        "mainOrigin" => origin,
+        "entries" => {}
+      })
+      units.each { |unit| entry["entries"][unit.fetch("id")] = origin }
+    end
+
+    def resolve_next_bot_battle!
+      return if @state["battle"].present?
+
+      @state = GameRules::Battle.new(session: @session, state: @state).resolve!
     end
 
     def resolve_event(card)
@@ -124,7 +145,8 @@ module GameRules
           log("Vercingetorix enters at #{area_name(targets.first)}.")
         end
       end
-      targets.each { |area_id| bot_move_from(area_id) }
+      moved = targets.map { |area_id| bot_move_from(area_id, resolve_battle: false) }.any?
+      resolve_next_bot_battle! if moved
     end
 
     def effective_revolt_title(card)

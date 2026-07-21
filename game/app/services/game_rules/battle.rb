@@ -68,7 +68,8 @@ module GameRules
     private
 
     def build_battle(area, main_origin: nil)
-      attacker = @attacker || @state.fetch("active", "roman")
+      pending_entry = (@state["pendingBattleEntries"] || {}).delete(area.key) || {}
+      attacker = @attacker || pending_entry["attacker"] || @state.fetch("active", "roman")
       defender = attacker == "roman" ? "barbarian" : "roman"
       unit_ids = area_units(area.key)
         .select { |unit| unit["owner"].in?(["roman", "barbarian"]) && current_strength(unit).positive? }
@@ -76,8 +77,11 @@ module GameRules
 
       attacker_ids = unit_ids.select { |id| unit(id)["owner"] == attacker }
       defender_ids = unit_ids.select { |id| unit(id)["owner"] == defender }
+      main_origin ||= pending_entry["mainOrigin"]
       main_origin ||= inferred_attacker_main_origin(area.key, attacker_ids)
-      entries = movement_entries(unit_ids, area.key).merge(@entry_origins.slice(*unit_ids))
+      entries = movement_entries(unit_ids, area.key)
+        .merge((pending_entry["entries"] || {}).slice(*unit_ids))
+        .merge(@entry_origins.slice(*unit_ids))
 
       battle_data = {
         "area" => area.key,
