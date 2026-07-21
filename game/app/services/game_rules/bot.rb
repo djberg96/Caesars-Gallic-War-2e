@@ -84,8 +84,8 @@ module GameRules
       activate_neutral_defenders!(target, attacker: "barbarian", entering_units: moved)
       moved.each { |unit| unit["location"] = target.key }
       log("Bot moves #{moved.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
-      queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
-      resolve_next_bot_battle! if resolve_battle
+      entry = queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
+      resolve_bot_battle!(target.key, entry) if resolve_battle
       true
     end
 
@@ -106,6 +106,7 @@ module GameRules
         "entries" => {}
       })
       units.each { |unit| entry["entries"][unit.fetch("id")] = origin }
+      entry
     end
 
     def resolve_next_bot_battle!
@@ -114,6 +115,12 @@ module GameRules
       pending = @state.fetch("pendingBattleEntries", {})
       area_id = pending.keys.find { |candidate| contested_area?(candidate) }
       entry = pending.fetch(area_id, {})
+      resolve_bot_battle!(area_id, entry)
+    end
+
+    def resolve_bot_battle!(area_id, entry)
+      return @state if @state["battle"].present?
+
       @state = GameRules::Battle.new(
         session: @session,
         state: @state,
