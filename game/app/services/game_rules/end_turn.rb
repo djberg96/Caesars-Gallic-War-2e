@@ -139,7 +139,8 @@ module GameRules
       units.values.filter_map do |unit|
         next unless unit["type"].in?(["barbarian", "german"])
         next if unit["location"].in?(["eliminated", "offboard"])
-        next unless unit["location"] == unit["home"]
+        home = unit["type"] == "barbarian" ? gallic_home(unit) : unit.fetch("home")
+        next unless unit["location"] == home
         next unless unit.fetch("step", 0).to_i.positive?
 
         unit["step"] = unit.fetch("step").to_i - 1
@@ -157,8 +158,9 @@ module GameRules
           next "Helvetii are permanently removed; Nantuates return at full strength"
         end
 
-        owner = occupying_owner(unit.fetch("home"), excluding: unit.fetch("id"))
-        unit["location"] = unit.fetch("home")
+        home = gallic_home(unit)
+        owner = occupying_owner(home, excluding: unit.fetch("id"))
+        unit["location"] = home
         if owner
           unit["owner"] = owner
           unit["step"] = weakest_step(unit)
@@ -176,6 +178,7 @@ module GameRules
       return unless nantuates
 
       owner = occupying_owner("helvetii", excluding: "nantuates")
+      nantuates["home"] = "helvetii"
       nantuates["location"] = "helvetii"
       nantuates["owner"] = owner || "neutral"
       nantuates["step"] = 0
@@ -229,7 +232,7 @@ module GameRules
     def return_roman_allies!(unit_ids)
       returned = unit_ids.map do |unit_id|
         unit = units.fetch(unit_id)
-        home = unit.fetch("home")
+        home = gallic_home(unit)
         unit["owner"] = "barbarian" if occupying_owner(home, excluding: unit.fetch("id")) == "barbarian"
         unit["location"] = home
         "#{unit.fetch("name")} (#{player_name(unit.fetch("owner"))})"
@@ -240,7 +243,7 @@ module GameRules
     def return_barbarian_allies!(unit_ids)
       returned = unit_ids.map do |unit_id|
         unit = units.fetch(unit_id)
-        home = unit.fetch("home")
+        home = gallic_home(unit)
         unit["owner"] = "roman" if occupying_owner(home, excluding: unit.fetch("id")) == "roman"
         unit["location"] = home
         "#{unit.fetch("name")} (#{player_name(unit.fetch("owner"))})"
@@ -316,6 +319,10 @@ module GameRules
 
     def unit_strengths(unit)
       Array(unit["strengths"]).presence || Array(UnitType.find_by(key: unit["id"])&.strengths).presence || [1]
+    end
+
+    def gallic_home(unit)
+      unit["id"] == "nantuates" ? "helvetii" : unit.fetch("home")
     end
 
     def score_controlled_tribes!

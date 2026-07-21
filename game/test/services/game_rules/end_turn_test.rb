@@ -158,6 +158,30 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "roman", result.dig("units", "sequani", "owner")
   end
 
+  test "replaces eliminated Helvetii with Roman-controlled Nantuates in Helvetii" do
+    state = base_state
+    state["units"]["legion_vii"]["location"] = "helvetii"
+    state["units"]["helvetii"] = unit("helvetii", "barbarian", "barbarian", "eliminated", "helvetii")
+      .merge("strengths" => [8, 6, 4, 2], "step" => 4)
+    state["units"]["nantuates"] = unit("nantuates", "barbarian", "neutral", "offboard", "offboard")
+      .merge("strengths" => [2, 1])
+    session = GameSession.create!(data: state)
+
+    pending = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal "offboard", pending.dig("units", "helvetii", "location")
+    assert_equal "helvetii", pending.dig("units", "nantuates", "home")
+    assert_equal "helvetii", pending.dig("units", "nantuates", "location")
+    assert_equal "roman", pending.dig("units", "nantuates", "owner")
+    assert_equal 0, pending.dig("units", "nantuates", "step")
+
+    result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: ["legion_vii"]).end_turn!
+
+    assert_equal "helvetii", result.dig("units", "nantuates", "location")
+    assert_equal "roman", result.dig("units", "nantuates", "owner")
+    assert_includes result["log"].join(" "), "Nantuates (Roman)"
+  end
+
   test "asks which legions winter and charges supply for those that remain" do
     state = base_state
     state["supply"] = 4

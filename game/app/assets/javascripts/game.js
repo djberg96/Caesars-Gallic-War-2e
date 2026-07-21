@@ -167,6 +167,45 @@ document.addEventListener("DOMContentLoaded", () => {
     await newGame();
   }
 
+  function yearlyObjectivesLocked() {
+    return Boolean(
+      state?.turn > 0 ||
+      state?.discard?.length ||
+      state?.currentAction ||
+      state?.movement ||
+      state?.battle ||
+      state?.revealed ||
+      state?.committed?.roman ||
+      state?.committed?.barbarian ||
+      state?.diceRolledThisTurn
+    );
+  }
+
+  async function changeYearlyObjectives(enabled) {
+    if (!state) return;
+    if (yearlyObjectivesLocked()) {
+      render();
+      return;
+    }
+
+    const previous = Boolean(state.options?.yearlyObjectives);
+    state.options ||= {};
+    state.options.yearlyObjectives = Boolean(enabled);
+    render();
+
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/update_options`, {
+        yearly_objectives: state.options.yearlyObjectives
+      });
+      state.options = result.options;
+    } catch (error) {
+      state.options.yearlyObjectives = previous;
+      log(error.message);
+    }
+    render();
+  }
+
   async function dealCards() {
     try {
       await ensureGameSession();
@@ -1587,7 +1626,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#supply-label").textContent = state.supply;
     document.querySelector("#vp-label").textContent = state.vp;
     const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
-    if (els.yearlyObjectives) els.yearlyObjectives.checked = objectivesEnabled;
+    if (els.yearlyObjectives) {
+      const locked = yearlyObjectivesLocked();
+      els.yearlyObjectives.checked = objectivesEnabled;
+      els.yearlyObjectives.disabled = locked;
+      els.yearlyObjectives.closest("label")?.setAttribute(
+        "title",
+        locked ? "Yearly Objectives are fixed after the first card is played" : "Apply the optional Yearly Objectives victory-point schedule"
+      );
+    }
     if (els.finishRegroup) {
       els.finishRegroup.hidden = !battleMapMode();
       els.finishRegroup.textContent = state.retreating ? "Retreat Complete" : "Finished Regroup";
@@ -3424,6 +3471,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state?.battle) event.preventDefault();
   });
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
+  els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);

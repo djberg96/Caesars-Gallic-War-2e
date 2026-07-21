@@ -745,6 +745,86 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["allobroges"], session.reload.data.dig("hands", "roman").map { |card| card.fetch("id") }
   end
 
+  test "updates yearly objectives before the first card is played" do
+    state = base_state.merge(
+      turn: 0,
+      options: { yearlyObjectives: false },
+      movement: nil,
+      currentAction: nil,
+      battle: nil,
+      discard: [],
+      committed: { roman: nil, barbarian: nil },
+      revealed: false,
+      diceRolledThisTurn: false
+    )
+    session = GameSession.create!(data: state)
+
+    post update_options_game_session_url(session, host: "localhost"),
+         params: { yearly_objectives: true },
+         as: :json
+
+    assert_response :success
+    assert JSON.parse(response.body).dig("options", "yearlyObjectives")
+    assert session.reload.data.dig("options", "yearlyObjectives")
+  end
+
+  test "rejects yearly objective changes after a card is played" do
+    state = base_state.merge(
+      options: { yearlyObjectives: true },
+      discard: [card_hash("helvetii")]
+    )
+    session = GameSession.create!(data: state)
+
+    post update_options_game_session_url(session, host: "localhost"),
+         params: { yearly_objectives: false },
+         as: :json
+
+    assert_response :unprocessable_entity
+    assert_match "cannot be changed", JSON.parse(response.body).fetch("error")
+    assert session.reload.data.dig("options", "yearlyObjectives")
+  end
+
+  test "preserves the locked yearly objective setting during later actions" do
+    state = base_state.merge(
+      options: { yearlyObjectives: true },
+      discard: [card_hash("helvetii")]
+    )
+    session = GameSession.create!(data: state)
+    submitted = session.data.deep_dup
+    submitted["options"]["yearlyObjectives"] = false
+
+    post move_game_session_url(session, host: "localhost"),
+         params: { state: submitted, unit_id: "legion_vii", target: "helvetii" },
+         as: :json
+
+    assert_response :success
+    assert JSON.parse(response.body).dig("state", "options", "yearlyObjectives")
+    assert session.reload.data.dig("options", "yearlyObjectives")
+  end
+
+  test "repairs legacy games that incorrectly returned Nantuates offboard" do
+    state = base_state
+    state[:units][:helvetii] = {
+      id: "helvetii", name: "Helvetii", type: "barbarian", owner: "barbarian",
+      location: "offboard", home: "helvetii", strengths: [8, 6, 4, 2], step: 4
+    }
+    state[:units][:nantuates] = {
+      id: "nantuates", name: "Nantuates", type: "barbarian", owner: "roman",
+      location: "offboard", home: "offboard", strengths: [2, 1], step: 0
+    }
+    session = GameSession.create!(data: state)
+
+    post move_game_session_url(session, host: "localhost"),
+         params: { state: session.data, unit_id: "legion_vii", target: "helvetii" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "helvetii", body.dig("state", "units", "nantuates", "home")
+    assert_equal "helvetii", body.dig("state", "units", "nantuates", "location")
+    assert_equal "roman", body.dig("state", "units", "nantuates", "owner")
+  end
+
   private
 
   def card_hash(key)

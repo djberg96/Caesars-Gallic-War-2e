@@ -28,5 +28,6 @@ Rails.application.routes.draw do
     post :activate_neutral, on: :member
     post :political_action, on: :member
     post :event_action, on: :member
+    post :update_options, on: :member
   end
 end
