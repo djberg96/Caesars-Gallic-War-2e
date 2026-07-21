@@ -57,8 +57,9 @@ module GameRules
 
       roll = d6
       if roll == 1 || roll <= card.fetch("ap").to_i
-        area_units(area.key).each do |unit|
-          unit["owner"] = "barbarian" unless unit["type"].in?(["roman", "german"])
+        revolt_units(area.key).each do |unit|
+          unit["owner"] = "barbarian"
+          unit["location"] = unit.fetch("home")
         end
         log("Bot political action succeeds in #{area.name} on roll #{roll}.")
       else
@@ -76,7 +77,7 @@ module GameRules
       targets = area.outgoing_borders.map(&:to_area).reject(&:sea?).select do |target|
         area_units(target.key).count { |unit| unit["owner"] != "barbarian" } == 1
       end
-      target = targets.find { |candidate| roman_controlled_area?(candidate.key) } || targets.first
+      target = targets.find { |candidate| roman_occupied_area?(candidate.key) } || targets.first
       return false unless target
 
       moved = attackers.first(2)
@@ -207,11 +208,20 @@ module GameRules
     end
 
     def activate_area!(area_id, owner)
-      area_units(area_id).select { |unit| unit["owner"] == "neutral" }.each do |unit|
+      revolt_units(area_id).each do |unit|
         unit["owner"] = owner
-        unit["step"] = 0
+        unit["location"] = unit.fetch("home")
       end
       log("#{player_name(owner)} activates #{area_name(area_id)}.")
+    end
+
+    def revolt_units(area_id)
+      units.values.select do |unit|
+        unit["type"] == "barbarian" &&
+          unit["home"] == area_id &&
+          !unit["location"].in?(["eliminated", "offboard"]) &&
+          current_strength(unit).positive?
+      end
     end
 
     def record_neutral_activation_card(card)
@@ -221,11 +231,15 @@ module GameRules
     end
 
     def neutral_area?(area_id)
-      area_units(area_id).any? { |unit| unit["owner"] == "neutral" }
+      revolt_units(area_id).any? { |unit| unit["owner"] == "neutral" }
     end
 
     def roman_controlled_area?(area_id)
-      area_units(area_id).any? { |unit| unit["owner"] == "roman" && unit["type"] != "roman" }
+      revolt_units(area_id).any? { |unit| unit["owner"] == "roman" }
+    end
+
+    def roman_occupied_area?(area_id)
+      area_units(area_id).any? { |unit| unit["owner"] == "roman" }
     end
 
     def current_strength(unit)

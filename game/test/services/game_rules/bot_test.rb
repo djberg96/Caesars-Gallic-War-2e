@@ -62,6 +62,30 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_includes result["log"], "Barbarian activates Allobroges."
   end
 
+  test "major revolt takes control of Roman allied tribes and returns every home-area tribe" do
+    state = bot_state(bot_deck: [card_hash("event_3_major_revolt")])
+    state["units"] = {
+      "bellovaci" => barbarian_unit("bellovaci", "Bellovaci", "bellovaci", "roman", [4, 3, 2, 1], fire: 2).merge(
+        "location" => "atuatuci",
+        "step" => 1
+      ),
+      "caletes" => barbarian_unit("caletes", "Caletes", "bellovaci", "roman", [3, 2, 1], fire: 1).merge(
+        "location" => "mandubii"
+      ),
+      "mandubii" => barbarian_unit("mandubii", "Mandubii", "mandubii", "neutral", [3, 2, 1], fire: 2)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, target: "bellovaci").draw!
+
+    assert_equal "barbarian", result.dig("units", "bellovaci", "owner")
+    assert_equal "barbarian", result.dig("units", "caletes", "owner")
+    assert_equal "bellovaci", result.dig("units", "bellovaci", "location")
+    assert_equal "bellovaci", result.dig("units", "caletes", "location")
+    assert_equal 1, result.dig("units", "bellovaci", "step")
+    assert_match "Barbarian activates Bellovaci + Caletes", result["log"].join(" ")
+  end
+
   test "records the bot entry border and prevents the defender retreating through it" do
     state = bot_state(bot_deck: [card_hash("boii")])
     state["units"] = {
