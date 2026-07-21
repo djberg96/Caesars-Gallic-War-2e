@@ -186,7 +186,7 @@ module GameRules
       candidates = units.values.select do |unit|
         unit["type"] == "roman" &&
           unit["owner"] == "roman" &&
-          !unit["location"].in?(["transalpine_gaul", "roman_off_map", "offboard", "eliminated"])
+          !unit["location"].in?(["transalpine_gaul", "roman_off_map", "offboard", "eliminated", "germania"])
       end
       return candidates unless eligible_ids
 
