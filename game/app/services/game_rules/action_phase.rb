@@ -80,9 +80,7 @@ module GameRules
       raise InvalidAction, "Event cards cannot activate neutral tribes." if area_id.blank?
 
       area = Area.find_by!(key: area_id)
-      if active_player == "roman" && (area.key == "germania" || area.region == "britannia")
-        raise InvalidAction, "Romans may not use neutral activation in Britannia or Germania."
-      end
+      validate_roman_special_target!(area, action: "neutral activation") if active_player == "roman"
 
       @state["currentAction"] = "activate"
       units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }.each do |unit|
@@ -102,6 +100,7 @@ module GameRules
 
       area = Area.find_by(key: area_id.to_s)
       raise InvalidAction, "That area is not a valid political target." unless political_target?(area)
+      validate_roman_special_target!(area, action: "political action") if active_player == "roman"
 
       rolled = die_roll(roll)
       modified = rolled
@@ -262,6 +261,24 @@ module GameRules
       area && area.region.present? && !area.region.in?(["roman", "germania"])
     end
 
+    def validate_roman_special_target!(area, action:)
+      if area.key == "germania"
+        raise InvalidAction, "Romans may not use #{action} against Germania."
+      end
+      return unless area.region == "britannia" && !roman_legion_on_northern_coast?
+
+      raise InvalidAction, "Romans need at least one legion in a port area connected to Oceanus Britannicus to use #{action} in Britannia."
+    end
+
+    def roman_legion_on_northern_coast?
+      units.values.any? do |unit|
+        next false unless unit["type"] == "roman" && unit["owner"] == "roman" && current_strength(unit).positive?
+
+        area = Area.includes(outgoing_borders: :to_area).find_by(key: unit["location"])
+        area&.outgoing_borders&.any? { |border| border.to_area.key == "oceanus_britannicus" }
+      end
+    end
+
     def political_units(area_id)
       units.values.select do |unit|
         unit["type"] == "barbarian" &&
@@ -290,9 +307,7 @@ module GameRules
     end
 
     def activate_area!(area, owner)
-      if owner == "roman" && (area.key == "germania" || area.region == "britannia")
-        raise InvalidAction, "Romans may not use neutral activation in Britannia or Germania."
-      end
+      validate_roman_special_target!(area, action: "neutral activation") if owner == "roman"
 
       units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }.each do |unit|
         unit["owner"] = owner

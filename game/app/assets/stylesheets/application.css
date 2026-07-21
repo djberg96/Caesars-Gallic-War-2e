@@ -391,6 +391,12 @@ h3 {
   stroke: rgba(255, 230, 140, 0.9);
 }
 
+.area-hotspot.is-targeting-disabled {
+  fill: rgba(95, 93, 85, 0.14);
+  stroke: rgba(130, 126, 115, 0.52);
+  stroke-dasharray: 0.8 0.7;
+}
+
 .area-click-catcher {
   pointer-events: auto;
   cursor: pointer;
@@ -1421,19 +1427,27 @@ h3 {
   backdrop-filter: blur(4px);
 }
 
-#battle-dialog > h2 {
-  margin-bottom: 0.85rem;
+.battle-board-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.battle-board-title h2 {
+  margin: 0;
   color: #f4ead3;
   font-family: Georgia, serif;
-  font-size: 1.45rem;
+  font-size: 1.3rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
 .battle-summary {
   display: grid;
-  gap: 0.45rem;
-  padding: 0.8rem 0.9rem;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid rgba(217, 180, 95, 0.28);
   border-radius: 9px;
   background: rgba(10, 13, 10, 0.46);
@@ -1449,7 +1463,7 @@ h3 {
   gap: 1rem;
 }
 
-.battle-heading > div {
+.battle-heading > div:first-child {
   display: grid;
   gap: 0.05rem;
 }
@@ -1481,26 +1495,71 @@ h3 {
   text-transform: uppercase;
 }
 
+.battle-defense-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  max-width: 58%;
+}
+
+.battle-defense-summary span {
+  padding: 0.25rem 0.48rem;
+  border: 1px solid rgba(118, 168, 110, 0.52);
+  border-radius: 999px;
+  background: rgba(118, 168, 110, 0.11);
+  color: #b8d4ae;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.battle-defense-summary span.is-inactive {
+  border-color: rgba(147, 139, 121, 0.3);
+  background: transparent;
+  color: #938b79;
+}
+
 .battle-status {
   color: #d9d0bc;
   font-weight: 650;
 }
 
-.battle-summary-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.65rem;
-  align-items: start;
-  margin-top: 0.1rem;
+.battle-details {
+  margin-top: 0.7rem;
 }
 
-.battle-summary-log {
+.battle-log-panel {
   min-width: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(217, 180, 95, 0.24);
+  border-radius: 8px;
+  background: rgba(7, 10, 8, 0.2);
 }
 
-.battle-summary-log .battle-action-history,
-.battle-summary-columns .battle-defense-intel {
+.battle-log-panel .battle-action-history {
   margin-top: 0;
+}
+
+.battle-details-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.battle-details-heading span,
+.battle-details-heading b {
+  color: #c4ad70;
+  font-size: 0.61rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.battle-details-heading b {
+  color: #9e9581;
 }
 
 .battle-log-empty {
@@ -1546,7 +1605,8 @@ h3 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
-  margin-top: 0.8rem;
+  align-items: start;
+  margin-top: 0.55rem;
 }
 
 .battle-army {
@@ -1587,7 +1647,7 @@ h3 {
   box-shadow: 0 0 14px color-mix(in srgb, var(--army-color) 60%, transparent);
 }
 
-.battle-army-header > div {
+.battle-army-identity {
   display: grid;
   gap: 0.06rem;
 }
@@ -1606,110 +1666,6 @@ h3 {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.battle-defense-intel {
-  --army-color: #a6a69a;
-  margin-top: 0.55rem;
-  padding: 0.6rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--army-color) 34%, #34392f);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--army-color) 9%, transparent), transparent),
-    rgba(7, 10, 8, 0.2);
-}
-
-.battle-defense-intel.owner-roman {
-  --army-color: var(--roman);
-}
-
-.battle-defense-intel.owner-barbarian {
-  --army-color: var(--barbarian);
-}
-
-.battle-defense-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.45rem;
-}
-
-.battle-defense-heading span,
-.battle-defense-heading b {
-  color: color-mix(in srgb, var(--army-color) 72%, #d9d0bc);
-  font-size: 0.61rem;
-  font-weight: 850;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.battle-defense-heading b {
-  padding: 0.12rem 0.3rem;
-  border: 1px solid color-mix(in srgb, var(--army-color) 34%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--army-color) 10%, transparent);
-}
-
-.battle-defense-effects {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 0.38rem;
-}
-
-.battle-defense-effect {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.45rem 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--army-color) 28%, #33372f);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--army-color) 7%, rgba(29, 33, 28, 0.9));
-}
-
-.battle-defense-effect.is-inactive {
-  opacity: 0.65;
-}
-
-.battle-defense-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--army-color) 48%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--army-color) 14%, #161a16);
-  color: color-mix(in srgb, var(--army-color) 72%, #eee0ba);
-  font-size: 0.85rem;
-  font-weight: 900;
-}
-
-.battle-defense-effect > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.08rem;
-}
-
-.battle-defense-effect > div > span {
-  color: color-mix(in srgb, var(--army-color) 68%, #aaa18e);
-  font-size: 0.55rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.battle-defense-effect strong {
-  color: #e9e1ce;
-  font-family: Georgia, serif;
-  font-size: 0.82rem;
-}
-
-.battle-defense-effect p {
-  margin: 0;
-  color: #b8b09f;
-  font-size: 0.65rem;
-  line-height: 1.35;
 }
 
 .battle-subzone {
@@ -2205,10 +2161,6 @@ textarea {
   }
 
   .battle-zones {
-    grid-template-columns: 1fr;
-  }
-
-  .battle-summary-columns {
     grid-template-columns: 1fr;
   }
 

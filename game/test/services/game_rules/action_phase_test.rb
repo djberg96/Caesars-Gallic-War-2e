@@ -95,6 +95,42 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal "roman", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 
+  test "requires a Roman legion on the northern coast to activate Britannia" do
+    state = britannia_action_state
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).activate_neutral!
+    end
+
+    assert_match "legion in a port area connected to Oceanus Britannicus", error.message
+    assert_equal "neutral", session.reload.data.dig("units", "belgae", "owner")
+
+    state["units"]["legion_vii"]["location"] = "atrebates"
+    coastal_session = GameSession.create!(data: state)
+    result = GameRules::ActionPhase.new(session: coastal_session, state: coastal_session.data).activate_neutral!
+
+    assert_equal "roman", result.dig("units", "belgae", "owner")
+  end
+
+  test "requires a Roman legion on the northern coast for a political action in Britannia" do
+    state = britannia_action_state
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).political!(area_id: "belgae", roll: 2)
+    end
+
+    assert_match "legion in a port area connected to Oceanus Britannicus", error.message
+    assert_equal "neutral", session.reload.data.dig("units", "belgae", "owner")
+
+    state["units"]["legion_vii"]["location"] = "osismi"
+    coastal_session = GameSession.create!(data: state)
+    result = GameRules::ActionPhase.new(session: coastal_session, state: coastal_session.data).political!(area_id: "belgae", roll: 2)
+
+    assert_equal "roman", result.dig("units", "belgae", "owner")
+  end
+
   test "rejects a second Roman neutral tribe activation in the same year" do
     state = base_state.merge(
       "neutralActivationCards" => { "roman" => [card_hash("andes")], "barbarian" => [] }
@@ -382,6 +418,25 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
       "location" => "allobroges",
       "step" => 1
     }
+  end
+
+  def britannia_action_state
+    card = card_hash("belgae")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["belgae"] = {
+      "id" => "belgae",
+      "name" => "Belgae",
+      "type" => "barbarian",
+      "owner" => "neutral",
+      "location" => "belgae",
+      "home" => "belgae",
+      "strengths" => [2, 1],
+      "step" => 0
+    }
+    state
   end
 
   def base_state

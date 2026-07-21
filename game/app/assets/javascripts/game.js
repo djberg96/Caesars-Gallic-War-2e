@@ -34,8 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleHand: document.querySelector("#toggle-hand"),
     cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
+    battleRoundHeader: document.querySelector("#battle-round-header"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
+    battleDetails: document.querySelector("#battle-details"),
     battleActions: document.querySelector("#battle-actions"),
     resultDialog: document.querySelector("#result-dialog"),
     resultTitle: document.querySelector("#result-title"),
@@ -837,8 +839,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activateArea(areaId, owner) {
-    if (owner === "roman" && (areaId === "germania" || areas[areaId]?.region === "britannia")) {
-      log("Romans may not use neutral activation in Britannia or Germania.");
+    if (owner === "roman" && romanSpecialTargetBlockReason(areaId, "neutral activation")) {
+      log(romanSpecialTargetBlockReason(areaId, "neutral activation"));
       return;
     }
 
@@ -850,8 +852,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function takeNeutralActivation(areaId, owner) {
-    if (owner === "roman" && (areaId === "germania" || areas[areaId]?.region === "britannia")) {
-      log("Romans may not use neutral activation in Britannia or Germania.");
+    if (owner === "roman" && romanSpecialTargetBlockReason(areaId, "neutral activation")) {
+      log(romanSpecialTargetBlockReason(areaId, "neutral activation"));
       return;
     }
 
@@ -891,6 +893,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function resolvePoliticalTarget(areaId) {
+    const blocked = state.active === "roman" && romanSpecialTargetBlockReason(areaId, "political action");
+    if (blocked) {
+      log(blocked);
+      render();
+      return;
+    }
+
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/political_action`, { state, area_id: areaId });
@@ -1698,6 +1707,10 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-selected", state.selectedArea === area.id);
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
       marker.classList.toggle("is-targeting", targetingPoliticalAction());
+      marker.classList.toggle(
+        "is-targeting-disabled",
+        targetingPoliticalAction() && state.active === "roman" && Boolean(romanSpecialTargetBlockReason(area.id, "political action"))
+      );
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
       els.areaLayer.append(marker);
     });
@@ -2607,17 +2620,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const activationLimit = neutralActivationLimit(state.active);
       const activationsUsed = neutralActivationsUsed(state.active);
       const activationLimitReached = activationsUsed >= activationLimit;
+      const targetBlocked = state.active === "roman" && romanSpecialTargetBlockReason(card.area, "neutral activation");
       actions.push({
         id: "activate",
         label: "Neutral Tribe",
-        detail: activationLimitReached
+        detail: targetBlocked || (activationLimitReached
           ? `Yearly limit reached (${activationsUsed} of ${activationLimit} used)`
-          : `Activate eligible tribes in ${areaName(card.area)} · ${activationsUsed} of ${activationLimit} used`,
-        disabled: activationLimitReached
+          : `Activate eligible tribes in ${areaName(card.area)} · ${activationsUsed} of ${activationLimit} used`),
+        disabled: activationLimitReached || Boolean(targetBlocked)
       });
     }
+    const cardAreaPoliticalBlocked = state.active === "roman" && romanSpecialTargetBlockReason(card.area, "political action");
     actions.push(
-      { id: "political", label: "Political", detail: `Attempt control using AP ${card.ap}` },
+      {
+        id: "political",
+        label: "Political",
+        detail: cardAreaPoliticalBlocked
+          ? `Britannia unavailable · other targets may be selected using AP ${card.ap}`
+          : `Attempt control using AP ${card.ap}`
+      },
       { id: "movement", label: "Movement", detail: `Activate up to ${card.ap} group${card.ap === 1 ? "" : "s"}` }
     );
     if (card.type === "event") {
@@ -2632,6 +2653,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function neutralActivationsUsed(player) {
     return state.neutralActivationCards?.[player]?.length || 0;
+  }
+
+  function romanLegionOnNorthernCoast() {
+    return Object.values(state.units).some((unit) =>
+      unit.type === "roman" &&
+      unit.owner === "roman" &&
+      currentStrength(unit) > 0 &&
+      areas[unit.location]?.links?.includes("oceanus_britannicus")
+    );
+  }
+
+  function romanSpecialTargetBlockReason(areaId, action) {
+    const area = areas[areaId];
+    if (!area) return null;
+    if (area.id === "germania") return `Romans may not use ${action} against Germania.`;
+    if (area.region === "britannia" && !romanLegionOnNorthernCoast()) {
+      return `Romans need at least one legion on the northern coast to use ${action} in Britannia.`;
+    }
+    return null;
   }
 
   async function playCardZoomAction(action) {
@@ -2686,6 +2726,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const battle = state.battle;
     if (!battle) {
       if (els.battleDialog.open) els.battleDialog.close();
+      if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
+      if (els.battleDetails) els.battleDetails.replaceChildren();
       state.regroupUnit = null;
       return;
     }
@@ -2701,23 +2743,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeUnit = battle.activeUnit ? state.units[battle.activeUnit] : null;
     const status = battleStatusText(battle, activeUnit);
     const defenderFortIds = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
-    const defenseIntel = battleDefenseIntel(battle, defenderFortIds);
+    const defenseAdvantages = battleDefenseAdvantages(battle, defenderFortIds);
     const actionHistory = battleActionHistory(battle);
+    els.battleRoundHeader.textContent = `Round ${battle.round} / ${battle.maxRounds}`;
     els.battleSummary.innerHTML = `
       <div class="battle-heading">
         <div>
           <span class="battle-kicker">Battle for</span>
           <strong>${areaName(battle.area)}</strong>
         </div>
-        <span class="battle-round">Round ${battle.round} / ${battle.maxRounds}</span>
+        <div class="battle-defense-summary" aria-label="Defender advantages">
+          ${defenseAdvantages.length
+            ? defenseAdvantages.map((advantage) => `<span>${advantage}</span>`).join("")
+            : "<span class=\"is-inactive\">No defender advantage</span>"}
+        </div>
       </div>
       <span class="battle-status">${status}</span>
-      <div class="battle-summary-columns">
-        <div class="battle-summary-log" aria-label="Battle log">
-          ${actionHistory || "<span class=\"battle-log-empty\">No battle actions yet.</span>"}
-        </div>
-        ${defenseIntel}
-      </div>
     `;
 
     const reserveIds = new Set(battle.round === 1 ? battle.reserves || [] : []);
@@ -2734,6 +2775,15 @@ document.addEventListener("DOMContentLoaded", () => {
       battleArmy(battle.attacker, "Attacker", attackers, attackerReserves, [], battle),
       battleArmy(battle.defender, "Defender", defenders, defenderReserves, fort, battle)
     ].join("");
+    els.battleDetails.innerHTML = `
+      <section class="battle-log-panel" aria-label="Battle log">
+        <div class="battle-details-heading">
+          <span>Battle Log</span>
+          <b>Round ${battle.round}</b>
+        </div>
+        ${actionHistory || "<span class=\"battle-log-empty\">No battle actions yet.</span>"}
+      </section>
+    `;
     wireBattleUnitButtons(battle);
     wireBattleActionButtons();
 
@@ -2807,7 +2857,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <section class="battle-army owner-${player}">
         <header class="battle-army-header">
           <span class="battle-army-standard" aria-hidden="true"></span>
-          <div>
+          <div class="battle-army-identity">
             <h3>${playerName(player)}</h3>
             <span>${role}</span>
           </div>
@@ -2826,70 +2876,21 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  function battleDefenseIntel(battle, fortIds) {
-    const effects = [];
+  function battleDefenseAdvantages(battle, fortIds) {
+    const advantages = [];
     if (battle.amphibious) {
-      effects.push({
-        icon: "⚓",
-        eyebrow: "Amphibious Invasion",
-        title: "Prepared Defense",
-        detail: "Defending units receive one better initiative. The battle is limited to 2 rounds."
-      });
+      advantages.push("Amphibious: Prepared Defense");
     }
     if (battle.area === "helvetii") {
-      effects.push({
-        icon: "▲",
-        eyebrow: "Terrain · Alps",
-        title: "Double Defense",
-        detail: "Defending units require 2 hits per strength loss. A 1/2 hit is retained until the end of the battle round."
-      });
+      advantages.push("Alps: Double Defense");
     }
 
     const areaFort = areas[battle.area]?.fort;
-    if (areaFort) {
-      const occupantNames = fortIds.map((id) => state.units[id]?.name).filter(Boolean);
-      const occupied = occupantNames.length > 0;
-      effects.push({
-        icon: "▰",
-        eyebrow: `Fortress · Capacity ${areaFort.level}`,
-        title: titleCase(areaFort.name),
-        detail: occupied
-          ? `${occupantNames.join(", ")} ${occupantNames.length === 1 ? "receives" : "receive"} improved initiative and double defense. Fort half-hits carry between assault rounds.`
-          : "Unoccupied. No defending unit currently receives fortress protection.",
-        inactive: !occupied
-      });
+    if (areaFort && fortIds.length) {
+      advantages.push(`${titleCase(areaFort.name)}: Improved Initiative + Double Defense`);
     }
 
-    if (!effects.length) {
-      effects.push({
-        icon: "—",
-        eyebrow: "Defensive Position",
-        title: "No Modifier",
-        detail: "No terrain or fortress effect changes damage in this battle.",
-        inactive: true
-      });
-    }
-
-    return `
-      <aside class="battle-defense-intel owner-${battle.defender}" aria-label="Defender advantages">
-        <div class="battle-defense-heading">
-          <span>Defender Advantages</span>
-          <b>${effects.some((effect) => !effect.inactive) ? "Active" : "None"}</b>
-        </div>
-        <div class="battle-defense-effects">
-          ${effects.map((effect) => `
-            <div class="battle-defense-effect${effect.inactive ? " is-inactive" : ""}">
-              <span class="battle-defense-icon" aria-hidden="true">${effect.icon}</span>
-              <div>
-                <span>${effect.eyebrow}</span>
-                <strong>${effect.title}</strong>
-                <p>${effect.detail}</p>
-              </div>
-            </div>
-          `).join("")}
-        </div>
-      </aside>
-    `;
+    return advantages;
   }
 
   function titleCase(value) {
