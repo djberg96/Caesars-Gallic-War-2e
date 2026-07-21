@@ -1,0 +1,59 @@
+name: Windows desktop installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Installer version
+        required: true
+        default: 0.1.0
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.4"
+
+      - name: Install production gems
+        working-directory: game
+        run: |
+          bundle lock --add-platform x64-mingw-ucrt
+          bundle config set --local path vendor/bundle
+          bundle config set --local without development:test
+          bundle install --jobs 4
+
+      - name: Compile assets
+        working-directory: game
+        env:
+          SECRET_KEY_BASE_DUMMY: "1"
+          RAILS_ENV: production
+        run: bundle exec rails assets:precompile
+
+      - name: Build installer
+        run: |
+          $version = "${{ inputs.version }}"
+          if (-not $version) {
+            $version = "${{ github.ref_name }}" -replace '^v', ''
+          }
+          .\packaging\windows\build.ps1 -Version $version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Caesars-Gallic-War-Windows-x64
+          path: dist/*.exe
+          if-no-files-found: error

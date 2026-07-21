@@ -138,6 +138,33 @@ bin/rails server
 
 Open `http://localhost:3000`.
 
+## Desktop installer
+
+The Windows desktop package includes Ruby, Rails, and all game assets. Players
+do not need to install Ruby or use a terminal: the installer creates a normal
+Start-menu shortcut that starts a private server on `127.0.0.1` and opens the
+game in the default browser. Game data and logs are kept in the current user's
+application-data directory rather than the installation directory.
+
+To produce an installer, run the **Windows desktop installer** workflow from
+the repository's Actions page and supply a version number. Pushing a tag such
+as `v0.1.0` also builds it. The downloadable workflow artifact contains
+`Caesars-Gallic-War-0.1.0-Windows-x64-Setup.exe`.
+
+The launcher in `bin/desktop` also supports macOS and Linux and provides the
+base for native packages on those platforms. From an existing development
+checkout it can be tried with:
+
+```sh
+SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production bin/rails assets:precompile
+bin/desktop
+```
+
+Windows installers are currently unsigned, so Windows may display a
+SmartScreen warning. A public release should sign the generated installer with
+an Authenticode certificate; macOS packages will likewise need Apple signing
+and notarization.
+
 The SQLite development and test databases are stored under `game/storage/`
 and are ignored by git. To run the test suite:
 

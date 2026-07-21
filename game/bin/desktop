@@ -1,0 +1,158 @@
+#!/usr/bin/env ruby
+
+require "fileutils"
+require "json"
+require "rbconfig"
+require "securerandom"
+require "socket"
+require "timeout"
+
+APP_ROOT = File.expand_path("..", __dir__)
+HOST = "127.0.0.1"
+
+def windows?
+  Gem.win_platform?
+end
+
+def macos?
+  RbConfig::CONFIG["host_os"].include?("darwin")
+end
+
+def data_directory
+  return ENV.fetch("CGW_DATA_DIR") if ENV["CGW_DATA_DIR"]
+
+  if windows?
+    File.join(ENV["LOCALAPPDATA"] || ENV.fetch("APPDATA"), "CaesarsGallicWar")
+  elsif macos?
+    File.join(Dir.home, "Library", "Application Support", "CaesarsGallicWar")
+  else
+    File.join(ENV.fetch("XDG_DATA_HOME", File.join(Dir.home, ".local", "share")), "caesars-gallic-war")
+  end
+end
+
+def server_healthy?(port)
+  response = Timeout.timeout(1) do
+    socket = TCPSocket.new(HOST, port)
+    socket.write("GET /up HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+    result = socket.read
+    socket.close
+    result
+  end
+
+  response.start_with?("HTTP/1.1 200", "HTTP/1.0 200")
+rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, IOError, SystemCallError, Timeout::Error
+  false
+end
+
+def available_port
+  server = TCPServer.new(HOST, 0)
+  server.addr[1]
+ensure
+  server&.close
+end
+
+def open_browser(url)
+  command = if windows?
+    [ "cmd.exe", "/c", "start", "", url ]
+  elsif macos?
+    [ "open", url ]
+  else
+    [ "xdg-open", url ]
+  end
+
+  Process.spawn(*command, out: File::NULL, err: File::NULL)
+rescue SystemCallError => error
+  warn "Could not open a browser automatically: #{error.message}\nOpen #{url} manually."
+end
+
+def show_failure(log_path, message)
+  File.open(log_path, "a") { |log| log.puts("Desktop launcher: #{message}") }
+
+  if windows?
+    Process.spawn("notepad.exe", log_path)
+  elsif macos?
+    Process.spawn("open", log_path)
+  end
+
+  warn "#{message} See #{log_path} for details."
+end
+
+data_dir = data_directory
+FileUtils.mkdir_p(data_dir)
+FileUtils.mkdir_p(File.join(data_dir, "cache"))
+FileUtils.mkdir_p(File.join(data_dir, "tmp", "pids"))
+
+state_path = File.join(data_dir, "server.json")
+log_path = File.join(data_dir, "desktop.log")
+state = begin
+  JSON.parse(File.read(state_path), symbolize_names: true) if File.exist?(state_path)
+rescue JSON::ParserError
+  nil
+end
+
+if state&.dig(:port) && server_healthy?(state.fetch(:port))
+  open_browser("http://#{HOST}:#{state.fetch(:port)}")
+  exit
+end
+
+secret_path = File.join(data_dir, "secret_key_base")
+unless File.exist?(secret_path)
+  File.write(secret_path, SecureRandom.hex(64))
+  File.chmod(0o600, secret_path) unless windows?
+end
+
+port = available_port
+environment = {
+  "BUNDLE_GEMFILE" => File.join(APP_ROOT, "Gemfile"),
+  "BUNDLE_WITHOUT" => "development:test",
+  "RAILS_ENV" => "desktop",
+  "RAILS_SERVE_STATIC_FILES" => "1",
+  "SECRET_KEY_BASE" => File.read(secret_path).strip,
+  "CGW_DATABASE_PATH" => File.join(data_dir, "game.sqlite3"),
+  "CGW_DESKTOP_LOG" => log_path,
+  "BOOTSNAP_CACHE_DIR" => File.join(data_dir, "cache"),
+  "TMPDIR" => File.join(data_dir, "tmp")
+}
+bundled_gems = File.join(APP_ROOT, "vendor", "bundle")
+environment["BUNDLE_PATH"] = bundled_gems if Dir.exist?(bundled_gems)
+
+rails = File.join(APP_ROOT, "bin", "rails")
+log = File.open(log_path, "a")
+log.sync = true
+log.puts("\n#{Time.now}: preparing desktop game")
+
+prepared = system(environment, RbConfig.ruby, rails, "db:prepare", chdir: APP_ROOT, out: log, err: log)
+unless prepared
+  log.close
+  show_failure(log_path, "Caesar's Gallic War could not prepare its game data.")
+  exit 1
+end
+
+pid = Process.spawn(
+  environment,
+  RbConfig.ruby,
+  rails,
+  "server",
+  "--binding", HOST,
+  "--port", port.to_s,
+  "--environment", "desktop",
+  chdir: APP_ROOT,
+  out: log,
+  err: log
+)
+Process.detach(pid)
+File.write(state_path, JSON.generate(pid: pid, port: port))
+log.close
+
+started = 120.times.any? do
+  break true if server_healthy?(port)
+  sleep 0.25
+  false
+end
+
+unless started
+  show_failure(log_path, "Caesar's Gallic War did not finish starting.")
+  exit 1
+end
+
+open_browser("http://#{HOST}:#{port}") unless ENV["CGW_DESKTOP_NO_BROWSER"] == "1"

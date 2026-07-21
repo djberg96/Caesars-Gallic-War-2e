@@ -22,6 +22,7 @@
 !/tmp/pids/.keep
 
 /public/assets
+/vendor/bundle
 
 # Local SQLite databases.
 /storage/*.sqlite3

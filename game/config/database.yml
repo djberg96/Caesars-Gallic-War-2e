@@ -14,3 +14,9 @@ test:
 production:
   <<: *default
   database: storage/production.sqlite3
+
+# Desktop packages are installed in a read-only application directory. The
+# launcher points this at the current user's application-data directory.
+desktop:
+  <<: *default
+  database: <%= ENV.fetch("CGW_DATABASE_PATH", Rails.root.join("storage/desktop.sqlite3")) %>

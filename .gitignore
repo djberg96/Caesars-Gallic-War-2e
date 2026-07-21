@@ -5,3 +5,5 @@
 *.fls
 *.fdb*
 *.DS*
+/dist/
+/packaging/windows/stage/
