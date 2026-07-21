@@ -346,6 +346,58 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "retreat complete", result["log"].join(" ")
   end
 
+  test "solitaire automatically retreats a defeated Barbarian attacker through its entry border" do
+    state = battle_state
+    state["mode"] = "solitaire"
+    state["units"]["legion_vii"]["fire"] = 0
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "allobroges",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [1],
+      "initiative" => "C",
+      "fire" => 0
+    }
+    state["units"].delete("allobroges")
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 3,
+      "maxRounds" => 3,
+      "phase" => "field",
+      "attacker" => "barbarian",
+      "defender" => "roman",
+      "activeUnit" => "legion_vii",
+      "acted" => [],
+      "fired" => [],
+      "actionResults" => [],
+      "attackers" => ["helvetii"],
+      "defenders" => ["legion_vii"],
+      "mainOrigin" => "helvetii",
+      "entries" => { "helvetii" => "helvetii" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => nil
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data, rolls: [6]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_nil result["battle"]
+    assert_equal "helvetii", result.dig("units", "helvetii", "location")
+    assert_match "Helvetii retreats from Allobroges to Helvetii", result["log"].join(" ")
+    assert_match "Barbarian retreat complete", result["log"].join(" ")
+  end
+
   test "defending units that moved into battle start in reserve" do
     state = battle_state
     state["units"]["legion_viii"] = state["units"]["legion_vii"].merge(

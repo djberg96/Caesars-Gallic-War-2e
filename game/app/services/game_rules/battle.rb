@@ -455,7 +455,36 @@ module GameRules
         advance_battle!
       end
 
+      finish_bot_forced_retreat! if bot_must_finish_forced_retreat?
       regroup!(nil) if bot_must_finish_regroup?
+    end
+
+    def bot_must_finish_forced_retreat?
+      battle &&
+        battle["phase"] == "retreat" &&
+        battle["retreating"] == "barbarian" &&
+        @state.fetch("mode", "hotseat") != "hotseat"
+    end
+
+    def finish_bot_forced_retreat!
+      retreaters = live_combat_units.select do |candidate|
+        candidate["owner"] == "barbarian" && candidate["location"] == battle_area.key && !battle["fort"].include?(candidate.fetch("id"))
+      end
+
+      retreaters.each do |retreater|
+        target = bot_forced_retreat_target(retreater)
+        return unless target
+
+        forced_retreat!(retreater.fetch("id"), target)
+      end
+      finish_forced_retreat!
+    end
+
+    def bot_forced_retreat_target(acting)
+      preferred = [battle.dig("entries", acting.fetch("id"))]
+      preferred << battle["mainOrigin"] if acting["owner"] == battle["attacker"]
+      adjacent = battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key)
+      (preferred.compact + adjacent).uniq.find { |target| legal_retreat_destination?(acting, target) }
     end
 
     def bot_must_finish_regroup?
@@ -680,13 +709,22 @@ module GameRules
 
     def retreat_target(unit_id)
       acting = unit(unit_id)
-      battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find do |target|
-        next false if target == "germania" && acting["type"] != "german"
-        next false if non_friendly_units_in?(target, acting["owner"])
-        next false if blocked_retreat_area?(acting, target)
+      battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find { |target| legal_retreat_destination?(acting, target) }
+    end
 
-        true
-      end
+    def legal_retreat_destination?(acting, target)
+      return false if target == "germania" && acting["type"] != "german"
+      return false if non_friendly_units_in?(target, acting["owner"])
+      return false if blocked_retreat_area?(acting, target)
+
+      border_to_target = border(battle_area.key, target)
+      return false unless border_to_target
+
+      capacity = border_to_target.capacity
+      return true unless capacity
+
+      used = battle["crossings"].fetch("#{battle_area.key}->#{target}", 0).to_i
+      used + 1 <= capacity
     end
 
     def blocked_retreat_area?(acting, target)
