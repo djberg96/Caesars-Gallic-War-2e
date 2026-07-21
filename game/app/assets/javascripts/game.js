@@ -2765,6 +2765,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function battleDefenseIntel(battle, fortIds) {
     const effects = [];
+    if (battle.amphibious) {
+      effects.push({
+        icon: "⚓",
+        eyebrow: "Amphibious Invasion",
+        title: "Prepared Defense",
+        detail: "Defending units receive one better initiative. The battle is limited to 2 rounds."
+      });
+    }
     if (battle.area === "helvetii") {
       effects.push({
         icon: "▲",

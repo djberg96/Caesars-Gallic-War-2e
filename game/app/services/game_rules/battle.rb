@@ -87,11 +87,13 @@ module GameRules
       entries = movement_entries(unit_ids, area.key)
         .merge((pending_entry["entries"] || {}).slice(*unit_ids))
         .merge(@entry_origins.slice(*unit_ids))
+      amphibious = amphibious_main_force?(attacker_ids, main_origin)
 
       battle_data = {
         "area" => area.key,
         "round" => 1,
-        "maxRounds" => area.key == "germania" ? 2 : 3,
+        "maxRounds" => area.key == "germania" || amphibious ? 2 : 3,
+        "amphibious" => amphibious,
         "phase" => "field",
         "attacker" => attacker,
         "defender" => defender,
@@ -590,9 +592,21 @@ module GameRules
 
     def effective_initiative_value(unit)
       value = INITIATIVE_ORDER.fetch(unit["initiative"], 5)
-      return value unless unit["owner"] == battle["defender"] && battle["fort"].include?(unit.fetch("id"))
+      return value unless unit["owner"] == battle["defender"]
 
-      [value - 1, 1].max
+      improvement = 0
+      improvement += 1 if battle["fort"].include?(unit.fetch("id"))
+      improvement += 1 if battle["amphibious"]
+      [value - improvement, 1].max
+    end
+
+    def amphibious_main_force?(attacker_ids, main_origin)
+      return false if main_origin.blank?
+
+      attacker_ids.any? do |id|
+        moved = @state.dig("movement", "units", id) || {}
+        moved["naval"] && moved["entry"] == main_origin
+      end
     end
 
     def validate_active_unit!(unit_id)

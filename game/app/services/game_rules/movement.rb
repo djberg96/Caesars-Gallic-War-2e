@@ -49,6 +49,7 @@ module GameRules
       direct_border = border(@from, @target)
       return { "force" => false, "steps" => [[@from, @target, direct_border]] } if direct_border
       return nil if retreat_movement?
+      return naval_route if naval_route
 
       force_route
     end
@@ -61,6 +62,7 @@ module GameRules
       return illegal_area_reason unless legal_area_for_unit?
       return movement_limit_reason unless can_unit_move_this_card?
       return "#{unit_name} cannot retreat more than one area." if retreat_movement?
+      return "Roman naval invasions require 1 supply per group." if naval_route_available? && naval_invasion_cost_due? && !supply.positive?
       return "#{unit_name} cannot force march." unless roman_legion?
       return "Roman legions need 1 supply to force march." unless supply.positive?
       return "#{unit_name} cannot force march after it has already moved." if movement_units.dig(@unit_id, "steps").to_i.positive?
@@ -122,8 +124,46 @@ module GameRules
       nil
     end
 
+    def naval_route
+      return @naval_route if defined?(@naval_route)
+
+      @naval_route = nil
+      return unless from_area.port? && target_area.port?
+      return if movement_units.dig(@unit_id, "steps").to_i.positive?
+
+      first_border = from_area.outgoing_borders.includes(:to_area).find do |candidate|
+        candidate.kind == "naval" && candidate.to_area.sea? && border(candidate.to_area.key, @target)&.kind == "naval"
+      end
+      return unless first_border
+
+      sea = first_border.to_area
+      second_border = border(sea.key, @target)
+      return unless second_border&.kind == "naval"
+      return if roman_legion? && naval_invasion_cost_due? && !supply.positive?
+
+      @naval_route = {
+        "force" => false,
+        "naval" => true,
+        "entry" => @from,
+        "steps" => [[@from, sea.key, first_border], [sea.key, @target, second_border]]
+      }
+    end
+
+    def naval_route_available?
+      return false unless from_area.port? && target_area.port?
+      return false if movement_units.dig(@unit_id, "steps").to_i.positive?
+
+      from_area.outgoing_borders.includes(:to_area).any? do |candidate|
+        candidate.kind == "naval" && candidate.to_area.sea? && border(candidate.to_area.key, @target)&.kind == "naval"
+      end
+    end
+
     def apply_capacity!(plan)
       crossings = movement["crossings"] ||= {}
+
+      if plan["naval"] && movement.fetch("navalDepartures", {}).fetch(@from, 0).to_i >= 2
+        raise InvalidMove, "No more than 2 units may make a naval move from #{area_name(@from)} in one movement action."
+      end
 
       plan.fetch("steps").each do |from, to, border|
         capacity = border.capacity
@@ -141,10 +181,12 @@ module GameRules
       @unit["location"] = @target
       record_unit_movement!(plan)
       record_yearly_objective_progress!(plan)
+      charge_naval_invasion!(plan)
       activate_neutral_units_in_target!
 
       message = "#{unit_name} moved to #{area_name(@target)}"
       message += " by forced march through #{area_name(plan.fetch("via"))}" if plan["force"]
+      message += " by naval movement" if plan["naval"]
       log("#{message}.")
       @state["selectedUnit"] = nil
     end
@@ -176,7 +218,12 @@ module GameRules
         moved["path"] << { "from" => from, "to" => to, "border" => border.kind }
         movement["crossings"]["#{from}->#{to}"] = movement["crossings"].fetch("#{from}->#{to}", 0).to_i + 1 if capacity
       end
-      moved["entry"] = plan.fetch("steps").last.first
+      moved["entry"] = plan["entry"] || plan.fetch("steps").last.first
+      if plan["naval"]
+        moved["naval"] = true
+        movement["navalDepartures"] ||= {}
+        movement["navalDepartures"][@from] = movement["navalDepartures"].fetch(@from, 0).to_i + 1
+      end
 
       if plan["force"]
         moved["steps"] = 2
@@ -202,6 +249,25 @@ module GameRules
         other["owner"] = active_player == "roman" ? "barbarian" : "roman"
         log("#{other.fetch("name")} joins the #{player_name(other.fetch("owner"))} player as #{unit_name} enters #{area_name(@target)}.")
       end
+    end
+
+    def naval_invasion_cost_due?
+      return false unless roman_legion? && area_has_stopper?(@target, @unit["owner"])
+
+      !movement.fetch("navalLandings", {}).key?(naval_landing_key)
+    end
+
+    def charge_naval_invasion!(plan)
+      return unless plan["naval"] && naval_invasion_cost_due?
+
+      @state["supply"] = supply - 1
+      movement["navalLandings"] ||= {}
+      movement["navalLandings"][naval_landing_key] = true
+      log("Roman naval invasion from #{area_name(@from)} to #{area_name(@target)} costs 1 supply.")
+    end
+
+    def naval_landing_key
+      @from
     end
 
     def persist!
@@ -230,7 +296,7 @@ module GameRules
     end
 
     def border_stops?(border)
-      border.kind == "minor_river"
+      border.kind.in?(["minor_river", "naval"])
     end
 
     def area_has_stopper?(area_key, owner)

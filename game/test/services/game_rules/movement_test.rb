@@ -31,6 +31,35 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal ["legion_vii"], result.dig("yearlyObjectiveProgress", "romanLegionsEnteredGermania")
   end
 
+  test "moves up to two Roman legions between ports and charges one supply for the invasion" do
+    state = base_state(target_area: "belgae")
+    state["options"] = { "yearlyObjectives" => true }
+    state["yearlyObjectiveProgress"] = {}
+    state["movement"]["areas"] = ["atrebates"]
+    state["units"].each_value { |unit| unit["location"] = "atrebates" }
+    state["units"]["belgae"] = {
+      "id" => "belgae", "name" => "Belgae", "type" => "barbarian", "owner" => "neutral",
+      "location" => "belgae", "home" => "belgae", "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    first = move(session, "legion_vii", "belgae")
+    second = move(session, "legion_viii", "belgae")
+
+    assert_equal "belgae", second.dig("units", "legion_vii", "location")
+    assert_equal "belgae", second.dig("units", "legion_viii", "location")
+    assert_equal 14, second["supply"]
+    assert second.dig("movement", "units", "legion_vii", "naval")
+    assert second.dig("movement", "units", "legion_vii", "stopped")
+    assert_equal "atrebates", second.dig("movement", "units", "legion_vii", "entry")
+    assert_equal 2, second.dig("movement", "crossings", "atrebates->oceanus_britannicus")
+    assert second.dig("yearlyObjectiveProgress", "romanEnteredBritannia")
+
+    error = assert_raises(GameRules::Movement::InvalidMove) { move(session, "legion_ix", "belgae") }
+    assert_match "No more than 2 units", error.message
+    assert_equal 14, session.reload.data["supply"]
+  end
+
   test "rejects movement before a movement card has been played" do
     state = base_state
     state["movement"] = nil

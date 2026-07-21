@@ -50,6 +50,27 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal ["legion_vii"], result.dig("yearlyObjectiveProgress", "romanLegionsFoughtInBritannia")
   end
 
+  test "limits an amphibious invasion to two rounds and improves defender initiative" do
+    state = battle_state
+    state["units"].each_value { |unit| unit["location"] = "belgae" }
+    state["units"]["legion_vii"]["initiative"] = "D"
+    state["units"]["allobroges"]["initiative"] = "C"
+    state["movement"] = {
+      "units" => {
+        "legion_vii" => {
+          "origin" => "atrebates", "entry" => "atrebates", "steps" => 1, "stopped" => true, "naval" => true
+        }
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+
+    assert result.dig("battle", "amphibious")
+    assert_equal 2, result.dig("battle", "maxRounds")
+    assert_equal "allobroges", result.dig("battle", "activeUnit")
+  end
+
   test "marks fired units until the next battle round" do
     state = battle_state
     state["units"]["legion_vii"]["fire"] = 0
