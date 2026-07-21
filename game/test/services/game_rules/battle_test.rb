@@ -791,7 +791,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     session = GameSession.create!(data: state)
 
     result = GameRules::Battle.new(session: session, state: session.data).resolve!
-    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1, 6]).act!(
       action: "fire",
       unit_id: "legion_vii"
     )
@@ -801,6 +801,42 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     legion_fire = result.dig("battle", "actionResults").find { |entry| entry["unitId"] == "legion_vii" }
     assert_equal 1, legion_fire["hits"]
     assert_equal 0, legion_fire["appliedHits"]
+  end
+
+  test "Caesar's death immediately ends the campaign" do
+    GameData::CardSeeder.seed!
+    state = battle_state
+    caesar = state["units"].delete("legion_vii").merge(
+      "id" => "legion_x",
+      "name" => "Legion X",
+      "fire" => 0
+    )
+    state["units"]["legion_x"] = caesar
+    roman_card = Card.find_by!(key: "allobroges").game_data.stringify_keys
+    bot_card = Card.find_by!(key: "helvetii").game_data.stringify_keys
+    state["hands"] = { "roman" => [roman_card], "barbarian" => [] }
+    state["botDeck"] = [bot_card]
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "pass",
+      unit_id: "legion_x"
+    )
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "allobroges"
+    )
+
+    assert_equal "eliminated", result.dig("units", "legion_x", "location")
+    assert_nil result["battle"]
+    assert_equal "Game Over", result["phase"]
+    assert_equal "barbarian", result.dig("gameOver", "winner")
+    assert_equal "Barbarian Instant Victory", result.dig("gameOver", "result")
+    assert_equal 5, result.dig("gameOver", "vp")
+    assert_empty result.dig("hands", "roman")
+    assert_empty result["botDeck"]
+    assert_match "Caesar has been killed", result["log"].join(" ")
   end
 
   private

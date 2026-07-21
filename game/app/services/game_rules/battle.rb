@@ -58,6 +58,11 @@ module GameRules
         raise InvalidAction, "Unknown battle action #{action}."
       end
 
+      if game_over?
+        conclude_instant_victory!
+        return persist!
+      end
+
       unless pending_hit_assignment?
         advance_battle!
         advance_bot_actions!
@@ -199,6 +204,7 @@ module GameRules
 
     def advance_battle!
       return unless battle
+      return if game_over?
       return if battle["phase"].in?(["regroup", "retreat"])
       return if pending_hit_assignment?
 
@@ -450,6 +456,10 @@ module GameRules
       while battle && battle["phase"] == "field" && bot_controls_active_unit? && guard < 20
         guard += 1
         bot_act!
+        if game_over?
+          conclude_instant_victory!
+          return
+        end
         break if pending_hit_assignment?
 
         advance_battle!
@@ -630,9 +640,10 @@ module GameRules
         end
 
         apply_pending_hit!(candidates.min_by { |candidate| candidate.fetch("name") })
+        break if game_over?
       end
 
-      finish_pending_fire!
+      finish_pending_fire! unless game_over?
     end
 
     def apply_pending_hit!(target)
@@ -700,6 +711,11 @@ module GameRules
         unit["location"] = "eliminated"
         remove_from_battle!(unit.fetch("id"))
         if unit["id"] == "legion_x"
+          @state["gameOver"] = {
+            "winner" => "barbarian",
+            "result" => "Barbarian Instant Victory",
+            "vp" => @state.fetch("vp", 0).to_i
+          }
           log("Caesar has been killed. Barbarian instant victory.")
         elsif unit["type"] == "roman"
           @state["vp"] = [@state.fetch("vp", 0).to_i - 5, 0].max
@@ -714,6 +730,23 @@ module GameRules
           log("#{unit.fetch("name")} eliminated.")
         end
       end
+    end
+
+    def game_over?
+      @state["gameOver"].present?
+    end
+
+    def conclude_instant_victory!
+      @state["phase"] = "Game Over"
+      @state["battle"] = nil
+      @state["movement"] = nil
+      @state["endTurn"] = nil
+      @state["selectedCard"] = nil
+      @state["currentAction"] = nil
+      @state["hands"] = { "roman" => [], "barbarian" => [] }
+      @state["committed"] = { "roman" => nil, "barbarian" => nil }
+      @state["revealed"] = false
+      @state["botDeck"] = []
     end
 
     def remove_from_battle!(unit_id)
