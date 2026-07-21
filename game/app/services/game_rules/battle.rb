@@ -58,6 +58,11 @@ module GameRules
         raise InvalidAction, "Unknown battle action #{action}."
       end
 
+      if game_over?
+        conclude_instant_victory!
+        return persist!
+      end
+
       unless pending_hit_assignment?
         advance_battle!
         advance_bot_actions!
@@ -82,11 +87,13 @@ module GameRules
       entries = movement_entries(unit_ids, area.key)
         .merge((pending_entry["entries"] || {}).slice(*unit_ids))
         .merge(@entry_origins.slice(*unit_ids))
+      amphibious = amphibious_main_force?(attacker_ids, main_origin)
 
       battle_data = {
         "area" => area.key,
         "round" => 1,
-        "maxRounds" => area.key == "germania" ? 2 : 3,
+        "maxRounds" => area.key == "germania" || amphibious ? 2 : 3,
+        "amphibious" => amphibious,
         "phase" => "field",
         "attacker" => attacker,
         "defender" => defender,
@@ -199,6 +206,7 @@ module GameRules
 
     def advance_battle!
       return unless battle
+      return if game_over?
       return if battle["phase"].in?(["regroup", "retreat"])
       return if pending_hit_assignment?
 
@@ -450,12 +458,60 @@ module GameRules
       while battle && battle["phase"] == "field" && bot_controls_active_unit? && guard < 20
         guard += 1
         bot_act!
+        if game_over?
+          conclude_instant_victory!
+          return
+        end
         break if pending_hit_assignment?
 
         advance_battle!
       end
 
+      finish_bot_forced_retreat! if bot_must_finish_forced_retreat?
       regroup!(nil) if bot_must_finish_regroup?
+      resolve_next_pending_battle! unless battle
+    end
+
+    def resolve_next_pending_battle!
+      pending = @state.fetch("pendingBattleEntries", {})
+      area_id = pending.keys.find { |candidate| contested_area?(candidate) }
+      return unless area_id
+
+      entry = pending.fetch(area_id)
+      @state = GameRules::Battle.new(
+        session: @session,
+        state: @state,
+        attacker: entry["attacker"],
+        entry_origins: entry["entries"]
+      ).resolve!(area_id: area_id, main_origin: entry["mainOrigin"])
+    end
+
+    def bot_must_finish_forced_retreat?
+      battle &&
+        battle["phase"] == "retreat" &&
+        battle["retreating"] == "barbarian" &&
+        @state.fetch("mode", "hotseat") != "hotseat"
+    end
+
+    def finish_bot_forced_retreat!
+      retreaters = live_combat_units.select do |candidate|
+        candidate["owner"] == "barbarian" && candidate["location"] == battle_area.key && !battle["fort"].include?(candidate.fetch("id"))
+      end
+
+      retreaters.each do |retreater|
+        target = bot_forced_retreat_target(retreater)
+        return unless target
+
+        forced_retreat!(retreater.fetch("id"), target)
+      end
+      finish_forced_retreat!
+    end
+
+    def bot_forced_retreat_target(acting)
+      preferred = [battle.dig("entries", acting.fetch("id"))]
+      preferred << battle["mainOrigin"] if acting["owner"] == battle["attacker"]
+      adjacent = battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key)
+      (preferred.compact + adjacent).uniq.find { |target| legal_retreat_destination?(acting, target) }
     end
 
     def bot_must_finish_regroup?
@@ -536,9 +592,21 @@ module GameRules
 
     def effective_initiative_value(unit)
       value = INITIATIVE_ORDER.fetch(unit["initiative"], 5)
-      return value unless unit["owner"] == battle["defender"] && battle["fort"].include?(unit.fetch("id"))
+      return value unless unit["owner"] == battle["defender"]
 
-      [value - 1, 1].max
+      improvement = 0
+      improvement += 1 if battle["fort"].include?(unit.fetch("id"))
+      improvement += 1 if battle["amphibious"]
+      [value - improvement, 1].max
+    end
+
+    def amphibious_main_force?(attacker_ids, main_origin)
+      return false if main_origin.blank?
+
+      attacker_ids.any? do |id|
+        moved = @state.dig("movement", "units", id) || {}
+        moved["naval"] && moved["entry"] == main_origin
+      end
     end
 
     def validate_active_unit!(unit_id)
@@ -586,9 +654,10 @@ module GameRules
         end
 
         apply_pending_hit!(candidates.min_by { |candidate| candidate.fetch("name") })
+        break if game_over?
       end
 
-      finish_pending_fire!
+      finish_pending_fire! unless game_over?
     end
 
     def apply_pending_hit!(target)
@@ -656,6 +725,11 @@ module GameRules
         unit["location"] = "eliminated"
         remove_from_battle!(unit.fetch("id"))
         if unit["id"] == "legion_x"
+          @state["gameOver"] = {
+            "winner" => "barbarian",
+            "result" => "Barbarian Instant Victory",
+            "vp" => @state.fetch("vp", 0).to_i
+          }
           log("Caesar has been killed. Barbarian instant victory.")
         elsif unit["type"] == "roman"
           @state["vp"] = [@state.fetch("vp", 0).to_i - 5, 0].max
@@ -672,6 +746,23 @@ module GameRules
       end
     end
 
+    def game_over?
+      @state["gameOver"].present?
+    end
+
+    def conclude_instant_victory!
+      @state["phase"] = "Game Over"
+      @state["battle"] = nil
+      @state["movement"] = nil
+      @state["endTurn"] = nil
+      @state["selectedCard"] = nil
+      @state["currentAction"] = nil
+      @state["hands"] = { "roman" => [], "barbarian" => [] }
+      @state["committed"] = { "roman" => nil, "barbarian" => nil }
+      @state["revealed"] = false
+      @state["botDeck"] = []
+    end
+
     def remove_from_battle!(unit_id)
       %w[attackers defenders reserves fort retreated acted fired].each do |key|
         battle[key]&.delete(unit_id)
@@ -680,13 +771,22 @@ module GameRules
 
     def retreat_target(unit_id)
       acting = unit(unit_id)
-      battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find do |target|
-        next false if target == "germania" && acting["type"] != "german"
-        next false if non_friendly_units_in?(target, acting["owner"])
-        next false if blocked_retreat_area?(acting, target)
+      battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find { |target| legal_retreat_destination?(acting, target) }
+    end
 
-        true
-      end
+    def legal_retreat_destination?(acting, target)
+      return false if target == "germania" && acting["type"] != "german"
+      return false if non_friendly_units_in?(target, acting["owner"])
+      return false if blocked_retreat_area?(acting, target)
+
+      border_to_target = border(battle_area.key, target)
+      return false unless border_to_target
+
+      capacity = border_to_target.capacity
+      return true unless capacity
+
+      used = battle["crossings"].fetch("#{battle_area.key}->#{target}", 0).to_i
+      used + 1 <= capacity
     end
 
     def blocked_retreat_area?(acting, target)

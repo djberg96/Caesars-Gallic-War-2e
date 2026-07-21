@@ -113,14 +113,12 @@ module GameRules
       @state["undoStack"] = []
 
       if modified <= card.fetch("ap").to_i
-        units.values.each do |unit|
-          next unless unit["location"] == area.key
-          next if unit["type"].in?(["roman", "german"])
-
+        political_units(area.key).each do |unit|
           unit["owner"] = active_player
           unit["location"] = unit["home"]
         end
         log("Political action succeeds in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
+        return resolve_political_battle!(area.key) if contested_area?(area.key)
       else
         log("Political action fails in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
       end
@@ -262,6 +260,26 @@ module GameRules
 
     def political_target?(area)
       area && area.region.present? && !area.region.in?(["roman", "germania"])
+    end
+
+    def political_units(area_id)
+      units.values.select do |unit|
+        unit["type"] == "barbarian" &&
+          unit["home"] == area_id &&
+          !unit["location"].in?(["eliminated", "offboard"]) &&
+          current_strength(unit).positive?
+      end
+    end
+
+    def contested_area?(area_id)
+      owners = units.values.select { |unit| unit["location"] == area_id && current_strength(unit).positive? }
+        .map { |unit| unit["owner"] }
+        .uniq
+      owners.include?("roman") && owners.include?("barbarian")
+    end
+
+    def resolve_political_battle!(area_id)
+      GameRules::Battle.new(session: @session, state: @state, attacker: active_player).resolve!(area_id: area_id)
     end
 
     def die_roll(roll)

@@ -50,6 +50,27 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal ["legion_vii"], result.dig("yearlyObjectiveProgress", "romanLegionsFoughtInBritannia")
   end
 
+  test "limits an amphibious invasion to two rounds and improves defender initiative" do
+    state = battle_state
+    state["units"].each_value { |unit| unit["location"] = "belgae" }
+    state["units"]["legion_vii"]["initiative"] = "D"
+    state["units"]["allobroges"]["initiative"] = "C"
+    state["movement"] = {
+      "units" => {
+        "legion_vii" => {
+          "origin" => "atrebates", "entry" => "atrebates", "steps" => 1, "stopped" => true, "naval" => true
+        }
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+
+    assert result.dig("battle", "amphibious")
+    assert_equal 2, result.dig("battle", "maxRounds")
+    assert_equal "allobroges", result.dig("battle", "activeUnit")
+  end
+
   test "marks fired units until the next battle round" do
     state = battle_state
     state["units"]["legion_vii"]["fire"] = 0
@@ -344,6 +365,58 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     result = GameRules::Battle.new(session: session, state: result).act!(action: "finish_retreat")
     assert_nil result["battle"]
     assert_match "retreat complete", result["log"].join(" ")
+  end
+
+  test "solitaire automatically retreats a defeated Barbarian attacker through its entry border" do
+    state = battle_state
+    state["mode"] = "solitaire"
+    state["units"]["legion_vii"]["fire"] = 0
+    state["units"]["helvetii"] = {
+      "id" => "helvetii",
+      "name" => "Helvetii",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "allobroges",
+      "home" => "helvetii",
+      "step" => 0,
+      "strengths" => [1],
+      "initiative" => "C",
+      "fire" => 0
+    }
+    state["units"].delete("allobroges")
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 3,
+      "maxRounds" => 3,
+      "phase" => "field",
+      "attacker" => "barbarian",
+      "defender" => "roman",
+      "activeUnit" => "legion_vii",
+      "acted" => [],
+      "fired" => [],
+      "actionResults" => [],
+      "attackers" => ["helvetii"],
+      "defenders" => ["legion_vii"],
+      "mainOrigin" => "helvetii",
+      "entries" => { "helvetii" => "helvetii" },
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => nil
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data, rolls: [6]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_nil result["battle"]
+    assert_equal "helvetii", result.dig("units", "helvetii", "location")
+    assert_match "Helvetii retreats from Allobroges to Helvetii", result["log"].join(" ")
+    assert_match "Barbarian retreat complete", result["log"].join(" ")
   end
 
   test "defending units that moved into battle start in reserve" do
@@ -739,7 +812,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     session = GameSession.create!(data: state)
 
     result = GameRules::Battle.new(session: session, state: session.data).resolve!
-    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1, 6]).act!(
       action: "fire",
       unit_id: "legion_vii"
     )
@@ -749,6 +822,42 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     legion_fire = result.dig("battle", "actionResults").find { |entry| entry["unitId"] == "legion_vii" }
     assert_equal 1, legion_fire["hits"]
     assert_equal 0, legion_fire["appliedHits"]
+  end
+
+  test "Caesar's death immediately ends the campaign" do
+    GameData::CardSeeder.seed!
+    state = battle_state
+    caesar = state["units"].delete("legion_vii").merge(
+      "id" => "legion_x",
+      "name" => "Legion X",
+      "fire" => 0
+    )
+    state["units"]["legion_x"] = caesar
+    roman_card = Card.find_by!(key: "allobroges").game_data.stringify_keys
+    bot_card = Card.find_by!(key: "helvetii").game_data.stringify_keys
+    state["hands"] = { "roman" => [roman_card], "barbarian" => [] }
+    state["botDeck"] = [bot_card]
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "pass",
+      unit_id: "legion_x"
+    )
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "allobroges"
+    )
+
+    assert_equal "eliminated", result.dig("units", "legion_x", "location")
+    assert_nil result["battle"]
+    assert_equal "Game Over", result["phase"]
+    assert_equal "barbarian", result.dig("gameOver", "winner")
+    assert_equal "Barbarian Instant Victory", result.dig("gameOver", "result")
+    assert_equal 5, result.dig("gameOver", "vp")
+    assert_empty result.dig("hands", "roman")
+    assert_empty result["botDeck"]
+    assert_match "Caesar has been killed", result["log"].join(" ")
   end
 
   private

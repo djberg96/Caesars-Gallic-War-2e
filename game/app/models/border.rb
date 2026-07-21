@@ -1,7 +1,7 @@
 class Border < ApplicationRecord
   CAPACITIES = {
     "regular" => 4,
-    "naval" => nil,
+    "naval" => 2,
     "black" => 4,
     "minor_river" => 2
   }.freeze

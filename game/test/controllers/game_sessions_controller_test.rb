@@ -489,6 +489,60 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "barbarian", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 
+  test "preserves the bot attacker and entry origin through the session API" do
+    state = base_state.merge(
+      mode: "solitaire",
+      botNeutralActivations: 2,
+      botDeck: [card_hash("helvetii")],
+      discard: [],
+      hands: { roman: [], barbarian: [] },
+      committed: { roman: nil, barbarian: nil },
+      movement: nil,
+      units: {
+        helvetii: {
+          id: "helvetii",
+          name: "Helvetii",
+          type: "barbarian",
+          owner: "barbarian",
+          location: "helvetii",
+          home: "helvetii",
+          step: 0,
+          strengths: [8, 6, 4, 2],
+          initiative: "C",
+          fire: 2
+        },
+        leuci: {
+          id: "leuci",
+          name: "Leuci",
+          type: "barbarian",
+          owner: "roman",
+          location: "leuci",
+          home: "leuci",
+          step: 0,
+          strengths: [2, 1],
+          initiative: "C",
+          fire: 1
+        }
+      }
+    )
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+
+    post draw_bot_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data },
+         as: :json
+
+    assert_response :success
+    battle = JSON.parse(response.body).dig("state", "battle")
+    assert_equal "leuci", battle.fetch("area")
+    assert_equal "barbarian", battle.fetch("attacker")
+    assert_equal "roman", battle.fetch("defender")
+    assert_equal ["helvetii"], battle.fetch("attackers")
+    assert_equal ["leuci"], battle.fetch("defenders")
+    assert_equal "helvetii", battle.fetch("mainOrigin")
+    assert_equal "helvetii", battle.dig("entries", "helvetii")
+  end
+
   test "deals cards through the session API" do
     session = GameSession.create!(data: base_state.merge(mode: "hotseat"))
     session.sync_from_data!
@@ -669,6 +723,26 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_nil body.dig("state", "selectedCard")
     assert_equal ["allobroges"], body.dig("state", "discard").map { |card| card.fetch("id") }
     assert_equal ["allobroges"], session.reload.game_session_cards.where(location: "discard").joins(:card).pluck("cards.key")
+  end
+
+  test "does not discard a card while its battle is unresolved" do
+    state = base_state.merge(
+      mode: "solitaire",
+      active: "roman",
+      hands: { roman: [card_hash("allobroges")], barbarian: [] },
+      selectedCard: card_hash("allobroges"),
+      committed: { roman: nil, barbarian: nil },
+      battle: { area: "allobroges", phase: "field" }
+    )
+    session = GameSession.create!(data: state)
+
+    post discard_card_game_session_url(session, host: "localhost"),
+         params: { state: session.data, player: "roman" },
+         as: :json
+
+    assert_response :unprocessable_entity
+    assert_match "Resolve the battle", JSON.parse(response.body).fetch("error")
+    assert_equal ["allobroges"], session.reload.data.dig("hands", "roman").map { |card| card.fetch("id") }
   end
 
   private

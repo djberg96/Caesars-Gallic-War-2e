@@ -50,6 +50,73 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_match "political action succeeds", result["log"].join(" ")
   end
 
+  test "a successful bot political action attacks Romans occupying the tribe's home" do
+    state = bot_state(bot_deck: [card_hash("allobroges")]).merge("botNeutralActivations" => 2)
+    state["units"]["allobroges"]["owner"] = "roman"
+    state["units"]["legion_vii"] = {
+      "id" => "legion_vii",
+      "name" => "Legion VII",
+      "type" => "roman",
+      "owner" => "roman",
+      "location" => "allobroges",
+      "home" => "roman_off_map",
+      "step" => 0,
+      "strengths" => [4, 3, 2, 1],
+      "initiative" => "A",
+      "fire" => 2
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, roll: 1).draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert_equal "allobroges", result.dig("units", "allobroges", "location")
+    assert_equal "allobroges", result.dig("battle", "area")
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_includes result.dig("battle", "attackers"), "allobroges"
+    assert_includes result.dig("battle", "defenders"), "legion_vii"
+  end
+
+  test "uses a political action instead of treating an unplayable area card as a revolt" do
+    state = bot_state(bot_deck: [card_hash("leuci")]).merge("botNeutralActivations" => 2)
+    state["units"] = {
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "barbarian", [2, 1], fire: 1),
+      "allobroges" => barbarian_unit("allobroges", "Allobroges", "allobroges", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, roll: 1, target: "allobroges").draw!
+
+    assert_equal "barbarian", result.dig("units", "allobroges", "owner")
+    assert result["diceRolledThisTurn"]
+    assert_match "fallback political action", result["log"].join(" ")
+    assert_match "political action succeeds", result["log"].join(" ")
+    assert_no_match "Barbarian activates Allobroges", result["log"].join(" ")
+  end
+
+  test "Germania attacks two areas with two eligible units per area" do
+    state = bot_state(bot_deck: [card_hash("germania")])
+    state["units"] = {
+      "ariovistus" => german_unit("ariovistus", "Ariovistus"),
+      "german_marcomanni" => german_unit("german_marcomanni", "German - Marcomanni"),
+      "german_tencteri" => german_unit("german_tencteri", "German - Tencteri"),
+      "german_usipetes" => german_unit("german_usipetes", "German - Usipetes"),
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "neutral", [2, 1], fire: 1).merge("initiative" => "A"),
+      "mediomatrici" => barbarian_unit("mediomatrici", "Mediomatrici", "mediomatrici", "neutral", [2, 1], fire: 1).merge("initiative" => "A")
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    german_locations = %w[ariovistus german_marcomanni german_tencteri german_usipetes]
+      .map { |id| result.dig("units", id, "location") }
+    assert_equal ["leuci", "leuci", "mediomatrici", "mediomatrici"].sort, german_locations.sort
+    assert_equal 1, result.fetch("pendingBattleEntries").length
+    assert result["battle"].present?
+    assert_equal "barbarian", result.dig("battle", "attacker")
+  end
+
   test "draws a revolt event and activates its target" do
     session = GameSession.create!(data: bot_state(bot_deck: [card_hash("event_1_minor_revolt")]))
     session.sync_from_data!
@@ -218,6 +285,17 @@ class GameRules::BotTest < ActiveSupport::TestCase
     remaining = result.fetch("pendingBattleEntries").values.first
     assert_equal "barbarian", remaining.fetch("attacker")
     assert_equal 1, remaining.fetch("entries").length
+
+    remaining_area = result.fetch("pendingBattleEntries").keys.sole
+    active_id = result.dig("battle", "activeUnit")
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1, 1]).act!(
+      action: "fire",
+      unit_id: active_id
+    )
+    result = GameRules::Battle.new(session: session, state: result).act!(action: "regroup")
+
+    assert_equal remaining_area, result.dig("battle", "area")
+    assert_empty result.fetch("pendingBattleEntries")
   end
 
   test "treats turn one massive revolt as a major revolt in solitaire" do
@@ -303,5 +381,9 @@ class GameRules::BotTest < ActiveSupport::TestCase
       "initiative" => "C",
       "fire" => fire
     }
+  end
+
+  def german_unit(id, name)
+    barbarian_unit(id, name, "germania", "barbarian", [3, 2, 1], fire: 2).merge("type" => "german")
   end
 end

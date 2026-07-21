@@ -77,6 +77,50 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "Play the remaining 2 cards before ending the turn.", error.message
   end
 
+  test "completes the campaign after scoring 51 BC without dealing another hand" do
+    state = base_state
+    state["turn"] = 7
+    state["vp"] = 89
+    state["mode"] = "solitaire"
+    state["hands"] = { "roman" => [], "barbarian" => [] }
+    state["botDeck"] = [Card.find_by!(key: "helvetii").game_data.stringify_keys]
+    state["units"]["legion_vii"]["location"] = "transalpine_gaul"
+    session = GameSession.create!(data: state)
+
+    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal 7, result["turn"]
+    assert_equal "Game Over", result["phase"]
+    assert_equal "roman", result.dig("gameOver", "winner")
+    assert_equal "Minor Roman Victory", result.dig("gameOver", "result")
+    assert_equal 90, result.dig("gameOver", "vp")
+    assert_empty result.dig("hands", "roman")
+    assert_empty result["botDeck"]
+    assert_match "Campaign complete: Minor Roman Victory with 90 Roman VP", result["log"].join(" ")
+
+    error = assert_raises(GameRules::EndTurn::InvalidAction) do
+      GameRules::EndTurn.new(session: session, state: result).end_turn!
+    end
+    assert_equal "The campaign is already complete.", error.message
+  end
+
+  test "deals the 51 BC hand after completing 52 BC" do
+    state = base_state
+    state["turn"] = 6
+    state["mode"] = "solitaire"
+    state["hands"] = { "roman" => [], "barbarian" => [] }
+    state["units"]["legion_vii"]["location"] = "transalpine_gaul"
+    session = GameSession.create!(data: state)
+
+    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal 7, result["turn"]
+    assert_equal "Card Phase", result["phase"]
+    assert_nil result["gameOver"]
+    assert_equal 5, result.dig("hands", "roman").length
+    assert_equal 28, result["botDeck"].length
+  end
+
   test "scores yearly objectives before units return to winter quarters" do
     state = base_state
     state["turn"] = 2
@@ -127,6 +171,20 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "transalpine_gaul", result.dig("units", "legion_viii", "location")
     assert_equal 3, result["supply"]
     assert_match "Roman Winter Quarters: Legion Vii remain", result["log"].join(" ")
+  end
+
+  test "does not offer legions in Germania as winter-quarter choices" do
+    state = base_state
+    state["units"]["legion_vii"]["location"] = "germania"
+    state["units"]["legion_viii"] = unit("legion_viii", "roman", "roman", "allobroges", "transalpine_gaul")
+    session = GameSession.create!(data: state)
+
+    pending = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: ["legion_viii"]).end_turn!
+
+    assert_equal ["legion_viii"], pending.dig("endTurn", "eligibleLegions")
+    assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
+    assert_equal "allobroges", result.dig("units", "legion_viii", "location")
   end
 
   test "enforces the harvest garrison limit for winter quarters" do
