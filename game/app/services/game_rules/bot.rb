@@ -43,7 +43,12 @@ module GameRules
         return
       end
 
-      return if card["area"].present? && bot_move_from(card["area"])
+      if card["area"].present?
+        return if bot_move_from(card["area"])
+
+        resolve_failed_area_movement(card)
+        return
+      end
 
       resolve_event(card)
     end
@@ -70,13 +75,14 @@ module GameRules
     def bot_move_from(area_id, resolve_battle: true)
       area = Area.find_by(key: area_id)
       return false unless area
+      return bot_move_from_germania(area, resolve_battle: resolve_battle) if area.key == "germania"
 
       attackers = area_units(area.key).select { |unit| unit["owner"] == "barbarian" && current_strength(unit) >= 1 }
       return false if attackers.empty?
 
-      targets = area.outgoing_borders.map(&:to_area).reject(&:sea?).select do |target|
-        area_units(target.key).count { |unit| unit["owner"] != "barbarian" } == 1
-      end
+      adjacent = area.outgoing_borders.map(&:to_area).reject(&:sea?)
+      targets = targets_with_enemy_count(adjacent, 1)
+      targets = targets_with_enemy_count(adjacent, 2) if targets.empty? && attackers.length >= 2
       target = targets.find { |candidate| roman_occupied_area?(candidate.key) } || targets.first
       return false unless target
 
@@ -87,6 +93,58 @@ module GameRules
       entry = queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
       resolve_bot_battle!(target.key, entry) if resolve_battle
       true
+    end
+
+    def bot_move_from_germania(area, resolve_battle: true)
+      attackers = area_units(area.key).select do |unit|
+        unit["owner"] == "barbarian" && unit["type"] == "german" && current_strength(unit) >= 2
+      end
+      return false if attackers.length < 2
+
+      adjacent = area.outgoing_borders.map(&:to_area).reject(&:sea?)
+      targets = adjacent.select do |target|
+        area_units(target.key).count { |unit| unit["owner"] != "barbarian" }.between?(1, 2)
+      end
+      targets = targets.sort_by { |target| roman_occupied_area?(target.key) ? 0 : 1 }
+      target_count = attackers.length >= 4 ? 2 : 1
+      targets = targets.first(target_count)
+      return false if targets.empty?
+
+      moved = false
+      targets.each_with_index do |target, index|
+        group = attackers.slice(index * 2, 2)
+        next if group.blank?
+
+        activate_neutral_defenders!(target, attacker: "barbarian", entering_units: group)
+        group.each { |unit| unit["location"] = target.key }
+        log("Bot moves #{group.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
+        queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: group)
+        moved = true
+      end
+      resolve_next_bot_battle! if moved && resolve_battle
+      moved
+    end
+
+    def targets_with_enemy_count(areas, count)
+      areas.select do |target|
+        area_units(target.key).count { |unit| unit["owner"] != "barbarian" } == count
+      end
+    end
+
+    def resolve_failed_area_movement(card)
+      if card["area"] != "germania" && bot_move_from("germania")
+        log("Bot activates Germania because #{area_name(card.fetch("area"))} cannot attack.")
+        return
+      end
+
+      target = @target || random_target
+      unless target
+        log("Bot #{card.fetch("title")} found no valid political target.")
+        return
+      end
+
+      log("Bot uses #{card.fetch("title")} for a fallback political action.")
+      bot_political_action(target, card.merge("ap" => 3))
     end
 
     def activate_neutral_defenders!(target, attacker:, entering_units:)

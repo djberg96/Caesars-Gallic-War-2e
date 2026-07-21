@@ -457,6 +457,21 @@ module GameRules
 
       finish_bot_forced_retreat! if bot_must_finish_forced_retreat?
       regroup!(nil) if bot_must_finish_regroup?
+      resolve_next_pending_battle! unless battle
+    end
+
+    def resolve_next_pending_battle!
+      pending = @state.fetch("pendingBattleEntries", {})
+      area_id = pending.keys.find { |candidate| contested_area?(candidate) }
+      return unless area_id
+
+      entry = pending.fetch(area_id)
+      @state = GameRules::Battle.new(
+        session: @session,
+        state: @state,
+        attacker: entry["attacker"],
+        entry_origins: entry["entries"]
+      ).resolve!(area_id: area_id, main_origin: entry["mainOrigin"])
     end
 
     def bot_must_finish_forced_retreat?
