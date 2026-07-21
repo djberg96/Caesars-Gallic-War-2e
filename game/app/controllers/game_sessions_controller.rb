@@ -100,7 +100,8 @@ class GameSessionsController < ApplicationController
     result = GameRules::EndTurn.new(
       session: session,
       state: state_params,
-      harvest_roll: params[:harvest_roll]
+      harvest_roll: params[:harvest_roll],
+      wintering_unit_ids: params[:wintering_unit_ids]
     ).end_turn!
 
     render json: { game_session_id: session.id, state: result }

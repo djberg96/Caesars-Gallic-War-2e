@@ -561,7 +561,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session.sync_from_data!
 
     post end_turn_game_session_url(session, host: "localhost"),
-         params: { state: session.data, harvest_roll: 1 },
+         params: { state: session.data, harvest_roll: 1, wintering_unit_ids: [] },
          as: :json
 
     assert_response :success

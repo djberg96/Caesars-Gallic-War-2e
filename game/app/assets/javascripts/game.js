@@ -45,6 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
     mainForceMessage: document.querySelector("#main-force-message"),
     mainForceChoices: document.querySelector("#main-force-choices"),
     mainForceCancel: document.querySelector("#main-force-cancel"),
+    winterQuartersDialog: document.querySelector("#winter-quarters-dialog"),
+    winterQuartersForm: document.querySelector("#winter-quarters-form"),
+    winterQuartersSummary: document.querySelector("#winter-quarters-summary"),
+    winterQuartersList: document.querySelector("#winter-quarters-list"),
+    winterQuartersError: document.querySelector("#winter-quarters-error"),
     finishRegroup: document.querySelector("#finish-regroup"),
     yearlyObjectives: document.querySelector("#yearly-objectives"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
@@ -1497,6 +1502,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (state.endTurn?.phase === "romanWintering") {
+      renderWinterQuarters();
+      return;
+    }
+
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/end_turn`, { state });
@@ -1507,6 +1517,27 @@ document.addEventListener("DOMContentLoaded", () => {
       log(`Turn could not be ended: ${error.message}`);
     }
     render();
+  }
+
+  async function completeEndTurn(event) {
+    event.preventDefault();
+    const winteringUnitIds = Array.from(els.winterQuartersList.querySelectorAll("input:checked"), (input) => input.value);
+    setWinterQuartersError();
+
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/end_turn`, {
+        state,
+        wintering_unit_ids: winteringUnitIds
+      });
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      els.winterQuartersDialog.close();
+      render();
+    } catch (error) {
+      setWinterQuartersError(error.message);
+    }
   }
 
   function d6() {
@@ -1538,6 +1569,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHandToggle();
     renderSidePanelToggle();
     renderBattleBoard();
+    renderWinterQuarters();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -3041,6 +3073,14 @@ document.addEventListener("DOMContentLoaded", () => {
     battleButton.classList.toggle("is-active", Boolean(state.battle));
     battleButton.disabled = Boolean(state.battle) || unresolvedBattles === 0;
 
+    if (state.endTurn?.phase === "romanWintering") {
+      endTurnButton.textContent = "Choose Winter Quarters";
+      endTurnButton.disabled = false;
+      endTurnButton.title = "Choose which Roman legions remain in Gaul for winter.";
+      battleButton.disabled = true;
+      return;
+    }
+
     if (state.movement) {
       endTurnButton.textContent = "Finish Movement";
       endTurnButton.disabled = Boolean(state.battle) || unresolvedBattles > 0;
@@ -3065,6 +3105,47 @@ document.addEventListener("DOMContentLoaded", () => {
       return (state.hands?.roman?.length || 0) + (state.hands?.barbarian?.length || 0);
     }
     return state.hands?.roman?.length || 0;
+  }
+
+  function renderWinterQuarters() {
+    if (!els.winterQuartersDialog) return;
+    if (state.endTurn?.phase !== "romanWintering") {
+      if (els.winterQuartersDialog.open) els.winterQuartersDialog.close();
+      return;
+    }
+
+    const harvestRoll = state.endTurn.harvestRoll;
+    const garrisonLimit = state.endTurn.garrisonLimit;
+    els.winterQuartersSummary.textContent = `Harvest roll ${harvestRoll}: up to ${garrisonLimit} legion${garrisonLimit === 1 ? "" : "s"} (not counting Caesar) may winter in each area.`;
+    els.winterQuartersList.replaceChildren();
+
+    (state.endTurn.eligibleLegions || []).forEach((unitId) => {
+      const unit = state.units[unitId];
+      if (!unit) return;
+      const label = document.createElement("label");
+      label.className = "winter-quarters-option";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = "wintering_unit_ids[]";
+      checkbox.value = unitId;
+      const copy = document.createElement("span");
+      const title = document.createElement("strong");
+      title.textContent = unit.name;
+      const detail = document.createElement("small");
+      detail.textContent = `${areaName(unit.location)} · strength ${currentStrength(unit)}${unitId === "legion_x" ? " · Caesar (free)" : " · 1 supply"}`;
+      copy.append(title, detail);
+      label.append(checkbox, copy);
+      els.winterQuartersList.append(label);
+    });
+
+    setWinterQuartersError();
+    if (!els.winterQuartersDialog.open) els.winterQuartersDialog.showModal();
+  }
+
+  function setWinterQuartersError(message = "") {
+    if (!els.winterQuartersError) return;
+    els.winterQuartersError.textContent = message;
+    els.winterQuartersError.hidden = !message;
   }
 
   function renderUndoButton() {
@@ -3279,6 +3360,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#discard-new-game").addEventListener("click", startNewGameWithoutSaving);
   document.querySelector("#save-new-game").addEventListener("click", saveAndStartNewGame);
   els.importForm?.addEventListener("submit", importGame);
+  els.winterQuartersForm?.addEventListener("submit", completeEndTurn);
   els.importFile?.addEventListener("change", (event) => loadImportFile(event.target.files?.[0]));
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
   els.cardZoom?.addEventListener("click", (event) => {
