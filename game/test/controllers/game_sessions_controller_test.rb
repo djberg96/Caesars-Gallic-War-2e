@@ -398,6 +398,19 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "eliminated", body.dig("state", "units", "allobroges", "location")
     assert body.dig("state", "diceRolledThisTurn")
     assert_empty body.dig("state", "undoStack")
+    assert_equal "field", body.dig("state", "battle", "phase")
+    assert_equal "legion_vii", body.dig("state", "battle", "awaitingRollAcknowledgement")
+
+    post battle_action_game_session_url(session, host: "localhost"),
+         params: {
+           state: body.fetch("state"),
+           battle_action: "acknowledge_roll",
+           unit_id: "legion_vii"
+         },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
     assert_equal "regroup", body.dig("state", "battle", "phase")
     assert session.dice_rolled_this_turn
     assert_equal "eliminated", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).location

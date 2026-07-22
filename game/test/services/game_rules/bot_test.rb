@@ -234,6 +234,11 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal 1, leuci_fire["appliedHits"]
 
     result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "acknowledge_roll",
+      unit_id: "leuci"
+    )
+
+    result = GameRules::Battle.new(session: session, state: result).act!(
       action: "retreat",
       unit_id: "legion_viii",
       target: "transalpine_gaul"
@@ -290,6 +295,10 @@ class GameRules::BotTest < ActiveSupport::TestCase
     active_id = result.dig("battle", "activeUnit")
     result = GameRules::Battle.new(session: session, state: result, rolls: [1, 1]).act!(
       action: "fire",
+      unit_id: active_id
+    )
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "acknowledge_roll",
       unit_id: active_id
     )
     result = GameRules::Battle.new(session: session, state: result).act!(action: "regroup")

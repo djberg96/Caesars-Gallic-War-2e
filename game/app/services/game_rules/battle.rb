@@ -36,10 +36,15 @@ module GameRules
       if pending_hit_assignment? && action.to_s != "assign_hit"
         raise InvalidAction, "Assign the pending hit before taking another battle action."
       end
+      if awaiting_roll_acknowledgement? && !pending_hit_assignment? && action.to_s != "acknowledge_roll"
+        raise InvalidAction, "Acknowledge the fire result before continuing the battle."
+      end
 
       case action.to_s
       when "fire"
         fire!(unit_id)
+      when "acknowledge_roll"
+        acknowledge_roll!(unit_id)
       when "assign_hit"
         assign_hit!(target.presence)
       when "pass"
@@ -63,7 +68,7 @@ module GameRules
         return persist!
       end
 
-      unless pending_hit_assignment?
+      unless pending_hit_assignment? || awaiting_roll_acknowledgement?
         advance_battle!
         advance_bot_actions!
       end
@@ -108,6 +113,7 @@ module GameRules
         "attacker" => attacker,
         "defender" => defender,
         "activeUnit" => nil,
+        "awaitingRollAcknowledgement" => nil,
         "acted" => [],
         "fired" => [],
         "actionResults" => [],
@@ -227,6 +233,7 @@ module GameRules
       return if game_over?
       return if battle["phase"].in?(["regroup", "retreat"])
       return if pending_hit_assignment?
+      return if awaiting_roll_acknowledgement?
 
       eliminate_dead(battle_area.key)
       finish_battle_if_decided!
@@ -305,6 +312,7 @@ module GameRules
         "hits" => hits,
         "appliedHits" => 0
       })
+      battle["awaitingRollAcknowledgement"] = unit_id
       log("#{acting.fetch("name")} fires #{rolls.join(", ")} for #{hits} hit#{hits == 1 ? "" : "s"}.")
       battle["fired"] ||= []
       battle["fired"] << unit_id unless battle["fired"].include?(unit_id)
@@ -473,14 +481,14 @@ module GameRules
 
     def advance_bot_actions!
       guard = 0
-      while battle && battle["phase"] == "field" && bot_controls_active_unit? && guard < 20
+      while battle && battle["phase"] == "field" && !awaiting_roll_acknowledgement? && bot_controls_active_unit? && guard < 20
         guard += 1
         bot_act!
         if game_over?
           conclude_instant_victory!
           return
         end
-        break if pending_hit_assignment?
+        break if pending_hit_assignment? || awaiting_roll_acknowledgement?
 
         advance_battle!
       end
@@ -553,6 +561,16 @@ module GameRules
       battle["actionResults"] ||= []
       battle["actionResults"] << result
       battle["actionResults"] = battle["actionResults"].last(6)
+    end
+
+    def acknowledge_roll!(unit_id)
+      awaiting = battle["awaitingRollAcknowledgement"]
+      raise InvalidAction, "There is no fire result to acknowledge." if awaiting.blank?
+      if unit_id.present? && unit_id != awaiting
+        raise InvalidAction, "Acknowledge #{unit(awaiting).fetch("name")}'s fire result first."
+      end
+
+      battle.delete("awaitingRollAcknowledgement")
     end
 
     def bot_act!
@@ -734,6 +752,10 @@ module GameRules
 
     def pending_hit_assignment?
       battle&.dig("pendingHits", "remaining").to_i.positive?
+    end
+
+    def awaiting_roll_acknowledgement?
+      battle&.fetch("awaitingRollAcknowledgement", nil).present?
     end
 
     def eliminate_dead(area_key)

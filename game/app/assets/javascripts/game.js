@@ -36,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
     battleRoundHeader: document.querySelector("#battle-round-header"),
-    battleRollToast: document.querySelector("#battle-roll-toast"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
     battleDetails: document.querySelector("#battle-details"),
@@ -95,11 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
-  let battleToastBattleKey = null;
-  let battleToastTimer = null;
-  let battleToastHideTimer = null;
-  let battleToastQueue = [];
-  let seenBattleRolls = new Set();
 
   function storedMapZoom() {
     try {
@@ -3019,13 +3013,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (els.battleDialog.open) els.battleDialog.close();
       if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
       if (els.battleDetails) els.battleDetails.replaceChildren();
-      resetBattleRollToasts();
       state.regroupUnit = null;
       return;
     }
     if (battleMapMode()) {
       if (els.battleDialog.open) els.battleDialog.close();
-      resetBattleRollToasts();
       return;
     }
     if (!els.battleDialog.open) {
@@ -3038,7 +3030,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const defenderFortIds = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
     const defenseAdvantages = battleDefenseAdvantages(battle, defenderFortIds);
     const actionHistory = battleActionHistory(battle);
-    queueBattleRollToasts(battle);
     els.battleRoundHeader.textContent = `Round ${battle.round} / ${battle.maxRounds}`;
     els.battleSummary.innerHTML = `
       <div class="battle-heading">
@@ -3106,70 +3097,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function queueBattleRollToasts(battle) {
-    if (!els.battleRollToast) return;
-
-    const battleKey = `${battle.area}:${battle.attacker}:${battle.defender}`;
-    if (battleToastBattleKey !== battleKey) {
-      resetBattleRollToasts();
-      battleToastBattleKey = battleKey;
-    }
-
-    (battle.actionResults || []).filter((action) => action.type === "fire").forEach((action) => {
-      const rollKey = [
-        battleKey,
-        action.round || battle.round,
-        action.unitId,
-        (action.rolls || []).join(",")
-      ].join(":");
-      if (seenBattleRolls.has(rollKey)) return;
-
-      seenBattleRolls.add(rollKey);
-      battleToastQueue.push({
-        message: action.hits > 0
-          ? `${action.unitName} scored ${action.hits} hit${action.hits === 1 ? "" : "s"}`
-          : `${action.unitName} scored no hits`,
-        hit: action.hits > 0
-      });
-    });
-
-    showNextBattleRollToast();
-  }
-
-  function showNextBattleRollToast() {
-    if (!els.battleRollToast || battleToastTimer || !battleToastQueue.length) return;
-
-    const notice = battleToastQueue.shift();
-    els.battleRollToast.textContent = notice.message;
-    els.battleRollToast.classList.toggle("is-hit", notice.hit);
-    els.battleRollToast.hidden = false;
-    window.requestAnimationFrame(() => els.battleRollToast.classList.add("is-visible"));
-
-    battleToastTimer = window.setTimeout(() => {
-      els.battleRollToast.classList.remove("is-visible");
-      battleToastHideTimer = window.setTimeout(() => {
-        els.battleRollToast.hidden = true;
-        battleToastHideTimer = null;
-        battleToastTimer = null;
-        showNextBattleRollToast();
-      }, 180);
-    }, 1650);
-  }
-
-  function resetBattleRollToasts() {
-    if (battleToastTimer) window.clearTimeout(battleToastTimer);
-    if (battleToastHideTimer) window.clearTimeout(battleToastHideTimer);
-    battleToastTimer = null;
-    battleToastHideTimer = null;
-    battleToastQueue = [];
-    seenBattleRolls = new Set();
-    battleToastBattleKey = null;
-    if (!els.battleRollToast) return;
-    els.battleRollToast.hidden = true;
-    els.battleRollToast.classList.remove("is-visible", "is-hit");
-    els.battleRollToast.textContent = "";
-  }
-
   function battleStatusText(battle, activeUnit) {
     if (battle.phase === "regroup") return `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`;
     if (battle.phase === "retreat") return `${playerName(battle.retreating)} is defeated and must retreat.`;
@@ -3177,6 +3104,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const owner = state.units[battle.pendingHits.targetIds[0]]?.owner;
       const remaining = battle.pendingHits.remaining || 1;
       return `${playerName(owner)} player: choose a strongest unit to take the pending hit${remaining === 1 ? "" : ` (${remaining} remaining)`}.`;
+    }
+    if (battle.awaitingRollAcknowledgement) {
+      const firingUnit = state.units[battle.awaitingRollAcknowledgement];
+      return `Review ${firingUnit?.name || "the unit"}'s fire result, then click OK.`;
     }
     if (activeUnit) return `${activeUnit.name} is acting.`;
     return "Waiting for the next battle action.";
@@ -3457,7 +3388,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!unit) return "";
     const active = unitId === battle.activeUnit;
     const hitTarget = (battle.pendingHits?.targetIds || []).includes(unitId);
-    const canAct = battle.phase === "field" && active && !battle.pendingHits;
+    const awaitingRoll = battle.awaitingRollAcknowledgement === unitId;
+    const canAct = battle.phase === "field" && active && !battle.pendingHits && !battle.awaitingRollAcknowledgement;
     const phaseSelectable = (
       (battle.phase === "regroup" && unit.owner === battle.winner) ||
       (battle.phase === "retreat" && unit.owner === battle.retreating)
@@ -3465,9 +3397,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectable = hitTarget || phaseSelectable;
     const inFort = (battle.fort || []).includes(unitId);
     const fired = (battle.fired || []).includes(unitId);
+    const rollDice = battleUnitRollDice(unitId, battle, unit);
     const halfHit = battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
-    const status = hitTarget ? "Choose for hit" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const status = hitTarget ? "Choose for hit" : awaitingRoll ? "Roll result" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -3478,7 +3411,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${awaitingRoll ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
             ${unitCounterMarkup(unit)}
@@ -3492,10 +3425,44 @@ document.addEventListener("DOMContentLoaded", () => {
               ${halfHit ? `<span class="battle-half-hit"><b>${halfHit}/2</b> ${halfHitSource}</span>` : ""}
             </div>
           </div>
+          ${rollDice}
         </div>
         ${hitTarget ? `<span class="battle-hit-target-prompt">Assign hit to ${unit.name}</span>` : ""}
         ${actions}
       </article>
+    `;
+  }
+
+  function battleUnitRollDice(unitId, battle, unit) {
+    if (battle.awaitingRollAcknowledgement !== unitId) return "";
+
+    const result = [...(battle.actionResults || [])].reverse().find((action) => (
+      action.type === "fire" &&
+      action.unitId === unitId &&
+      Number(action.round || battle.round) === Number(battle.round)
+    ));
+    if (!result) return "";
+
+    const rolls = result.rolls || [];
+    if (!rolls.length) return "";
+
+    const hitCount = Number(result.hits || 0);
+    const label = `${unit.name} rolled ${rolls.join(", ")}; ${hitCount} hit${hitCount === 1 ? "" : "s"}`;
+    const dice = rolls.map((roll) => {
+      const hit = Number(roll) <= Number(unit.fire);
+      return `<span class="battle-roll-die${hit ? " is-hit" : ""}" title="${roll}: ${hit ? "hit" : "miss"}">${roll}</span>`;
+    }).join("");
+
+    const acknowledgement = !battle.pendingHits
+      ? `<button type="button" class="battle-roll-acknowledge" data-battle-action="acknowledge_roll" data-unit-id="${unitId}">OK</button>`
+      : "";
+
+    return `
+      <div class="battle-roll-result" role="status" aria-label="${label}">
+        <div class="battle-roll-dice" role="img" aria-hidden="true">${dice}</div>
+        <strong>${hitCount ? `${hitCount} hit${hitCount === 1 ? "" : "s"}` : "No hits"}</strong>
+        ${acknowledgement}
+      </div>
     `;
   }
 

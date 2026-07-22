@@ -24,13 +24,17 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal "eliminated", result.dig("units", "allobroges", "location")
     assert result["diceRolledThisTurn"]
     assert_empty result["undoStack"]
-    assert_equal "regroup", result.dig("battle", "phase")
+    assert_equal "field", result.dig("battle", "phase")
+    assert_equal "legion_vii", result.dig("battle", "awaitingRollAcknowledgement")
     assert_equal "fire", result.dig("battle", "lastAction", "type")
     assert_equal 1, result.dig("battle", "lastAction", "round")
     assert_equal [1], result.dig("battle", "lastAction", "rolls")
     assert_equal 1, result.dig("battle", "lastAction", "hits")
     assert_equal 1, result.dig("battle", "actionResults").last.fetch("round")
     assert_match "eliminated", result["log"].join(" ")
+
+    result = acknowledge_roll(session, result)
+    assert_equal "regroup", result.dig("battle", "phase")
 
     session.reload
     assert session.dice_rolled_this_turn
@@ -85,10 +89,13 @@ class GameRules::BattleTest < ActiveSupport::TestCase
 
     assert_equal ["legion_vii"], result.dig("battle", "fired")
 
+    result = acknowledge_roll(session, result)
+
     result = GameRules::Battle.new(session: session, state: result, rolls: [6]).act!(
       action: "fire",
       unit_id: "allobroges"
     )
+    result = acknowledge_roll(session, result)
 
     assert_equal 2, result.dig("battle", "round")
     assert_empty result.dig("battle", "fired")
@@ -376,10 +383,14 @@ class GameRules::BattleTest < ActiveSupport::TestCase
 
     result = GameRules::Battle.new(session: session, state: session.data, rolls: Array.new(6, 6)).resolve!
     until %w[regroup retreat].include?(result.dig("battle", "phase"))
-      result = GameRules::Battle.new(session: session, state: result, rolls: Array.new(6, 6)).act!(
-        action: "fire",
-        unit_id: result.dig("battle", "activeUnit")
-      )
+      result = if result.dig("battle", "awaitingRollAcknowledgement")
+        acknowledge_roll(session, result)
+      else
+        GameRules::Battle.new(session: session, state: result, rolls: Array.new(6, 6)).act!(
+          action: "fire",
+          unit_id: result.dig("battle", "activeUnit")
+        )
+      end
     end
 
     assert_match "reached the round limit", result["log"].join(" ")
@@ -478,6 +489,8 @@ class GameRules::BattleTest < ActiveSupport::TestCase
       action: "fire",
       unit_id: "legion_vii"
     )
+    result = acknowledge_roll(session, result)
+    result = acknowledge_roll(session, result)
 
     assert_nil result["battle"]
     assert_equal "helvetii", result.dig("units", "helvetii", "location")
@@ -527,10 +540,12 @@ class GameRules::BattleTest < ActiveSupport::TestCase
       action: "fire",
       unit_id: "legion_vii"
     )
+    result = acknowledge_roll(session, result)
     result = GameRules::Battle.new(session: session, state: result, rolls: [6]).act!(
       action: "fire",
       unit_id: "allobroges"
     )
+    result = acknowledge_roll(session, result)
 
     assert_equal 2, result.dig("battle", "round")
     announcement = result.dig("battle", "actionResults").last
@@ -845,6 +860,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
         action: "fire",
         unit_id: result.dig("battle", "activeUnit")
       )
+      result = acknowledge_roll(session, result)
     end
 
     assert_includes result.dig("battle", "fort"), "sequani"
@@ -927,6 +943,16 @@ class GameRules::BattleTest < ActiveSupport::TestCase
   end
 
   private
+
+  def acknowledge_roll(session, state)
+    unit_id = state.dig("battle", "awaitingRollAcknowledgement")
+    return state unless unit_id
+
+    GameRules::Battle.new(session: session, state: state).act!(
+      action: "acknowledge_roll",
+      unit_id: unit_id
+    )
+  end
 
   def roman_legion(id, name, location)
     {
