@@ -2891,9 +2891,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const supplyDetail = state.active === "roman"
       ? `Gain ${card.ap * 2} Roman Supply`
       : `Reduce Roman Supply by ${card.ap}`;
-    const actions = [
-      { id: "supply", label: "Supply", detail: supplyDetail }
-    ];
+    const actions = [];
+    if (!(state.active === "roman" && card.title === "Baggage Train")) {
+      actions.push({ id: "supply", label: "Supply", detail: supplyDetail });
+    }
     if (card.area) {
       const activationLimit = neutralActivationLimit(state.active);
       const activationsUsed = neutralActivationsUsed(state.active);

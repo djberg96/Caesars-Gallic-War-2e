@@ -73,6 +73,22 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal 18, session.reload.supply
   end
 
+  test "requires Romans to resolve Baggage Train as an event instead of a supply action" do
+    card = card_hash("event_0_baggage_train")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::ActionPhase::InvalidAction) do
+      GameRules::ActionPhase.new(session: session, state: session.data).supply!
+    end
+
+    assert_equal "Resolve Baggage Train as an event to gain Roman supply.", error.message
+    assert_equal 15, session.reload.supply
+  end
+
   test "activates neutral tribes in the card area" do
     state = base_state
     state["units"]["allobroges"] = {

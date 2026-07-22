@@ -57,6 +57,9 @@ module GameRules
 
       card = action_card
       raise InvalidAction, card_prompt unless card
+      if active_player == "roman" && card["title"] == "Baggage Train"
+        raise InvalidAction, "Resolve Baggage Train as an event to gain Roman supply."
+      end
 
       @state["currentAction"] = "supply"
       if active_player == "roman"
