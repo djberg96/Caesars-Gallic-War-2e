@@ -2062,54 +2062,115 @@ dialog {
 
 .roman-administration-options {
   display: flex;
-  flex: 1;
-  gap: 0.45rem;
+  gap: 0.7rem;
+  grid-area: options;
+  width: 100%;
   min-width: 0;
   overflow-x: auto;
   padding: 0.12rem 0;
 }
 
+.roman-administration-panel {
+  display: grid;
+  grid-template-areas:
+    "heading options"
+    ". footer";
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.8rem;
+}
+
 .roman-administration-choice {
-  display: flex;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(4.9rem, 1fr);
   align-items: center;
-  gap: 0.65rem;
-  min-width: 14rem;
-  padding: 0.35rem 0.5rem;
+  gap: 0.48rem;
+  min-width: 9.25rem;
+  padding: 0.3rem 0.4rem;
   border: 1px solid rgba(217, 180, 95, 0.32);
   border-radius: 0.45rem;
   background: rgba(10, 14, 11, 0.34);
 }
 
-.roman-administration-choice > span {
-  display: grid;
-  flex: 1;
+.roman-administration-panel .winter-quarters-heading {
+  grid-area: heading;
+  min-width: 13.5rem;
+}
+
+.roman-administration-panel .winter-quarters-heading strong {
+  line-height: 1.02;
+  white-space: pre-line;
+}
+
+.roman-administration-footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
   min-width: 0;
 }
 
-.roman-administration-choice small {
+.roman-administration-footer .winter-quarters-status {
+  min-width: 0;
+}
+
+.roman-administration-counter {
+  position: relative;
+  display: block;
+  width: 3.25rem;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.45);
+}
+
+.roman-administration-counter .unit-counter-art {
+  border-color: color-mix(in srgb, var(--roman) 72%, #f4e9ce);
+}
+
+.roman-administration-counter .roman-counter-name {
+  font-size: 0.48rem;
+}
+
+.roman-administration-choice-body,
+.roman-administration-choice-label {
+  display: grid;
+  min-width: 0;
+}
+
+.roman-administration-choice-label strong,
+.roman-administration-choice-label small {
   overflow: hidden;
-  color: var(--muted);
-  font-size: 0.66rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.roman-administration-choice-label strong {
+  font-size: 0.73rem;
+  line-height: 1.1;
+}
+
+.roman-administration-choice-label small {
+  color: var(--muted);
+  font-size: 0.59rem;
+}
+
 .roman-administration-stepper {
   display: grid;
-  grid-template-columns: 1.7rem minmax(4.4rem, auto) 1.7rem;
+  grid-template-columns: 1.35rem minmax(2.7rem, auto) 1.35rem;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.12rem;
+  margin-top: 0.18rem;
 }
 
 .roman-administration-stepper button {
   min-width: 0;
-  padding: 0.25rem;
+  padding: 0.12rem;
   font-weight: 900;
 }
 
 .roman-administration-stepper output {
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: 0.63rem;
   font-weight: 750;
   text-align: center;
 }
@@ -2161,9 +2222,16 @@ dialog {
     flex-basis: 100%;
   }
 
-  .roman-administration-options {
-    order: 3;
-    flex-basis: 100%;
+  .roman-administration-panel {
+    grid-template-areas:
+      "heading"
+      "options"
+      "footer";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roman-administration-footer {
+    justify-content: space-between;
   }
 }
 

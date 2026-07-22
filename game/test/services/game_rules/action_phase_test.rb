@@ -195,6 +195,24 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert session.reload.dice_rolled_this_turn
   end
 
+  test "reports when matching card and opposing unit political modifiers cancel" do
+    state = base_state
+    state["units"]["allobroges"] = {
+      "id" => "allobroges",
+      "name" => "Allobroges",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "allobroges",
+      "home" => "allobroges",
+      "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).political!(area_id: "allobroges", roll: 3)
+
+    assert_match "rolled 3; matching card -1, opposing unit +1; modified 3", result["log"].first
+  end
+
   test "a successful political action returns the home tribe as the attacker" do
     state = base_state
     state["units"]["allobroges"] = {

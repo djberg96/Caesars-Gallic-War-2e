@@ -349,7 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return mark ? `<span class="barbarian-counter-mark${mark.length > 1 ? " is-wide" : ""}" aria-label="${label}">${mark}</span>` : "";
   }
 
-  function unitCounterMarkup(unit, { faceVisible = true, showStats = true } = {}) {
+  function unitCounterMarkup(unit, { faceVisible = true, showStats = true, showStrength = true } = {}) {
     const strength = currentStrength(unit);
     const halfHit = state.battle?.halfHits?.[unit.id];
     const digitalRomanFace = faceVisible && unit.type === "roman";
@@ -375,9 +375,11 @@ document.addEventListener("DOMContentLoaded", () => {
         ` : ""}
       </span>
       ${faceVisible ? `
-        <span class="unit-counter-strength" aria-label="Current strength ${strength}">
-          <b>${strength}</b>
-        </span>
+        ${showStrength ? `
+          <span class="unit-counter-strength" aria-label="Current strength ${strength}">
+            <b>${strength}</b>
+          </span>
+        ` : ""}
         ${showStats ? `
           <span class="unit-counter-stats">
             <span class="unit-counter-stat unit-counter-initiative" aria-label="Initiative ${unit.initiative}"><b>${unit.initiative}</b></span>
@@ -1031,9 +1033,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const roll = d6();
+    const matchingCard = card.area === areaId;
+    const opposingUnit = areaUnits(areaId).some((unit) => unit.owner !== state.active && unit.owner !== "neutral");
     let modified = roll;
-    if (card.area === areaId) modified -= 1;
-    if (areaUnits(areaId).some((unit) => unit.owner !== state.active && unit.owner !== "neutral")) modified += 1;
+    if (matchingCard) modified -= 1;
+    if (opposingUnit) modified += 1;
+
+    const modifiers = [];
+    if (matchingCard) modifiers.push("matching card -1");
+    if (opposingUnit) modifiers.push("opposing unit +1");
+    const modifierSummary = modifiers.length ? `${modifiers.join(", ")}; ` : "";
 
     if (modified <= card.ap) {
       areaUnits(areaId).forEach((unit) => {
@@ -1042,9 +1051,9 @@ document.addEventListener("DOMContentLoaded", () => {
           unit.location = unit.home;
         }
       });
-      log(`Political action succeeds in ${area.name}: rolled ${roll}, modified ${modified}, AP ${card.ap}.`);
+      log(`Political action succeeds in ${area.name}: rolled ${roll}; ${modifierSummary}modified ${modified}; AP ${card.ap}.`);
     } else {
-      log(`Political action fails in ${area.name}: rolled ${roll}, modified ${modified}, AP ${card.ap}.`);
+      log(`Political action fails in ${area.name}: rolled ${roll}; ${modifierSummary}modified ${modified}; AP ${card.ap}.`);
     }
   }
 
@@ -3617,14 +3626,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const choices = state.endTurn.replacementSteps;
     const options = state.endTurn.replacementOptions || [];
     const cost = Object.values(choices).reduce((sum, value) => sum + Number(value || 0), 0);
-    els.romanAdministrationTitle.textContent = "Roman Replacements & Reorganization";
+    els.romanAdministrationTitle.textContent = "Roman Replacements &\nReorganization";
     els.romanAdministrationOptions.innerHTML = options.map((option) => {
       const steps = Number(choices[option.id] || 0);
       return administrationChoiceHtml({
         kind: "replacement",
         id: option.id,
         name: option.name,
-        detail: `${option.locationName} · strength ${option.currentStrength} → ${option.currentStrength + steps}`,
+        detail: `${option.locationName} · ${option.currentStrength} → ${option.currentStrength + steps}`,
         value: steps,
         maximum: option.maximumSteps,
         valueLabel: `${steps} step${steps === 1 ? "" : "s"}`
@@ -3649,7 +3658,7 @@ document.addEventListener("DOMContentLoaded", () => {
         kind: "reinforcement",
         id: option.id,
         name: option.name,
-        detail: "Roman Force Pool · placed in Roman Off-Map",
+        detail: "Force Pool",
         value: strength,
         maximum: option.maximumStrength,
         valueLabel: strength ? `strength ${strength}` : "not built"
@@ -3661,13 +3670,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function administrationChoiceHtml({ kind, id, name, detail, value, maximum, valueLabel }) {
+    const unit = state.units[id];
     return `
       <div class="roman-administration-choice">
-        <span><strong>${name}</strong><small>${detail}</small></span>
-        <div class="roman-administration-stepper">
-          <button type="button" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="-1"${value <= 0 ? " disabled" : ""}>−</button>
-          <output>${valueLabel}</output>
-          <button type="button" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="1"${value >= maximum ? " disabled" : ""}>+</button>
+        <span class="roman-administration-counter" title="${name}">
+          ${unit ? unitCounterMarkup(unit, { showStats: false, showStrength: false }) : ""}
+        </span>
+        <div class="roman-administration-choice-body">
+          <span class="roman-administration-choice-label"><strong>${name}</strong><small>${detail}</small></span>
+          <div class="roman-administration-stepper">
+            <button type="button" aria-label="Decrease ${name}" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="-1"${value <= 0 ? " disabled" : ""}>−</button>
+            <output>${valueLabel}</output>
+            <button type="button" aria-label="Increase ${name}" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="1"${value >= maximum ? " disabled" : ""}>+</button>
+          </div>
         </div>
       </div>`;
   }

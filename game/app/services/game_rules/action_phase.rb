@@ -103,9 +103,18 @@ module GameRules
       validate_roman_special_target!(area, action: "political action") if active_player == "roman"
 
       rolled = die_roll(roll)
+      matching_card = card["area"] == area.key
+      opposing_unit = units.values.any? do |unit|
+        unit["location"] == area.key && unit["owner"] != active_player && unit["owner"] != "neutral"
+      end
       modified = rolled
-      modified -= 1 if card["area"] == area.key
-      modified += 1 if units.values.any? { |unit| unit["location"] == area.key && unit["owner"] != active_player && unit["owner"] != "neutral" }
+      modified -= 1 if matching_card
+      modified += 1 if opposing_unit
+
+      modifiers = []
+      modifiers << "matching card -1" if matching_card
+      modifiers << "opposing unit +1" if opposing_unit
+      modifier_summary = modifiers.any? ? "#{modifiers.join(", ")}; " : ""
 
       @state["currentAction"] = "political"
       @state["diceRolledThisTurn"] = true
@@ -116,10 +125,10 @@ module GameRules
           unit["owner"] = active_player
           unit["location"] = unit["home"]
         end
-        log("Political action succeeds in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
+        log("Political action succeeds in #{area.name}: rolled #{rolled}; #{modifier_summary}modified #{modified}; AP #{card.fetch("ap")}.")
         return resolve_political_battle!(area.key) if contested_area?(area.key)
       else
-        log("Political action fails in #{area.name}: rolled #{rolled}, modified #{modified}, AP #{card.fetch("ap")}.")
+        log("Political action fails in #{area.name}: rolled #{rolled}; #{modifier_summary}modified #{modified}; AP #{card.fetch("ap")}.")
       end
       persist!
     end
