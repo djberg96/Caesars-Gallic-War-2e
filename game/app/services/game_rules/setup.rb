@@ -33,6 +33,8 @@ module GameRules
         "botDeck" => [],
         "botNeutralActivations" => 0,
         "neutralActivationCards" => { "roman" => [], "barbarian" => [] },
+        "romanForcePool" => %w[legion_i legion_xiii legion_xiv legion_xv],
+        "massiveRevoltPlayed" => false,
         "currentAction" => nil,
         "movement" => nil,
         "battle" => nil,
@@ -65,6 +67,7 @@ module GameRules
         setup_variable_tribes!(all_units)
         setup_initial_owners!(all_units)
         setup_reduced_units!(all_units)
+        %w[legion_i legion_xiii legion_xiv legion_xv].each { |unit_id| all_units.fetch(unit_id)["location"] = "offboard" }
       end
     end
 

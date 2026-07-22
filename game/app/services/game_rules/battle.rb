@@ -723,6 +723,7 @@ module GameRules
         next if current_strength(unit).positive?
 
         unit["location"] = "eliminated"
+        unit["eliminatedTurn"] = @state.fetch("turn", 0).to_i if unit["type"] == "roman"
         remove_from_battle!(unit.fetch("id"))
         if unit["id"] == "legion_x"
           @state["gameOver"] = {

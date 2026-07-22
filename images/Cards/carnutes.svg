@@ -24,7 +24,7 @@
   <rect x="22" y="22" width="376" height="556" rx="18" fill="url(#grain)"/>
   <rect x="38" y="38" width="344" height="524" rx="12" fill="none" stroke="#f5ddb0" stroke-opacity="0.82" stroke-width="4"/>
 
-  <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" fill="#fff0c8">
+  <text x="210" y="82" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#fff0c8">
     <tspan x="210" y="82">Carnutes / Cenomani</tspan>
   </text>
 

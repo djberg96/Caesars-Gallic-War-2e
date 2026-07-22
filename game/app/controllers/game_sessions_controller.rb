@@ -101,7 +101,9 @@ class GameSessionsController < ApplicationController
       session: session,
       state: action_state(session),
       harvest_roll: params[:harvest_roll],
-      wintering_unit_ids: params[:wintering_unit_ids]
+      wintering_unit_ids: params[:wintering_unit_ids],
+      replacement_steps: params[:replacement_steps],
+      reinforcement_builds: params[:reinforcement_builds]
     ).end_turn!
 
     render json: { game_session_id: session.id, state: result }

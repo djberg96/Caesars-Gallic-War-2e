@@ -4,12 +4,20 @@ module GameRules
 
     YEARS = 8
 
-    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil)
+    END_TURN_PHASES = %w[romanWintering romanReplacements romanReinforcements].freeze
+    INITIAL_FORCE_POOL = %w[legion_i legion_xiii legion_xiv legion_xv].freeze
+    MASSIVE_REVOLT_REINFORCEMENTS = %w[legion_v legion_vi].freeze
+
+    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil, replacement_steps: nil, reinforcement_builds: nil)
       @session = session
       @state = state.deep_dup
       @harvest_roll = harvest_roll&.to_i
       @wintering_submitted = !wintering_unit_ids.nil?
       @wintering_unit_ids = Array(wintering_unit_ids).map(&:to_s).uniq
+      @replacements_submitted = !replacement_steps.nil?
+      @replacement_steps = normalize_numeric_choices(replacement_steps)
+      @reinforcements_submitted = !reinforcement_builds.nil?
+      @reinforcement_builds = normalize_numeric_choices(reinforcement_builds)
     end
 
     def end_turn!
@@ -21,7 +29,7 @@ module GameRules
       raise InvalidAction, remaining_cards_message if remaining_cards.positive?
 
       begin_end_turn!
-      return complete_end_turn!(@wintering_unit_ids) if @wintering_submitted || wintering_legions.empty?
+      return complete_wintering!(@wintering_unit_ids) if @wintering_submitted || wintering_legions.empty?
 
       persist!
     end
@@ -39,6 +47,7 @@ module GameRules
 
       returned = return_eliminated_gallic_units!
       log(returned.empty? ? "Eliminated Gallic Units: none return." : "Eliminated Gallic Units: #{returned.join("; ")}.")
+      mark_newly_eliminated_legions!
 
       @state["phase"] = "End of Turn"
       @state["endTurn"] = {
@@ -50,12 +59,28 @@ module GameRules
     end
 
     def resume_end_turn!
-      raise InvalidAction, "Choose which Roman legions will remain in winter quarters." unless @wintering_submitted
+      case @state.dig("endTurn", "phase")
+      when "romanWintering"
+        raise InvalidAction, "Choose which Roman legions will remain in winter quarters." unless @wintering_submitted
 
-      complete_end_turn!(@wintering_unit_ids)
+        complete_wintering!(@wintering_unit_ids)
+      when "romanReplacements"
+        raise InvalidAction, "Choose Roman replacement steps or continue without replacements." unless @replacements_submitted
+
+        apply_roman_replacements!(@replacement_steps)
+        apply_roman_supply_production!
+        begin_roman_reinforcements!
+      when "romanReinforcements"
+        raise InvalidAction, "Choose Roman reinforcements or continue without building a legion." unless @reinforcements_submitted
+
+        apply_roman_reinforcements!(@reinforcement_builds)
+        complete_end_turn!
+      else
+        raise InvalidAction, "The end-of-turn phase is not valid."
+      end
     end
 
-    def complete_end_turn!(wintering_ids)
+    def complete_wintering!(wintering_ids)
       validate_wintering_choices!(wintering_ids)
       roman_allies = gallic_units("roman").map { |unit| unit.fetch("id") }
       barbarian_allies = gallic_units("barbarian").map { |unit| unit.fetch("id") }
@@ -64,6 +89,46 @@ module GameRules
       return_barbarian_allies!(barbarian_allies)
       return_german_units!
       apply_winter_supply!(wintering_ids)
+
+      return complete_end_turn! if final_turn?
+
+      begin_roman_replacements!
+    end
+
+    def begin_roman_replacements!
+      options = roman_replacement_options
+      if options.empty?
+        log("Roman Replacements and Reorganization: no damaged legions are eligible.")
+        apply_roman_supply_production!
+        return begin_roman_reinforcements!
+      end
+
+      @state["endTurn"] = @state.fetch("endTurn", {}).merge(
+        "phase" => "romanReplacements",
+        "replacementOptions" => options
+      )
+      persist!
+    end
+
+    def begin_roman_reinforcements!
+      returned = return_eliminated_roman_legions!
+      log(returned.empty? ? "Eliminated Roman Legions: none return this year." : "Eliminated Roman Legions Return: #{returned.join(", ")} return at full strength in the Roman Off-Map area.")
+      refresh_force_pool!
+      options = roman_reinforcement_options
+      if options.empty?
+        log("Roman Reinforcements: no unbuilt legions are available.")
+        return complete_end_turn!
+      end
+
+      @state["endTurn"] = @state.fetch("endTurn", {}).merge(
+        "phase" => "romanReinforcements",
+        "reinforcementOptions" => options,
+        "reinforcementLimit" => reinforcement_limit
+      )
+      persist!
+    end
+
+    def complete_end_turn!
 
       controlled_tribes = score_controlled_tribes!
       objectives = GameRules::YearlyObjectives.new(state: @state).score!
@@ -111,7 +176,7 @@ module GameRules
     end
 
     def end_turn_in_progress?
-      @state.dig("endTurn", "phase") == "romanWintering"
+      END_TURN_PHASES.include?(@state.dig("endTurn", "phase"))
     end
 
     def remaining_cards
@@ -287,6 +352,7 @@ module GameRules
             attrition << "#{unit.fetch("name")} lose 1 strength"
           else
             unit["location"] = "eliminated"
+            unit["eliminatedTurn"] = @state.fetch("turn", 0).to_i
             @state["vp"] = [@state.fetch("vp", 0).to_i - 5, 0].max
             attrition << "#{unit.fetch("name")} are eliminated"
           end
@@ -296,6 +362,180 @@ module GameRules
       detail << "supplied #{supplied.join(", ")}" if supplied.any?
       detail << attrition.join(", ") if attrition.any?
       log(detail.empty? ? "Supply and Attrition: no winter-quarter supply required." : "Supply and Attrition: #{detail.join("; ")}.")
+    end
+
+    def roman_replacement_options
+      units.values.filter_map do |unit|
+        next unless unit["type"] == "roman" && unit["owner"] == "roman"
+        next if unit["location"].in?(["offboard", "eliminated"])
+
+        strength = current_strength(unit)
+        maximum = unit_strengths(unit).max.to_i
+        missing_steps = unit.fetch("step", 0).to_i
+        next unless strength.positive? && missing_steps.positive?
+
+        home_area = unit["location"].in?(["transalpine_gaul", "roman_off_map"])
+        {
+          "id" => unit.fetch("id"),
+          "name" => unit.fetch("name"),
+          "location" => unit.fetch("location"),
+          "locationName" => area_name(unit.fetch("location")),
+          "currentStrength" => strength,
+          "maximumStrength" => maximum,
+          "maximumSteps" => home_area ? missing_steps : 1
+        }
+      end.sort_by { |option| option.fetch("name") }
+    end
+
+    def apply_roman_replacements!(choices)
+      options = roman_replacement_options.index_by { |option| option.fetch("id") }
+      validate_known_choices!(choices, options, "replacement")
+      total = choices.sum do |unit_id, steps|
+        next 0 if steps.zero?
+
+        maximum = options.fetch(unit_id).fetch("maximumSteps")
+        raise InvalidAction, "#{options.fetch(unit_id).fetch("name")} may receive at most #{maximum} replacement step#{maximum == 1 ? "" : "s"}." if steps > maximum
+
+        steps
+      end
+      raise InvalidAction, "Roman replacements cost #{total} supply, but only #{@state.fetch("supply", 0)} is available." if total > @state.fetch("supply", 0).to_i
+
+      replaced = choices.filter_map do |unit_id, steps|
+        next if steps.zero?
+
+        unit = units.fetch(unit_id)
+        unit["step"] = unit.fetch("step", 0).to_i - steps
+        "#{unit.fetch("name")} +#{steps}"
+      end
+      @state["supply"] = @state.fetch("supply", 0).to_i - total
+      log(replaced.empty? ? "Roman Replacements and Reorganization: no supply spent." : "Roman Replacements and Reorganization: #{replaced.join(", ")} strength; #{total} supply spent.")
+    end
+
+    def apply_roman_supply_production!
+      sources = [["Transalpine Gaul", 2]]
+      Area.where.not(fort_name: nil).order(:key).each do |area|
+        next if area.key == "transalpine_gaul"
+        next unless roman_controls_area?(area)
+
+        sources << [area.fort_name.to_s.titleize, area.key == "bituriges" ? 2 : 1]
+      end
+
+      produced = sources.sum(&:last)
+      before = @state.fetch("supply", 0).to_i
+      @state["supply"] = [before + produced, 19].min
+      gained = @state.fetch("supply") - before
+      source_text = sources.map { |name, amount| "#{name} +#{amount}" }.join(", ")
+      cap_text = gained < produced ? " (limited by the 19-supply maximum)" : ""
+      log("Roman Supply Production: #{source_text}; supply #{before} to #{@state.fetch("supply")}#{cap_text}.")
+    end
+
+    def roman_controls_area?(area)
+      tribe_ids = (area.tribes + [area.alternate_tribe]).compact
+      tribe_ids.any? do |unit_id|
+        unit = units[unit_id]
+        unit && unit["owner"] == "roman" && !unit["location"].in?(["offboard", "eliminated", nil]) && current_strength(unit).positive?
+      end
+    end
+
+    def mark_newly_eliminated_legions!
+      units.values.each do |unit|
+        next unless unit["type"] == "roman" && unit["location"] == "eliminated"
+
+        unit["eliminatedTurn"] ||= @state.fetch("turn", 0).to_i
+      end
+    end
+
+    def return_eliminated_roman_legions!
+      turn = @state.fetch("turn", 0).to_i
+      units.values.filter_map do |unit|
+        next unless unit["type"] == "roman" && unit["location"] == "eliminated"
+        next unless unit["eliminatedTurn"].to_i < turn
+
+        unit["location"] = "roman_off_map"
+        unit["owner"] = "roman"
+        unit["step"] = 0
+        unit.delete("eliminatedTurn")
+        unit.fetch("name")
+      end
+    end
+
+    def refresh_force_pool!
+      @state["romanForcePool"] ||= INITIAL_FORCE_POOL.select do |unit_id|
+        units[unit_id]&.fetch("location", nil) == "offboard"
+      end
+      return unless @state["massiveRevoltPlayed"]
+
+      MASSIVE_REVOLT_REINFORCEMENTS.each do |unit_id|
+        next unless units[unit_id]&.fetch("location", nil) == "offboard"
+
+        @state["romanForcePool"] << unit_id unless @state["romanForcePool"].include?(unit_id)
+      end
+    end
+
+    def roman_reinforcement_options
+      Array(@state["romanForcePool"]).filter_map do |unit_id|
+        unit = units[unit_id]
+        next unless unit && unit["location"] == "offboard"
+
+        {
+          "id" => unit.fetch("id"),
+          "name" => unit.fetch("name"),
+          "maximumStrength" => [unit_strengths(unit).max.to_i, 4].min
+        }
+      end.sort_by { |option| option.fetch("name") }
+    end
+
+    def reinforcement_limit
+      @state["massiveRevoltPlayed"] ? 2 : 1
+    end
+
+    def apply_roman_reinforcements!(choices)
+      options = roman_reinforcement_options.index_by { |option| option.fetch("id") }
+      validate_known_choices!(choices, options, "reinforcement")
+      builds = choices.select { |_unit_id, strength| strength.positive? }
+      if builds.length > reinforcement_limit
+        raise InvalidAction, "Only #{reinforcement_limit} new legion#{reinforcement_limit == 1 ? "" : "s"} may be built this year."
+      end
+
+      total = builds.sum do |unit_id, strength|
+        maximum = options.fetch(unit_id).fetch("maximumStrength")
+        raise InvalidAction, "#{options.fetch(unit_id).fetch("name")} must be built at strength 1 through #{maximum}." unless strength.between?(1, maximum)
+
+        strength
+      end
+      raise InvalidAction, "Roman reinforcements cost #{total} supply, but only #{@state.fetch("supply", 0)} is available." if total > @state.fetch("supply", 0).to_i
+
+      built = builds.map do |unit_id, strength|
+        unit = units.fetch(unit_id)
+        step = unit_strengths(unit).index(strength)
+        raise InvalidAction, "#{unit.fetch("name")} cannot be built at strength #{strength}." unless step
+
+        unit["location"] = "roman_off_map"
+        unit["owner"] = "roman"
+        unit["step"] = step
+        @state["romanForcePool"].delete(unit_id)
+        "#{unit.fetch("name")} at strength #{strength}"
+      end
+      @state["supply"] = @state.fetch("supply", 0).to_i - total
+      log(built.empty? ? "Roman Reinforcements: no new legion built." : "Roman Reinforcements: #{built.join(", ")} placed in the Roman Off-Map area; #{total} supply spent.")
+    end
+
+    def validate_known_choices!(choices, options, kind)
+      unknown = choices.select { |unit_id, value| value.positive? && !options.key?(unit_id) }.keys
+      return if unknown.empty?
+
+      raise InvalidAction, "Unknown Roman #{kind} choice: #{unknown.join(", ")}."
+    end
+
+    def normalize_numeric_choices(choices)
+      raw = if choices.respond_to?(:to_unsafe_h)
+        choices.to_unsafe_h
+      elsif choices.respond_to?(:to_h)
+        choices.to_h
+      else
+        {}
+      end
+      raw.to_h { |unit_id, value| [unit_id.to_s, [value.to_i, 0].max] }
     end
 
     def occupying_owner(area_id, excluding: nil)

@@ -48,6 +48,10 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 28, body.dig("state", "botDeck").length
     assert_equal 33, session.game_session_cards.count
     assert_equal "roman", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "legion_x" }).owner
+    assert_equal %w[legion_i legion_xiii legion_xiv legion_xv], body.dig("state", "romanForcePool")
+    %w[legion_i legion_xiii legion_xiv legion_xv].each do |unit_id|
+      assert_equal "offboard", body.dig("state", "units", unit_id, "location")
+    end
     assert_equal 0, session.turn_index
     assert_equal "Card Phase", session.phase
     assert_equal "roman", session.active_player
@@ -623,13 +627,13 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session.reload
 
     assert_equal 1, body.dig("state", "turn")
-    assert_equal 13, body.dig("state", "supply")
+    assert_equal 15, body.dig("state", "supply")
     assert_equal 1, body.dig("state", "vp")
     assert_equal "transalpine_gaul", body.dig("state", "units", "legion_vii", "location")
     assert_equal 5, body.dig("state", "hands", "roman").length
     assert_equal 5, body.dig("state", "hands", "barbarian").length
     assert_equal 1, session.turn_index
-    assert_equal 13, session.supply
+    assert_equal 15, session.supply
     assert_equal 1, session.vp
     assert_not session.dice_rolled_this_turn
     assert_equal 10, session.game_session_cards.count

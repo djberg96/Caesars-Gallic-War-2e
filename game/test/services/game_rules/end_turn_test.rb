@@ -20,7 +20,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: []).end_turn!
 
     assert_equal 1, result["turn"]
-    assert_equal 17, result["supply"]
+    assert_equal 19, result["supply"]
     assert_equal 1, result["vp"]
     assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
     assert_equal "allobroges", result.dig("units", "allobroges", "location")
@@ -36,7 +36,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
 
     session.reload
     assert_equal 1, session.turn_index
-    assert_equal 17, session.supply
+    assert_equal 19, session.supply
     assert_equal 1, session.vp
     assert_equal "transalpine_gaul", session.game_units.joins(:unit_type).find_by!(unit_type: { key: "legion_vii" }).location
     assert_equal 10, session.game_session_cards.count
@@ -193,7 +193,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
 
     assert_equal "allobroges", result.dig("units", "legion_vii", "location")
     assert_equal "transalpine_gaul", result.dig("units", "legion_viii", "location")
-    assert_equal 3, result["supply"]
+    assert_equal 5, result["supply"]
     assert_match "Roman Winter Quarters: Legion Vii remain", result["log"].join(" ")
   end
 
@@ -230,6 +230,124 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     end
 
     assert_match "Only 1 legion may winter in Allobroges", error.message
+  end
+
+  test "runs replacements supply production and reinforcement construction in rules order" do
+    state = base_state
+    state["supply"] = 6
+    state["romanForcePool"] = ["legion_i"]
+    state["units"]["legion_vii"].merge!("strengths" => [4, 3, 2, 1], "step" => 2)
+    state["units"]["legion_i"] = unit("legion_i", "roman", "roman", "offboard", "roman_off_map")
+      .merge("strengths" => [4, 3, 2, 1])
+    session = GameSession.create!(data: state)
+
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    replacements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+
+    assert_equal "romanReplacements", replacements.dig("endTurn", "phase")
+    assert_equal 2, replacements.dig("endTurn", "replacementOptions", 0, "maximumSteps")
+
+    reinforcements = GameRules::EndTurn.new(
+      session: session,
+      state: replacements,
+      replacement_steps: { "legion_vii" => 2 }
+    ).end_turn!
+
+    assert_equal "romanReinforcements", reinforcements.dig("endTurn", "phase")
+    assert_equal 0, reinforcements.dig("units", "legion_vii", "step")
+    assert_equal 6, reinforcements["supply"] # 6 - 2 replacements + 2 Transalpine production
+
+    result = GameRules::EndTurn.new(
+      session: session,
+      state: reinforcements,
+      reinforcement_builds: { "legion_i" => 3 }
+    ).end_turn!
+
+    assert_equal 1, result["turn"]
+    assert_equal 3, result["supply"]
+    assert_equal "roman_off_map", result.dig("units", "legion_i", "location")
+    assert_equal 1, result.dig("units", "legion_i", "step")
+    assert_empty result["romanForcePool"]
+    log = result["log"].reverse.join(" ")
+    assert_operator log.index("Supply and Attrition"), :<, log.index("Roman Replacements and Reorganization")
+    assert_operator log.index("Roman Replacements and Reorganization"), :<, log.index("Roman Supply Production")
+    assert_operator log.index("Roman Supply Production"), :<, log.index("Roman Reinforcements")
+  end
+
+  test "limits a field legion to one replacement step" do
+    state = base_state
+    state["units"]["legion_vii"].merge!("strengths" => [4, 3, 2, 1], "step" => 2)
+    session = GameSession.create!(data: state)
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    replacements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: ["legion_vii"]).end_turn!
+
+    assert_equal 1, replacements.dig("endTurn", "replacementOptions", 0, "maximumSteps")
+    error = assert_raises(GameRules::EndTurn::InvalidAction) do
+      GameRules::EndTurn.new(
+        session: session,
+        state: replacements,
+        replacement_steps: { "legion_vii" => 2 }
+      ).end_turn!
+    end
+    assert_match "at most 1 replacement step", error.message
+  end
+
+  test "produces two supply for Transalpine Gaul and two for Roman controlled Avaricum" do
+    state = base_state
+    state["supply"] = 10
+    state["units"]["bituriges"] = unit("bituriges", "barbarian", "roman", "bituriges", "bituriges")
+    state["units"]["legion_vii"].merge!("strengths" => [4, 3, 2, 1], "step" => 1)
+    session = GameSession.create!(data: state)
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    replacements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    result = GameRules::EndTurn.new(session: session, state: replacements, replacement_steps: {}).end_turn!
+
+    assert_equal 14, result["supply"]
+    assert_match "Transalpine Gaul +2, Avaricum +2", result["log"].join(" ")
+  end
+
+  test "returns an eliminated legion at full strength at the end of the following turn" do
+    state = base_state
+    state["turn"] = 1
+    state["units"]["legion_vii"].merge!(
+      "location" => "eliminated",
+      "strengths" => [4, 3, 2, 1],
+      "step" => 4,
+      "eliminatedTurn" => 0
+    )
+    session = GameSession.create!(data: state)
+
+    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+
+    assert_equal "roman_off_map", result.dig("units", "legion_vii", "location")
+    assert_equal 0, result.dig("units", "legion_vii", "step")
+    assert_nil result.dig("units", "legion_vii", "eliminatedTurn")
+    assert_match "Eliminated Roman Legions Return: Legion Vii", result["log"].join(" ")
+  end
+
+  test "Massive Revolt adds legions V and VI and permits two builds" do
+    state = base_state
+    state["supply"] = 10
+    state["massiveRevoltPlayed"] = true
+    state["romanForcePool"] = []
+    %w[legion_v legion_vi].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    session = GameSession.create!(data: state)
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    reinforcements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+
+    assert_equal 2, reinforcements.dig("endTurn", "reinforcementLimit")
+    assert_equal %w[legion_v legion_vi], reinforcements.dig("endTurn", "reinforcementOptions").map { |option| option["id"] }.sort
+
+    result = GameRules::EndTurn.new(
+      session: session,
+      state: reinforcements,
+      reinforcement_builds: { "legion_v" => 2, "legion_vi" => 3 }
+    ).end_turn!
+    assert_equal "roman_off_map", result.dig("units", "legion_v", "location")
+    assert_equal "roman_off_map", result.dig("units", "legion_vi", "location")
   end
 
   private

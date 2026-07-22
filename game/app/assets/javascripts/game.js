@@ -54,6 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
     winterQuartersSummary: document.querySelector("#winter-quarters-summary"),
     winterQuartersSelection: document.querySelector("#winter-quarters-selection"),
     winterQuartersError: document.querySelector("#winter-quarters-error"),
+    romanAdministrationForm: document.querySelector("#roman-administration-form"),
+    romanAdministrationTitle: document.querySelector("#roman-administration-title"),
+    romanAdministrationOptions: document.querySelector("#roman-administration-options"),
+    romanAdministrationStatus: document.querySelector("#roman-administration-status"),
+    romanAdministrationError: document.querySelector("#roman-administration-error"),
+    romanAdministrationContinue: document.querySelector("#roman-administration-continue"),
     finishRegroup: document.querySelector("#finish-regroup"),
     yearlyObjectives: document.querySelector("#yearly-objectives"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
@@ -1558,6 +1564,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentStrength(unit) > 0) return;
 
       unit.location = "eliminated";
+      if (unit.type === "roman") unit.eliminatedTurn = state.turn;
       if (unit.id === "legion_x") {
         log("Caesar has been killed. Barbarian instant victory.");
       } else if (unit.type === "roman") {
@@ -1581,8 +1588,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (state.endTurn?.phase === "romanWintering") {
+    if (state.endTurn) {
       renderWinterQuarters();
+      renderRomanAdministration();
       return;
     }
 
@@ -1620,6 +1628,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function completeRomanAdministration(event) {
+    event.preventDefault();
+    const phase = state.endTurn?.phase;
+    if (!phase?.startsWith("roman")) return;
+    setRomanAdministrationError();
+
+    const payload = { state };
+    if (phase === "romanReplacements") {
+      payload.replacement_steps = state.endTurn.replacementSteps || {};
+    } else if (phase === "romanReinforcements") {
+      payload.reinforcement_builds = state.endTurn.reinforcementBuilds || {};
+    } else {
+      return;
+    }
+
+    try {
+      await ensureGameSession();
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/end_turn`, payload);
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      showCampaignResult();
+      render();
+    } catch (error) {
+      setRomanAdministrationError(error.message);
+    }
+  }
+
   function d6() {
     state.diceRolledThisTurn = true;
     state.undoStack = [];
@@ -1650,6 +1686,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSidePanelToggle();
     renderBattleBoard();
     renderWinterQuarters();
+    renderRomanAdministration();
     document.querySelectorAll(".player-button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
@@ -3437,6 +3474,22 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (state.endTurn?.phase === "romanReplacements") {
+      endTurnButton.textContent = "Roman Replacements";
+      endTurnButton.disabled = true;
+      endTurnButton.title = "Complete Roman replacements and reorganization above the map.";
+      battleButton.disabled = true;
+      return;
+    }
+
+    if (state.endTurn?.phase === "romanReinforcements") {
+      endTurnButton.textContent = "Roman Reinforcements";
+      endTurnButton.disabled = true;
+      endTurnButton.title = "Build new Roman legions or continue above the map.";
+      battleButton.disabled = true;
+      return;
+    }
+
     if (state.movement) {
       endTurnButton.textContent = "Finish Movement";
       endTurnButton.disabled = Boolean(state.battle) || unresolvedBattles > 0;
@@ -3483,9 +3536,10 @@ document.addEventListener("DOMContentLoaded", () => {
     els.winterQuartersPanel.hidden = false;
     const harvestRoll = state.endTurn.harvestRoll;
     const garrisonLimit = state.endTurn.garrisonLimit;
+    const harvestQuality = harvestRoll === 1 ? "Poor" : harvestRoll === 6 ? "Bountiful" : "Normal";
     const selected = winteringUnitIds();
     const supplyCost = selected.filter((unitId) => unitId !== "legion_x").length;
-    els.winterQuartersSummary.textContent = `Harvest ${harvestRoll}: up to ${garrisonLimit} legion${garrisonLimit === 1 ? "" : "s"} per area; Caesar does not count against the limit.`;
+    els.winterQuartersSummary.textContent = `${harvestQuality} Harvest: up to ${garrisonLimit} legion${garrisonLimit === 1 ? "" : "s"} per area; Caesar does not count against the limit.`;
     els.winterQuartersSelection.textContent = selected.length
       ? `${selected.length} selected · ${supplyCost} supply`
       : "No legions selected · 0 supply";
@@ -3541,6 +3595,128 @@ document.addEventListener("DOMContentLoaded", () => {
     els.winterQuartersError.hidden = !message;
   }
 
+  function renderRomanAdministration() {
+    if (!els.romanAdministrationForm) return;
+    const phase = state.endTurn?.phase;
+    if (!["romanReplacements", "romanReinforcements"].includes(phase)) {
+      els.romanAdministrationForm.hidden = true;
+      setRomanAdministrationError();
+      return;
+    }
+
+    els.romanAdministrationForm.hidden = false;
+    if (phase === "romanReplacements") {
+      renderRomanReplacementOptions();
+    } else {
+      renderRomanReinforcementOptions();
+    }
+  }
+
+  function renderRomanReplacementOptions() {
+    state.endTurn.replacementSteps ||= {};
+    const choices = state.endTurn.replacementSteps;
+    const options = state.endTurn.replacementOptions || [];
+    const cost = Object.values(choices).reduce((sum, value) => sum + Number(value || 0), 0);
+    els.romanAdministrationTitle.textContent = "Roman Replacements & Reorganization";
+    els.romanAdministrationOptions.innerHTML = options.map((option) => {
+      const steps = Number(choices[option.id] || 0);
+      return administrationChoiceHtml({
+        kind: "replacement",
+        id: option.id,
+        name: option.name,
+        detail: `${option.locationName} · strength ${option.currentStrength} → ${option.currentStrength + steps}`,
+        value: steps,
+        maximum: option.maximumSteps,
+        valueLabel: `${steps} step${steps === 1 ? "" : "s"}`
+      });
+    }).join("");
+    els.romanAdministrationStatus.textContent = `${cost} supply selected · ${state.supply - cost} remaining`;
+    els.romanAdministrationContinue.textContent = cost ? "Buy Replacements" : "Skip Replacements";
+    bindRomanAdministrationButtons();
+  }
+
+  function renderRomanReinforcementOptions() {
+    state.endTurn.reinforcementBuilds ||= {};
+    const choices = state.endTurn.reinforcementBuilds;
+    const options = state.endTurn.reinforcementOptions || [];
+    const cost = Object.values(choices).reduce((sum, value) => sum + Number(value || 0), 0);
+    const builds = Object.values(choices).filter((value) => Number(value) > 0).length;
+    const limit = state.endTurn.reinforcementLimit || 1;
+    els.romanAdministrationTitle.textContent = "Roman Reinforcements";
+    els.romanAdministrationOptions.innerHTML = options.map((option) => {
+      const strength = Number(choices[option.id] || 0);
+      return administrationChoiceHtml({
+        kind: "reinforcement",
+        id: option.id,
+        name: option.name,
+        detail: "Roman Force Pool · placed in Roman Off-Map",
+        value: strength,
+        maximum: option.maximumStrength,
+        valueLabel: strength ? `strength ${strength}` : "not built"
+      });
+    }).join("");
+    els.romanAdministrationStatus.textContent = `${builds} of ${limit} legion${limit === 1 ? "" : "s"} · ${cost} supply · ${state.supply - cost} remaining`;
+    els.romanAdministrationContinue.textContent = builds ? "Build Reinforcements" : "Skip Reinforcements";
+    bindRomanAdministrationButtons();
+  }
+
+  function administrationChoiceHtml({ kind, id, name, detail, value, maximum, valueLabel }) {
+    return `
+      <div class="roman-administration-choice">
+        <span><strong>${name}</strong><small>${detail}</small></span>
+        <div class="roman-administration-stepper">
+          <button type="button" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="-1"${value <= 0 ? " disabled" : ""}>−</button>
+          <output>${valueLabel}</output>
+          <button type="button" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="1"${value >= maximum ? " disabled" : ""}>+</button>
+        </div>
+      </div>`;
+  }
+
+  function bindRomanAdministrationButtons() {
+    els.romanAdministrationOptions.querySelectorAll("[data-administration-kind]").forEach((button) => {
+      button.addEventListener("click", () => adjustRomanAdministrationChoice(
+        button.dataset.administrationKind,
+        button.dataset.unitId,
+        Number(button.dataset.delta)
+      ));
+    });
+  }
+
+  function adjustRomanAdministrationChoice(kind, unitId, delta) {
+    const replacement = kind === "replacement";
+    const key = replacement ? "replacementSteps" : "reinforcementBuilds";
+    const optionKey = replacement ? "replacementOptions" : "reinforcementOptions";
+    const maximumKey = replacement ? "maximumSteps" : "maximumStrength";
+    state.endTurn[key] ||= {};
+    const option = (state.endTurn[optionKey] || []).find((candidate) => candidate.id === unitId);
+    if (!option) return;
+
+    const oldValue = Number(state.endTurn[key][unitId] || 0);
+    const newValue = Math.max(0, Math.min(option[maximumKey], oldValue + delta));
+    const currentCost = Object.values(state.endTurn[key]).reduce((sum, value) => sum + Number(value || 0), 0);
+    if (newValue > oldValue && currentCost >= state.supply) {
+      setRomanAdministrationError("No additional supply is available.");
+      return;
+    }
+    if (!replacement && oldValue === 0 && newValue > 0) {
+      const builds = Object.values(state.endTurn[key]).filter((value) => Number(value) > 0).length;
+      if (builds >= (state.endTurn.reinforcementLimit || 1)) {
+        setRomanAdministrationError(`Only ${state.endTurn.reinforcementLimit || 1} new legion${state.endTurn.reinforcementLimit === 1 ? "" : "s"} may be built this year.`);
+        return;
+      }
+    }
+
+    state.endTurn[key][unitId] = newValue;
+    setRomanAdministrationError();
+    renderRomanAdministration();
+  }
+
+  function setRomanAdministrationError(message = "") {
+    if (!els.romanAdministrationError) return;
+    els.romanAdministrationError.textContent = message;
+    els.romanAdministrationError.hidden = !message;
+  }
+
   function renderUndoButton() {
     const button = document.querySelector("#undo-move");
     button.disabled = state.diceRolledThisTurn || !(state.undoStack?.length);
@@ -3586,6 +3762,8 @@ document.addEventListener("DOMContentLoaded", () => {
       state.endTurn.winteringUnitIds ||= [];
       piecesHidden = false;
     }
+    if (state.endTurn?.phase === "romanReplacements") state.endTurn.replacementSteps ||= {};
+    if (state.endTurn?.phase === "romanReinforcements") state.endTurn.reinforcementBuilds ||= {};
     if (!state.battle) {
       state.regrouping = false;
       state.retreating = false;
@@ -3765,6 +3943,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#save-new-game").addEventListener("click", saveAndStartNewGame);
   els.importForm?.addEventListener("submit", importGame);
   els.winterQuartersForm?.addEventListener("submit", completeEndTurn);
+  els.romanAdministrationForm?.addEventListener("submit", completeRomanAdministration);
   els.importFile?.addEventListener("change", (event) => loadImportFile(event.target.files?.[0]));
   document.querySelector("#resolve-battles").addEventListener("click", resolveBattles);
   els.cardZoom?.addEventListener("click", (event) => {

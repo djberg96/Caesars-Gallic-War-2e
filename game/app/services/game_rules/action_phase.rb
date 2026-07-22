@@ -131,6 +131,7 @@ module GameRules
       raise InvalidAction, card_prompt unless card
 
       @state["currentAction"] = "event"
+      @state["massiveRevoltPlayed"] = true if card.fetch("title") == "Massive Revolt"
       if card.fetch("title") == "Baggage Train"
         if active_player == "roman"
           @state["supply"] = [@state.fetch("supply", 0).to_i + 5, 19].min
