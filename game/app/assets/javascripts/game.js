@@ -888,11 +888,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    areaUnits(areaId).filter((unit) => unit.owner === "neutral").forEach((unit) => {
+    const activatedUnits = areaUnits(areaId).filter((unit) => unit.owner === "neutral");
+    activatedUnits.forEach((unit) => {
       unit.owner = owner;
       unit.step = 0;
     });
-    log(`${playerName(owner)} places ${areaName(areaId)} in the neutral tribe activation area.`);
+    const names = activatedUnits.map((unit) => unit.name).join(" and ") || areaName(areaId);
+    const plural = activatedUnits.length > 1;
+    log(`${names} ${plural ? `become ${playerName(owner)} allies` : `becomes a ${playerName(owner)} ally`}.`);
   }
 
   async function performCardAction(endpoint, extra = {}) {
@@ -1323,7 +1326,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return { key: "outcome", label: "Outcome", battleDetail: true };
     }
     if (/^Regroup victorious units/i.test(message)) return { key: "instruction", label: "Next", battleDetail: true };
-    if (/\bjoins the (Roman|Barbarian) player\b/i.test(message)) return { key: "control", label: "Control", battleDetail: false };
+    if (/\bjoins the (Roman|Barbarian) player\b/i.test(message) || /\b(Roman|Barbarian) (ally|allies)\b/i.test(message)) {
+      return { key: "control", label: "Control", battleDetail: false };
+    }
     if (/\b(moves|enters)\b/i.test(message)) return { key: "movement", label: "Move", battleDetail: false };
     if (/\bactivates\b/i.test(message)) return { key: "activation", label: "Activate", battleDetail: false };
     return { key: "event", label: "Event", battleDetail: false };
@@ -1331,7 +1336,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function botActionSummary(entry, revealedCard) {
     if (entry.startsWith("Barbarian activates ") && revealedCard?.includes("Revolt")) return { title: `Barbarian Action - Event: ${revealedCard}`, message: entry };
-    if (entry.startsWith("Barbarian places ") && entry.includes(" neutral tribe activation area")) return { title: "Barbarian Action - Neutral Tribe Activation", message: entry };
+    if (/\bBarbarian (ally|allies)\.$/.test(entry)) return { title: "Barbarian Action - Neutral Tribe Activation", message: entry };
     if (entry.startsWith("Bot political action ")) return { title: "Barbarian Action - Political Action", message: entry.replace(/^Bot /, "Barbarian ") };
     if (entry.startsWith("Bot moves ")) return { title: "Barbarian Action - Movement", message: entry.replace(/^Bot /, "Barbarian ") };
     if (entry.startsWith("Bot Baggage Train ")) return { title: "Barbarian Action - Event: Baggage Train", message: entry.replace(/^Bot /, "Barbarian ") };

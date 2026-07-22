@@ -83,12 +83,15 @@ module GameRules
       validate_roman_special_target!(area, action: "neutral activation") if active_player == "roman"
 
       @state["currentAction"] = "activate"
-      units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }.each do |unit|
+      activated_units = units.values.select { |unit| unit["location"] == area.key && unit["owner"] == "neutral" }
+      activated_units.each do |unit|
         unit["owner"] = active_player
         unit["step"] = 0
       end
       record_neutral_activation_card(card)
-      log("#{player_name(active_player)} places #{area.name} in the neutral tribe activation area.")
+      names = activated_units.map { |unit| unit.fetch("name") }.to_sentence
+      plural = activated_units.many?
+      log("#{names} #{plural ? "become" : "becomes"} #{plural ? player_name(active_player) : "a #{player_name(active_player)}"} #{plural ? "allies" : "ally"}.")
       persist!
     end
 

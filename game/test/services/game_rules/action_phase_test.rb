@@ -91,7 +91,7 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal 0, result.dig("units", "allobroges", "step")
     assert_equal "activate", result["currentAction"]
     assert_equal ["allobroges"], result.dig("neutralActivationCards", "roman").map { |card| card.fetch("id") }
-    assert_match "places Allobroges in the neutral tribe activation area", result["log"].first
+    assert_equal "Allobroges becomes a Roman ally.", result["log"].first
     assert_equal "roman", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
 

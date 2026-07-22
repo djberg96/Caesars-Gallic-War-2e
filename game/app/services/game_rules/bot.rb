@@ -280,11 +280,14 @@ module GameRules
     end
 
     def neutral_activation!(area_id)
-      area_units(area_id).select { |unit| unit["owner"] == "neutral" }.each do |unit|
+      activated_units = area_units(area_id).select { |unit| unit["owner"] == "neutral" }
+      activated_units.each do |unit|
         unit["owner"] = "barbarian"
         unit["step"] = 0
       end
-      log("Barbarian places #{area_name(area_id)} in the neutral tribe activation area.")
+      names = activated_units.map { |unit| unit.fetch("name") }.to_sentence
+      plural = activated_units.many?
+      log("#{names} #{plural ? "become Barbarian allies" : "becomes a Barbarian ally"}.")
     end
 
     def activate_area!(area_id, owner)
