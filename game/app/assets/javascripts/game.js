@@ -947,12 +947,12 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  function showResultDialog(title, message) {
+  function showResultDialog(title, message, options = {}) {
     if (!els.resultDialog) {
       window.alert(message);
       return;
     }
-    const result = { title, message };
+    const result = { title, message, reportGroups: options.reportGroups || null };
     if (els.resultDialog.open) {
       resultDialogQueue.push(result);
       return;
@@ -962,8 +962,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayResultDialog(result) {
     els.resultTitle.textContent = result.title;
-    els.resultMessage.textContent = result.message;
+    els.resultDialog.classList.toggle("is-action-report", Boolean(result.reportGroups));
+    els.resultMessage.replaceChildren();
+    if (result.reportGroups) {
+      renderActionReport(result.reportGroups);
+    } else {
+      els.resultMessage.textContent = result.message;
+    }
     els.resultDialog.showModal();
+  }
+
+  function renderActionReport(groups) {
+    const report = document.createElement("div");
+    report.className = "action-report";
+
+    groups.forEach((group) => {
+      if (group.kind === "battle") {
+        const section = document.createElement("section");
+        section.className = "action-report-battle";
+
+        const heading = document.createElement("h3");
+        heading.textContent = `Battle · ${group.area}`;
+        section.appendChild(heading);
+
+        const events = document.createElement("ul");
+        group.entries.forEach((entry) => {
+          const item = document.createElement("li");
+          item.textContent = entry;
+          item.classList.toggle("is-outcome", botReportEntryKind(entry).key === "outcome");
+          events.appendChild(item);
+        });
+        section.appendChild(events);
+        report.appendChild(section);
+        return;
+      }
+
+      const row = document.createElement("div");
+      const entryKind = botReportEntryKind(group.message);
+      row.className = `action-report-row is-${entryKind.key}`;
+
+      const label = document.createElement("span");
+      label.className = "action-report-label";
+      label.textContent = entryKind.label;
+
+      const message = document.createElement("p");
+      message.textContent = group.message;
+
+      row.append(label, message);
+      report.appendChild(row);
+    });
+
+    els.resultMessage.appendChild(report);
   }
 
   function showNextResultDialog() {
@@ -1240,7 +1289,44 @@ document.addEventListener("DOMContentLoaded", () => {
     const summaries = actionEntries.reverse().map((entry) => botActionSummary(entry, revealedCard));
     const title = summaries[0]?.title || "Barbarian Action";
     const message = summaries.map((summary) => summary.message).join("\n") || "Barbarian takes no action.";
-    showResultDialog(title, message);
+    const reportGroups = botActionReportGroups(summaries.map((summary) => summary.message));
+    showResultDialog(title, message, { reportGroups });
+  }
+
+  function botActionReportGroups(messages) {
+    const groups = [];
+    let battle = null;
+
+    messages.forEach((message) => {
+      const battleStart = message.match(/^Battle board opened for (.+)\.$/);
+      if (battleStart) {
+        battle = { kind: "battle", area: battleStart[1], entries: [] };
+        groups.push(battle);
+        return;
+      }
+
+      if (battle && botReportEntryKind(message).battleDetail) {
+        battle.entries.push(message);
+        return;
+      }
+
+      battle = null;
+      groups.push({ kind: "event", message });
+    });
+
+    return groups.length ? groups : [{ kind: "event", message: "Barbarian takes no action." }];
+  }
+
+  function botReportEntryKind(message) {
+    if (/\b(fires|rolled)\b/i.test(message)) return { key: "combat", label: "Combat", battleDetail: true };
+    if (/\b(eliminated|wins the battle|holds .+ after battle|battle .+ continues|retreated)\b/i.test(message)) {
+      return { key: "outcome", label: "Outcome", battleDetail: true };
+    }
+    if (/^Regroup victorious units/i.test(message)) return { key: "instruction", label: "Next", battleDetail: true };
+    if (/\bjoins the (Roman|Barbarian) player\b/i.test(message)) return { key: "control", label: "Control", battleDetail: false };
+    if (/\b(moves|enters)\b/i.test(message)) return { key: "movement", label: "Move", battleDetail: false };
+    if (/\bactivates\b/i.test(message)) return { key: "activation", label: "Activate", battleDetail: false };
+    return { key: "event", label: "Event", battleDetail: false };
   }
 
   function botActionSummary(entry, revealedCard) {
