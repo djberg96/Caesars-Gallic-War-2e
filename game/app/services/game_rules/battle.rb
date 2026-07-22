@@ -74,17 +74,27 @@ module GameRules
 
     def build_battle(area, main_origin: nil)
       pending_entry = (@state["pendingBattleEntries"] || {}).delete(area.key) || {}
-      attacker = @attacker || pending_entry["attacker"] || @state.fetch("active", "roman")
-      defender = attacker == "roman" ? "barbarian" : "roman"
       unit_ids = area_units(area.key)
         .select { |unit| unit["owner"].in?(["roman", "barbarian"]) && current_strength(unit).positive? }
         .map { |unit| unit.fetch("id") }
+      durable_entry_records = durable_battle_entry_records(unit_ids, area.key)
+      durable_attackers = durable_entry_records.values.map { |record| record["attacker"] }.compact.uniq
+      durable_attacker = durable_attackers.one? ? durable_attackers.first : nil
+      attacker = @attacker || pending_entry["attacker"] || durable_attacker || @state.fetch("active", "roman")
+      defender = attacker == "roman" ? "barbarian" : "roman"
 
       attacker_ids = unit_ids.select { |id| unit(id)["owner"] == attacker }
       defender_ids = unit_ids.select { |id| unit(id)["owner"] == defender }
       main_origin ||= pending_entry["mainOrigin"]
+      durable_origins = durable_entry_records.values
+        .select { |record| record["attacker"] == attacker }
+        .map { |record| record["origin"] }
+        .compact
+        .uniq
+      main_origin ||= durable_origins.first if durable_origins.one?
       main_origin ||= inferred_attacker_main_origin(area.key, attacker_ids)
       entries = movement_entries(unit_ids, area.key)
+        .merge(durable_entry_records.transform_values { |record| record["origin"] })
         .merge((pending_entry["entries"] || {}).slice(*unit_ids))
         .merge(@entry_origins.slice(*unit_ids))
       amphibious = amphibious_main_force?(attacker_ids, main_origin)
@@ -112,9 +122,17 @@ module GameRules
         "crossings" => {},
         "winner" => nil
       }
+      durable_entry_records.each_key { |id| unit(id).delete("battleEntry") }
       assign_initial_fort_defenders!(area, battle_data)
       record_yearly_objective_battle!(area, battle_data)
       battle_data
+    end
+
+    def durable_battle_entry_records(unit_ids, area_key)
+      unit_ids.filter_map do |id|
+        record = unit(id)["battleEntry"]
+        [id, record] if record.is_a?(Hash) && record["area"] == area_key
+      end.to_h
     end
 
     def record_yearly_objective_battle!(area, battle_data)

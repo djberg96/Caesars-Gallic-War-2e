@@ -455,6 +455,49 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_includes body.dig("state", "battle", "attackers"), "legion_viii"
   end
 
+  test "uses persisted bot battle metadata when the submitted state omits it" do
+    state = base_state.merge(active: "roman", pendingBattleEntries: {
+      "pictones" => {
+        "attacker" => "barbarian",
+        "mainOrigin" => "santones",
+        "entries" => { "santones" => "santones", "lemovicii" => "santones" }
+      }
+    })
+    state[:units] = {
+      pictones: {
+        id: "pictones", name: "Pictones", type: "barbarian", owner: "roman",
+        location: "pictones", home: "pictones", step: 0, strengths: [3, 2, 1], initiative: "C", fire: 2
+      },
+      santones: {
+        id: "santones", name: "Santones", type: "barbarian", owner: "barbarian",
+        location: "pictones", home: "santones", step: 0, strengths: [3, 2, 1], initiative: "C", fire: 2,
+        battleEntry: { area: "pictones", attacker: "barbarian", origin: "santones" }
+      },
+      lemovicii: {
+        id: "lemovicii", name: "Lemovicii", type: "barbarian", owner: "barbarian",
+        location: "pictones", home: "santones", step: 0, strengths: [2, 1], initiative: "C", fire: 2,
+        battleEntry: { area: "pictones", attacker: "barbarian", origin: "santones" }
+      }
+    }
+    session = GameSession.create!(data: state)
+    session.sync_from_data!
+    submitted = session.data.deep_dup
+    submitted.delete("pendingBattleEntries")
+    submitted.fetch("units").each_value { |unit| unit.delete("battleEntry") }
+
+    post resolve_battles_game_session_url(session, host: "localhost"),
+         params: { state: submitted, area_id: "pictones" },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "barbarian", body.dig("state", "battle", "attacker")
+    assert_equal "roman", body.dig("state", "battle", "defender")
+    assert_equal "santones", body.dig("state", "battle", "mainOrigin")
+    assert_equal "santones", body.dig("state", "battle", "entries", "santones")
+    assert_equal "santones", body.dig("state", "battle", "entries", "lemovicii")
+  end
+
   test "draws a bot card through the session API" do
     state = base_state.merge(
       mode: "solitaire",

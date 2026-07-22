@@ -191,12 +191,26 @@ class GameSessionsController < ApplicationController
 
   def action_state(session)
     submitted = state_params
+    preserve_server_battle_metadata!(submitted, session.data)
     normalize_special_unit_state!(submitted)
     return submitted unless game_started?(session.data)
 
     submitted["options"] ||= {}
     submitted["options"]["yearlyObjectives"] = session.data.dig("options", "yearlyObjectives") || false
     submitted
+  end
+
+  def preserve_server_battle_metadata!(submitted, persisted)
+    submitted["pendingBattleEntries"] = persisted.fetch("pendingBattleEntries", {}).deep_dup
+
+    submitted.fetch("units", {}).each do |unit_id, unit|
+      persisted_entry = persisted.dig("units", unit_id, "battleEntry")
+      if persisted_entry.present?
+        unit["battleEntry"] = persisted_entry.deep_dup
+      else
+        unit.delete("battleEntry")
+      end
+    end
   end
 
   def normalize_special_unit_state!(state)

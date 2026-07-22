@@ -284,6 +284,72 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_includes result.dig("battle", "defenders"), "helvetii"
   end
 
+  test "recovers bot attacker and retreat origin from persisted unit entry data" do
+    state = battle_state
+    state["active"] = "roman"
+    state["units"] = {
+      "pictones" => {
+        "id" => "pictones",
+        "name" => "Pictones",
+        "type" => "barbarian",
+        "owner" => "roman",
+        "location" => "pictones",
+        "home" => "pictones",
+        "step" => 0,
+        "strengths" => [3, 2, 1],
+        "initiative" => "C",
+        "fire" => 2
+      },
+      "santones" => {
+        "id" => "santones",
+        "name" => "Santones",
+        "type" => "barbarian",
+        "owner" => "barbarian",
+        "location" => "pictones",
+        "home" => "santones",
+        "step" => 0,
+        "strengths" => [3, 2, 1],
+        "initiative" => "C",
+        "fire" => 2,
+        "battleEntry" => { "area" => "pictones", "attacker" => "barbarian", "origin" => "santones" }
+      },
+      "lemovicii" => {
+        "id" => "lemovicii",
+        "name" => "Lemovicii",
+        "type" => "barbarian",
+        "owner" => "barbarian",
+        "location" => "pictones",
+        "home" => "santones",
+        "step" => 0,
+        "strengths" => [2, 1],
+        "initiative" => "C",
+        "fire" => 2,
+        "battleEntry" => { "area" => "pictones", "attacker" => "barbarian", "origin" => "santones" }
+      }
+    }
+    state["pendingBattleEntries"] = {}
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!(area_id: "pictones")
+
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_equal "santones", result.dig("battle", "mainOrigin")
+    assert_equal "santones", result.dig("battle", "entries", "santones")
+    assert_equal "santones", result.dig("battle", "entries", "lemovicii")
+    assert_nil result.dig("units", "santones", "battleEntry")
+    assert_nil result.dig("units", "lemovicii", "battleEntry")
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: result).act!(
+        action: "retreat",
+        unit_id: "pictones",
+        target: "santones"
+      )
+    end
+    assert_match "enemy units entered Pictones / Namnetes from there", error.message
+  end
+
   test "rejects a requested battle area that is not contested" do
     session = GameSession.create!(data: battle_state)
 

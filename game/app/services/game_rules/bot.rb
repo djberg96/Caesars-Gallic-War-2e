@@ -164,7 +164,14 @@ module GameRules
         "mainOrigin" => origin,
         "entries" => {}
       })
-      units.each { |unit| entry["entries"][unit.fetch("id")] = origin }
+      units.each do |unit|
+        entry["entries"][unit.fetch("id")] = origin
+        unit["battleEntry"] = {
+          "area" => area_id,
+          "attacker" => attacker,
+          "origin" => origin
+        }
+      end
       entry
     end
 
