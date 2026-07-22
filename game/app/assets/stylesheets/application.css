@@ -2324,7 +2324,7 @@ dialog {
 .action-report-row {
   display: grid;
   grid-template-columns: 4.2rem minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 0.65rem;
   padding: 0.5rem 0.6rem;
   border: 1px solid rgba(217, 180, 95, 0.18);
