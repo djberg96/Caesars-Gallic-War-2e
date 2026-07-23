@@ -47,7 +47,9 @@ module GameRules
       return nil unless can_unit_move_this_card?
 
       direct_border = border(@from, @target)
-      return { "force" => false, "steps" => [[@from, @target, direct_border]] } if direct_border
+      if direct_border && border_has_capacity?(@from, @target, direct_border)
+        return { "force" => false, "steps" => [[@from, @target, direct_border]] }
+      end
       return nil if retreat_movement?
       return naval_route if naval_route
 
@@ -62,6 +64,13 @@ module GameRules
       return illegal_area_reason unless legal_area_for_unit?
       return movement_limit_reason unless can_unit_move_this_card?
       return "#{unit_name} cannot retreat more than one area." if retreat_movement?
+
+      direct_border = border(@from, @target)
+      if direct_border && !border_has_capacity?(@from, @target, direct_border)
+        capacity = direct_border.capacity
+        return "No more than #{capacity} unit#{capacity == 1 ? "" : "s"} may cross #{area_name(@from)} to #{area_name(@target)} this movement action."
+      end
+
       return "Roman naval invasions require 1 supply per group." if naval_route_available? && naval_invasion_cost_due? && !supply.positive?
       return "#{unit_name} cannot force march." unless roman_legion?
       return "Roman legions need 1 supply to force march." unless supply.positive?
@@ -113,6 +122,8 @@ module GameRules
         second_border = border(middle.key, @target)
         next unless second_border
         next if second_border.to_area.sea?
+        next unless border_has_capacity?(@from, middle.key, first_border)
+        next unless border_has_capacity?(middle.key, @target, second_border)
 
         return {
           "force" => true,
@@ -122,6 +133,13 @@ module GameRules
       end
 
       nil
+    end
+
+    def border_has_capacity?(from, to, border)
+      capacity = border.capacity
+      return true unless capacity
+
+      movement.fetch("crossings", {}).fetch("#{from}->#{to}", 0).to_i < capacity
     end
 
     def naval_route

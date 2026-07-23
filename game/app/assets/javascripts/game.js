@@ -2442,7 +2442,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function isBorderPixel(red, green, blue) {
     const average = (red + green + blue) / 3;
     const chroma = Math.max(red, green, blue) - Math.min(red, green, blue);
-    return average < 100 || (average < 175 && chroma < 24);
+    const riverBoundary = red > 248 && green > 248 && blue > 248;
+    return riverBoundary || average < 100 || (average < 175 && chroma < 24);
   }
 
   function floodFillHitComponent(start, componentId, labels, queue, width, height) {

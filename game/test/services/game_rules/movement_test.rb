@@ -74,7 +74,9 @@ class GameRules::MovementTest < ActiveSupport::TestCase
   end
 
   test "enforces minor river capacity during a movement action" do
-    session = GameSession.create!(data: base_state)
+    state = base_state
+    state["supply"] = 0
+    session = GameSession.create!(data: state)
 
     move(session, "legion_vii", "helvetii")
     move(session, "legion_viii", "helvetii")
@@ -87,8 +89,30 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal "allobroges", session.reload.data.dig("units", "legion_ix", "location")
   end
 
+  test "force marches around a saturated direct river border when an alternate route is legal" do
+    session = GameSession.create!(data: base_state(target_area: "boii"))
+
+    move(session, "legion_vii", "boii")
+    move(session, "legion_viii", "boii")
+    result = move(session, "legion_ix", "boii")
+
+    assert_equal "boii", result.dig("units", "legion_ix", "location")
+    assert_equal 14, result["supply"]
+    assert_equal 2, result.dig("movement", "units", "legion_ix", "steps")
+    assert result.dig("movement", "units", "legion_ix", "stopped")
+    assert_equal [
+      { "from" => "allobroges", "to" => "transalpine_gaul", "border" => "regular" },
+      { "from" => "transalpine_gaul", "to" => "boii", "border" => "regular" }
+    ], result.dig("movement", "units", "legion_ix", "path")
+    assert_equal 2, result.dig("movement", "crossings", "allobroges->boii")
+    assert_equal 1, result.dig("movement", "crossings", "allobroges->transalpine_gaul")
+    assert_equal 1, result.dig("movement", "crossings", "transalpine_gaul->boii")
+  end
+
   test "allows up to four units over a regular black border" do
-    session = GameSession.create!(data: base_state(target_area: "sequani"))
+    state = base_state(target_area: "sequani")
+    state["supply"] = 0
+    session = GameSession.create!(data: state)
 
     %w[legion_vii legion_viii legion_ix legion_x].each do |unit_id|
       move(session, unit_id, "sequani")
