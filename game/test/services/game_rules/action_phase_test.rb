@@ -336,6 +336,77 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal 0, result.dig("units", "atuatuci", "step")
   end
 
+  test "Roman revolt makes a returning tribe attack Barbarian occupants in its home area" do
+    card = card_hash("event_3_major_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["mandubii"] = barbarian_unit(
+      id: "mandubii",
+      name: "Mandubii",
+      owner: "barbarian",
+      location: "aedui",
+      home: "mandubii",
+      strengths: [3, 2, 1]
+    )
+    state["units"]["senones"] = barbarian_unit(
+      id: "senones",
+      name: "Senones",
+      owner: "barbarian",
+      location: "mandubii",
+      home: "mandubii",
+      strengths: [2, 1]
+    )
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "mandubii")
+
+    assert_equal "roman", result.dig("units", "mandubii", "owner")
+    assert_equal "mandubii", result.dig("units", "mandubii", "location")
+    assert_equal "mandubii", result.dig("battle", "area")
+    assert_equal "roman", result.dig("battle", "attacker")
+    assert_equal ["mandubii"], result.dig("battle", "attackers")
+    assert_equal ["senones"], result.dig("battle", "defenders")
+    assert_match(/Mandubii.*becomes a Roman ally.*attacks Senones/, result["log"].join(" "))
+  end
+
+  test "Roman revolt makes a returning tribe attack Roman occupants as a Barbarian ally" do
+    card = card_hash("event_3_major_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["mandubii"] = barbarian_unit(
+      id: "mandubii",
+      name: "Mandubii",
+      owner: "barbarian",
+      location: "aedui",
+      home: "mandubii",
+      strengths: [3, 2, 1]
+    )
+    state["units"]["legion_viii"] = {
+      "id" => "legion_viii",
+      "name" => "Legion VIII",
+      "type" => "roman",
+      "owner" => "roman",
+      "location" => "mandubii",
+      "home" => "transalpine_gaul",
+      "initiative" => "A",
+      "fire" => 2,
+      "strengths" => [4, 3, 2, 1],
+      "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "mandubii")
+
+    assert_equal "barbarian", result.dig("units", "mandubii", "owner")
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal ["mandubii"], result.dig("battle", "attackers")
+    assert_equal ["legion_viii"], result.dig("battle", "defenders")
+  end
+
   test "roman minor revolt cannot target an eliminated tribe" do
     card = card_hash("event_1_minor_revolt")
     state = base_state.merge(
@@ -495,6 +566,21 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
       "step" => 0
     }
     state
+  end
+
+  def barbarian_unit(id:, name:, owner:, location:, home:, strengths:)
+    {
+      "id" => id,
+      "name" => name,
+      "type" => "barbarian",
+      "owner" => owner,
+      "location" => location,
+      "home" => home,
+      "initiative" => "C",
+      "fire" => 2,
+      "strengths" => strengths,
+      "step" => 0
+    }
   end
 
   def base_state

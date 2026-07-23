@@ -157,7 +157,9 @@ module GameRules
       end
 
       if active_player == "roman"
-        resolve_roman_revolt!(card, unit_id)
+        battle_state = resolve_roman_revolt!(card, unit_id)
+        return battle_state if battle_state
+
         return persist!
       end
 
@@ -196,16 +198,27 @@ module GameRules
       raise InvalidAction, "Unknown tribe #{unit_id}." unless target
       raise InvalidAction, "#{target.fetch("name")} is not an active Barbarian-controlled tribe." unless roman_revolt_target?(target)
 
+      event_label = card.fetch("title") == "Minor Revolt" ? "Minor Revolt" : "#{card.fetch("title")} (treated as Minor Revolt)"
       home = target.fetch("home")
-      home_units = units.values.select { |unit| unit["location"] == home && unit["id"] != unit_id }
+      home_units = units.values.select do |unit|
+        unit["location"] == home &&
+          unit["id"] != unit_id &&
+          unit["owner"].in?(["roman", "barbarian"]) &&
+          current_strength(unit).positive?
+      end
       target["location"] = home
       if home_units.empty?
         target["owner"] = "neutral"
         target["step"] = 0
-        log("#{card.fetch("title")}: #{target.fetch("name")} returns home to #{area_name(home)} and becomes neutral at full strength.")
+        log("#{event_label}: #{target.fetch("name")} returns home to #{area_name(home)} and becomes neutral at full strength.")
+        nil
       else
-        target["owner"] = "barbarian"
-        log("#{card.fetch("title")}: #{target.fetch("name")} returns home to #{area_name(home)} at current strength.")
+        occupying_owner = home_units.first.fetch("owner")
+        returning_owner = occupying_owner == "roman" ? "barbarian" : "roman"
+        target["owner"] = returning_owner
+        defenders = home_units.select { |unit| unit["owner"] == occupying_owner }.map { |unit| unit.fetch("name") }
+        log("#{event_label}: #{target.fetch("name")} returns home to #{area_name(home)}, becomes a #{player_name(returning_owner)} ally, and attacks #{defenders.to_sentence}.")
+        GameRules::Battle.new(session: @session, state: @state, attacker: returning_owner).resolve!(area_id: home)
       end
     end
 

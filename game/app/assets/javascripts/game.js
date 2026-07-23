@@ -853,7 +853,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (action === "event") {
       const eventTarget = await chooseEventTarget(card);
       if (eventTarget === false) return;
-      if (await performCardAction("event_action", eventTarget)) await discardSelectedCard();
+      if (await performCardAction("event_action", eventTarget) && !state.battle) await discardSelectedCard();
     } else {
       await startMovement();
     }
