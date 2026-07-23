@@ -201,7 +201,6 @@ module GameRules
     end
 
     def resolve_event(card)
-      @state["massiveRevoltPlayed"] = true if card.fetch("title") == "Massive Revolt"
       if card.fetch("title") == "Baggage Train"
         return if bot_move_from("germania")
 
@@ -230,6 +229,7 @@ module GameRules
         if vercingetorix
           vercingetorix["location"] = targets.first
           vercingetorix["owner"] = "barbarian"
+          @state["massiveRevoltPlayed"] = true
           log("Vercingetorix enters at #{area_name(targets.first)}.")
         end
       end

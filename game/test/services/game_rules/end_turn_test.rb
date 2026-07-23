@@ -325,11 +325,12 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_match "Eliminated Roman Legions Return: Legion Vii", result["log"].join(" ")
   end
 
-  test "Massive Revolt adds legions V and VI and permits two builds" do
+  test "Massive Revolt resolved as Massive adds legions V and VI and permits two builds" do
     state = base_state
     state["supply"] = 10
     state["massiveRevoltPlayed"] = true
     state["romanForcePool"] = []
+    state["units"]["vercingetorix"] = unit("vercingetorix", "leader", "barbarian", "arverni", "arverni")
     %w[legion_v legion_vi].each do |unit_id|
       state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
         .merge("strengths" => [4, 3, 2, 1])
@@ -348,6 +349,25 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     ).end_turn!
     assert_equal "roman_off_map", result.dig("units", "legion_v", "location")
     assert_equal "roman_off_map", result.dig("units", "legion_vi", "location")
+  end
+
+  test "Massive Revolt treated as a lesser revolt does not unlock legions V and VI" do
+    state = base_state
+    state["massiveRevoltPlayed"] = true
+    state["romanForcePool"] = ["legion_i"]
+    state["units"]["vercingetorix"] = unit("vercingetorix", "leader", "neutral", "offboard", "offboard")
+    state["units"]["legion_i"] = unit("legion_i", "roman", "roman", "offboard", "offboard")
+      .merge("strengths" => [4, 3, 2, 1])
+    %w[legion_v legion_vi].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    session = GameSession.create!(data: state)
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    reinforcements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+
+    assert_equal 1, reinforcements.dig("endTurn", "reinforcementLimit")
+    assert_equal ["legion_i"], reinforcements.dig("endTurn", "reinforcementOptions").map { |option| option["id"] }
   end
 
   private

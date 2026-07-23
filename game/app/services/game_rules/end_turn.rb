@@ -463,7 +463,7 @@ module GameRules
       @state["romanForcePool"] ||= INITIAL_FORCE_POOL.select do |unit_id|
         units[unit_id]&.fetch("location", nil) == "offboard"
       end
-      return unless @state["massiveRevoltPlayed"]
+      return unless massive_revolt_reinforcements_unlocked?
 
       MASSIVE_REVOLT_REINFORCEMENTS.each do |unit_id|
         next unless units[unit_id]&.fetch("location", nil) == "offboard"
@@ -486,7 +486,13 @@ module GameRules
     end
 
     def reinforcement_limit
-      @state["massiveRevoltPlayed"] ? 2 : 1
+      massive_revolt_reinforcements_unlocked? ? 2 : 1
+    end
+
+    def massive_revolt_reinforcements_unlocked?
+      return false unless @state["massiveRevoltPlayed"]
+
+      units.dig("vercingetorix", "location").present? && units.dig("vercingetorix", "location") != "offboard"
     end
 
     def apply_roman_reinforcements!(choices)

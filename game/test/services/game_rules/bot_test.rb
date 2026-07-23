@@ -337,8 +337,30 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "allobroges", result.dig("units", "allobroges", "location")
     assert_equal "barbarian", result.dig("units", "boii", "owner")
     assert_equal "offboard", result.dig("units", "vercingetorix", "location")
+    assert_not result["massiveRevoltPlayed"]
     assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Major Revolt."
     assert_match(/Bot revolt areas: Allobroges, Boii/, result["log"].join(" "))
+  end
+
+  test "Massive Revolt unlocks legions V and VI only when resolved as Massive" do
+    state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
+    state["turn"] = 5
+    state["units"]["vercingetorix"] = {
+      "id" => "vercingetorix",
+      "name" => "Vercingetorix",
+      "type" => "leader",
+      "owner" => "neutral",
+      "location" => "offboard",
+      "home" => "offboard",
+      "step" => 0,
+      "strengths" => [4]
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, target: "allobroges").draw!
+
+    assert result["massiveRevoltPlayed"]
+    assert_equal "allobroges", result.dig("units", "vercingetorix", "location")
   end
 
   private

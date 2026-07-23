@@ -1449,6 +1449,45 @@ h3 {
   text-transform: uppercase;
 }
 
+.battle-roll-toast {
+  position: fixed;
+  z-index: 20;
+  top: 5.1rem;
+  left: 50%;
+  min-width: min(23rem, 76vw);
+  padding: 0.7rem 1.1rem;
+  border: 1px solid rgba(203, 196, 171, 0.55);
+  border-radius: 999px;
+  background: rgba(54, 61, 52, 0.96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48);
+  color: #f2ead7;
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -0.55rem) scale(0.97);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.battle-roll-toast[hidden] {
+  display: none;
+}
+
+.battle-roll-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.battle-roll-toast.is-hit {
+  border-color: rgba(238, 193, 79, 0.88);
+  background: linear-gradient(135deg, rgba(111, 65, 42, 0.98), rgba(82, 48, 33, 0.98));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 22px rgba(238, 193, 79, 0.2);
+  color: #fff0bd;
+}
+
 .battle-summary {
   display: grid;
   gap: 0.25rem;

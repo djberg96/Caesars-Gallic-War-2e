@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleHand: document.querySelector("#toggle-hand"),
     cardZoom: document.querySelector("#card-zoom"),
     battleDialog: document.querySelector("#battle-dialog"),
+    battleRollToast: document.querySelector("#battle-roll-toast"),
     battleRoundHeader: document.querySelector("#battle-round-header"),
     battleSummary: document.querySelector("#battle-summary"),
     battleZones: document.querySelector("#battle-zones"),
@@ -91,6 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let sidePanelCollapsed = false;
   let zoomedCardId = null;
   let resultDialogQueue = [];
+  let botRollReview = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
@@ -1278,6 +1280,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showBotActionDialog(previousLog, nextLog) {
+    // An active battle presents its own log and roll feedback. Opening the
+    // accumulated action report over it obscures the units and duplicates the
+    // combat information.
+    if (state.mode === "solitaire" && state.battle) return;
+
     const previousHead = previousLog[0];
     const firstOldIndex = previousHead ? nextLog.indexOf(previousHead) : -1;
     const entries = firstOldIndex >= 0 ? nextLog.slice(0, firstOldIndex) : nextLog.slice(0, 5);
@@ -3010,6 +3017,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!els.battleDialog) return;
     const battle = state.battle;
     if (!battle) {
+      resetBotRollReview();
       if (els.battleDialog.open) els.battleDialog.close();
       if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
       if (els.battleDetails) els.battleDetails.replaceChildren();
@@ -3071,6 +3079,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     wireBattleUnitButtons(battle);
     wireBattleActionButtons();
+    reviewSolitaireBotRoll(battle);
 
     els.battleActions.innerHTML = "";
     if (battle.phase === "regroup") {
@@ -3107,6 +3116,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (battle.awaitingRollAcknowledgement) {
       const firingUnit = state.units[battle.awaitingRollAcknowledgement];
+      if (solitaireBotRoll(battle, battle.awaitingRollAcknowledgement)) {
+        return `${firingUnit?.name || "The Barbarian unit"}'s fire result is being resolved.`;
+      }
       return `Review ${firingUnit?.name || "the unit"}'s fire result, then click OK.`;
     }
     if (activeUnit) return `${activeUnit.name} is acting.`;
@@ -3389,6 +3401,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const active = unitId === battle.activeUnit;
     const hitTarget = (battle.pendingHits?.targetIds || []).includes(unitId);
     const awaitingRoll = battle.awaitingRollAcknowledgement === unitId;
+    const manualRollReview = awaitingRoll && !solitaireBotRoll(battle, unitId);
     const canAct = battle.phase === "field" && active && !battle.pendingHits && !battle.awaitingRollAcknowledgement;
     const phaseSelectable = (
       (battle.phase === "regroup" && unit.owner === battle.winner) ||
@@ -3400,7 +3413,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const rollDice = battleUnitRollDice(unitId, battle, unit);
     const halfHit = battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
-    const status = hitTarget ? "Choose for hit" : awaitingRoll ? "Roll result" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const status = hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -3411,7 +3424,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${awaitingRoll ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${manualRollReview ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
           <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
             ${unitCounterMarkup(unit)}
@@ -3435,6 +3448,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function battleUnitRollDice(unitId, battle, unit) {
     if (battle.awaitingRollAcknowledgement !== unitId) return "";
+    if (solitaireBotRoll(battle, unitId)) return "";
 
     const result = [...(battle.actionResults || [])].reverse().find((action) => (
       action.type === "fire" &&
@@ -3464,6 +3478,74 @@ document.addEventListener("DOMContentLoaded", () => {
         ${acknowledgement}
       </div>
     `;
+  }
+
+  function solitaireBotRoll(battle, unitId) {
+    return state.mode === "solitaire" && state.units[unitId]?.owner === "barbarian";
+  }
+
+  function reviewSolitaireBotRoll(battle) {
+    const unitId = battle.awaitingRollAcknowledgement;
+    if (!unitId || !solitaireBotRoll(battle, unitId)) {
+      resetBotRollReview();
+      return;
+    }
+
+    const result = [...(battle.actionResults || [])].reverse().find((action) => (
+      action.type === "fire" &&
+      action.unitId === unitId &&
+      Number(action.round || battle.round) === Number(battle.round)
+    ));
+    if (!result) return;
+
+    const key = [battle.area, battle.round, unitId, (result.rolls || []).join(",")].join(":");
+    if (botRollReview?.key !== key) {
+      resetBotRollReview();
+      const hits = Number(result.hits || 0);
+      botRollReview = { key, unitId, shownAt: Date.now(), acknowledgementTimer: null, hideTimer: null };
+      if (els.battleRollToast) {
+        els.battleRollToast.textContent = hits
+          ? `${result.unitName} scored ${hits} hit${hits === 1 ? "" : "s"}`
+          : `${result.unitName} scored no hits`;
+        els.battleRollToast.classList.toggle("is-hit", hits > 0);
+        els.battleRollToast.hidden = false;
+        window.requestAnimationFrame(() => els.battleRollToast.classList.add("is-visible"));
+        botRollReview.hideTimer = window.setTimeout(hideBotRollToast, 1650);
+      }
+    }
+
+    // A Roman player may still need to choose which equal-strength unit takes
+    // a hit. Preserve that choice, then acknowledge the Barbarian roll without
+    // requiring an additional OK click.
+    if (battle.pendingHits || botRollReview.acknowledgementTimer) return;
+
+    const elapsed = Date.now() - botRollReview.shownAt;
+    const delay = Math.max(0, 1650 - elapsed);
+    botRollReview.acknowledgementTimer = window.setTimeout(async () => {
+      const currentUnitId = state.battle?.awaitingRollAcknowledgement;
+      botRollReview.acknowledgementTimer = null;
+      if (currentUnitId !== unitId || state.battle?.pendingHits) return;
+      await battleAction("acknowledge_roll", unitId);
+    }, delay);
+  }
+
+  function hideBotRollToast() {
+    if (!els.battleRollToast) return;
+    els.battleRollToast.classList.remove("is-visible");
+    window.setTimeout(() => {
+      if (els.battleRollToast.classList.contains("is-visible")) return;
+      els.battleRollToast.hidden = true;
+    }, 180);
+  }
+
+  function resetBotRollReview() {
+    if (botRollReview?.acknowledgementTimer) window.clearTimeout(botRollReview.acknowledgementTimer);
+    if (botRollReview?.hideTimer) window.clearTimeout(botRollReview.hideTimer);
+    botRollReview = null;
+    if (!els.battleRollToast) return;
+    els.battleRollToast.hidden = true;
+    els.battleRollToast.classList.remove("is-visible", "is-hit");
+    els.battleRollToast.textContent = "";
   }
 
   function battleLastActionText(action) {

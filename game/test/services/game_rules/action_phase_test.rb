@@ -398,6 +398,7 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal 0, result.dig("units", "allobroges", "step")
     assert_equal "allobroges", result.dig("units", "vercingetorix", "location")
     assert_equal "barbarian", result.dig("units", "vercingetorix", "owner")
+    assert result["massiveRevoltPlayed"]
     assert_match "Massive Revolt resolved", result["log"].first
   end
 
@@ -437,8 +438,31 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
 
     assert_equal "barbarian", result.dig("units", "allobroges", "owner")
     assert_equal "offboard", result.dig("units", "vercingetorix", "location")
+    assert_not result["massiveRevoltPlayed"]
     assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Minor Revolt."
     assert_match(/Minor Revolt resolved/, result["log"].first)
+  end
+
+  test "Roman Massive Revolt event does not unlock legions V and VI" do
+    card = card_hash("event_4_massive_revolt")
+    state = base_state.merge(
+      "selectedCard" => card,
+      "hands" => { "roman" => [card], "barbarian" => [] }
+    )
+    state["units"]["atuatuci"] = {
+      "id" => "atuatuci",
+      "name" => "Atuatuci",
+      "type" => "barbarian",
+      "owner" => "barbarian",
+      "location" => "atuatuci",
+      "home" => "atuatuci",
+      "step" => 1
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).event!(unit_id: "atuatuci")
+
+    assert_not result["massiveRevoltPlayed"]
   end
 
   private
