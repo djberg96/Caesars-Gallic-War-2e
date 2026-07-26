@@ -933,13 +933,23 @@ document.addEventListener("DOMContentLoaded", () => {
     state.targetingAction = "political";
     state.selectedUnit = null;
     state.selectedArea = null;
-    els.selection.textContent = "Select a political action target.";
+    els.selection.textContent = `${playerName(state.active)}-controlled tribes are highlighted. Select a political action target.`;
     els.areaDetail.textContent = "Blocks are hidden while choosing.";
     log("Political action: select a target area.");
   }
 
   function targetingPoliticalAction() {
     return state.targetingAction === "political";
+  }
+
+  function activePlayerControlsPoliticalArea(areaId) {
+    return Object.values(state.units).some((unit) =>
+      unit.type === "barbarian" &&
+      unit.home === areaId &&
+      unit.owner === state.active &&
+      !["eliminated", "offboard"].includes(unit.location) &&
+      currentStrength(unit) > 0
+    );
   }
 
   async function resolvePoliticalTarget(areaId) {
@@ -2141,6 +2151,14 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
       marker.classList.toggle("is-targeting", targetingPoliticalAction());
       marker.classList.toggle(
+        "is-politically-controlled",
+        targetingPoliticalAction() && activePlayerControlsPoliticalArea(area.id)
+      );
+      marker.classList.toggle(
+        `owner-${state.active}`,
+        targetingPoliticalAction() && activePlayerControlsPoliticalArea(area.id)
+      );
+      marker.classList.toggle(
         "is-targeting-disabled",
         targetingPoliticalAction() && state.active === "roman" && Boolean(romanSpecialTargetBlockReason(area.id, "political action"))
       );
@@ -2172,7 +2190,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!style) continue;
 
       const edge = territoryPixelIsEdge(territoryLabels, canvas.width, canvas.height, index, territoryIndex);
-      const color = edge ? style.edge : style.fill;
+      const x = index % canvas.width;
+      const y = Math.floor(index / canvas.width);
+      const stripe = style.stripe && ((x - y + canvas.height) % 22 < 6);
+      const color = edge ? style.edge : (stripe ? style.stripe : style.fill);
       const pixelIndex = index * 4;
       pixels[pixelIndex] = color[0];
       pixels[pixelIndex + 1] = color[1];
@@ -2213,6 +2234,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (blocked) {
       return { name: "disabled", fill: [104, 102, 94, 28], edge: [142, 138, 126, 125] };
+    }
+    if (targeting && activePlayerControlsPoliticalArea(area.id)) {
+      return state.active === "roman"
+        ? {
+            name: "political-control-roman",
+            fill: [217, 107, 85, 74],
+            stripe: [137, 42, 32, 128],
+            edge: [255, 151, 120, 245]
+          }
+        : {
+            name: "political-control-barbarian",
+            fill: [118, 168, 110, 74],
+            stripe: [42, 91, 43, 128],
+            edge: [170, 230, 157, 245]
+          };
     }
     if (targeting) {
       return { name: "targeting", fill: [255, 230, 140, 34], edge: [255, 230, 140, 160] };

@@ -497,6 +497,18 @@ h3 {
   stroke: rgba(255, 230, 140, 0.9);
 }
 
+.area-hotspot.is-politically-controlled.owner-roman {
+  fill: rgba(217, 107, 85, 0.46);
+  stroke: rgba(244, 143, 113, 0.95);
+  stroke-width: 0.55;
+}
+
+.area-hotspot.is-politically-controlled.owner-barbarian {
+  fill: rgba(118, 168, 110, 0.46);
+  stroke: rgba(159, 213, 147, 0.95);
+  stroke-width: 0.55;
+}
+
 .area-hotspot.is-targeting-disabled {
   fill: rgba(95, 93, 85, 0.14);
   stroke: rgba(130, 126, 115, 0.52);
