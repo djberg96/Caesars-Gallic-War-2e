@@ -80,7 +80,14 @@ document.addEventListener("DOMContentLoaded", () => {
     turnDialogStatus: document.querySelector("#turn-dialog-status"),
     turnDialogVp: document.querySelector("#turn-dialog-vp"),
     turnDialogSupply: document.querySelector("#turn-dialog-supply"),
-    acknowledgeTurn: document.querySelector("#acknowledge-turn")
+    acknowledgeTurn: document.querySelector("#acknowledge-turn"),
+    botActionReviewDialog: document.querySelector("#bot-action-review-dialog"),
+    botActionReviewCard: document.querySelector("#bot-action-review-card"),
+    botActionReviewKicker: document.querySelector("#bot-action-review-kicker"),
+    botActionReviewTitle: document.querySelector("#bot-action-review-title"),
+    botActionReviewMessage: document.querySelector("#bot-action-review-message"),
+    botActionReviewDetails: document.querySelector("#bot-action-review-details"),
+    advanceBotActionReview: document.querySelector("#advance-bot-action-review")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -99,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let sidePanelCollapsed = false;
   let zoomedCardId = null;
   let resultDialogQueue = [];
+  let botActionReview = null;
   let botRollReview = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
@@ -1024,6 +1032,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function showNextResultDialog() {
     if (!resultDialogQueue.length) {
       showTurnAnnouncement();
+      showBotActionReview();
       return;
     }
     displayResultDialog(resultDialogQueue.shift());
@@ -1324,29 +1333,164 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
-      showBotActionDialog(previousLog, state.log || []);
+      beginBotActionReview(previousLog, state.log || []);
     } catch (error) {
       log(error.message);
     }
     render();
   }
 
-  function showBotActionDialog(previousLog, nextLog) {
-    // An active battle presents its own log and roll feedback. Opening the
-    // accumulated action report over it obscures the units and duplicates the
-    // combat information.
-    if (state.mode === "solitaire" && state.battle) return;
-
+  function beginBotActionReview(previousLog, nextLog) {
     const previousHead = previousLog[0];
     const firstOldIndex = previousHead ? nextLog.indexOf(previousHead) : -1;
     const entries = firstOldIndex >= 0 ? nextLog.slice(0, firstOldIndex) : nextLog.slice(0, 5);
     const revealedCard = entries.find((entry) => entry.startsWith("Bot reveals "))?.replace(/^Bot reveals /, "").replace(/\.$/, "");
-    const actionEntries = entries.filter((entry) => !entry.startsWith("Bot reveals "));
-    const summaries = actionEntries.reverse().map((entry) => botActionSummary(entry, revealedCard));
-    const title = summaries[0]?.title || "Barbarian Action";
-    const message = summaries.map((summary) => summary.message).join("\n") || "Barbarian takes no action.";
-    const reportGroups = botActionReportGroups(summaries.map((summary) => summary.message));
-    showResultDialog(title, message, { reportGroups });
+    const card = [...(state.discard || [])].reverse().find((candidate) => candidate.title === revealedCard);
+    const actionEntries = entries
+      .filter((entry) => !entry.startsWith("Bot reveals "))
+      .reverse()
+      .map((entry) => botActionSummary(entry, revealedCard).message);
+    const movementMessages = actionEntries.filter((entry) => botReportEntryKind(entry).key === "movement");
+    const battleMessages = actionEntries.filter((entry) =>
+      /^Battle board opened for /.test(entry) || botReportEntryKind(entry).battleDetail
+    );
+    const actionMessages = actionEntries.filter((entry) =>
+      !movementMessages.includes(entry) && !battleMessages.includes(entry)
+    );
+    const actionLabel = botActionReviewLabel(card, actionEntries);
+    const movementRoutes = movementMessages.map(botMovementRoute).filter(Boolean);
+    const stages = [
+      {
+        kind: "card",
+        kicker: "Barbarian Reveals",
+        title: revealedCard || "Unknown Card",
+        message: card ? `AP ${card.ap} card drawn from the Barbarian deck.` : "A card is drawn from the Barbarian deck.",
+        details: []
+      },
+      {
+        kind: "action",
+        kicker: "Barbarian Action",
+        title: `Played for ${actionLabel}`,
+        message: `${revealedCard || "The card"} is resolved as ${indefiniteArticle(actionLabel)} ${actionLabel.toLowerCase()}.`,
+        details: actionMessages
+      }
+    ];
+    if (movementMessages.length) {
+      stages.push({
+        kind: "movement",
+        kicker: "Barbarian Movement",
+        title: "Units Move",
+        message: "The Barbarian units have moved on the map.",
+        details: movementMessages
+      });
+    }
+
+    botActionReview = {
+      card,
+      stages,
+      stageIndex: 0,
+      movementRoutes,
+      battlePending: Boolean(state.battle),
+      movementFocused: false
+    };
+  }
+
+  function botActionReviewLabel(card, messages) {
+    if (card?.type === "event") return "Event";
+    if (messages.some((message) => /political action/i.test(message))) return "Political Action";
+    if (messages.some((message) => botReportEntryKind(message).key === "movement")) return "Movement";
+    if (messages.some((message) => ["activation", "control"].includes(botReportEntryKind(message).key))) {
+      return "Neutral Tribe Activation";
+    }
+    return "Action";
+  }
+
+  function indefiniteArticle(label) {
+    return /^[aeiou]/i.test(label) ? "an" : "a";
+  }
+
+  function areaIdForName(name) {
+    return Object.keys(areas).find((areaId) => areaName(areaId) === name.trim());
+  }
+
+  function botMovementRoute(message) {
+    const match = message.match(/^Barbarian moves (.+) from (.+) to (.+)\.$/);
+    if (!match) return null;
+
+    const from = areaIdForName(match[2]);
+    const to = areaIdForName(match[3]);
+    if (!from || !to) return null;
+    const battleEntries = Object.entries(state.battle?.entries || {});
+    const count = battleEntries.filter(([unitId, origin]) =>
+      origin === from && state.units[unitId]?.location === to && state.units[unitId]?.owner === "barbarian"
+    ).length || match[1].split(", ").length;
+    return { owner: "barbarian", from, to, count };
+  }
+
+  function currentBotActionReviewStage() {
+    return botActionReview?.stages?.[botActionReview.stageIndex] || null;
+  }
+
+  function showBotActionReview() {
+    const stage = currentBotActionReviewStage();
+    if (!stage || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
+    if (document.querySelector("dialog[open]")) return;
+
+    const image = botActionReview.card ? cardImage(botActionReview.card) : null;
+    els.botActionReviewDialog.classList.toggle("is-movement-review", stage.kind === "movement");
+    els.botActionReviewCard.hidden = !image || stage.kind === "movement";
+    if (image) {
+      els.botActionReviewCard.src = image;
+      els.botActionReviewCard.alt = `${botActionReview.card.title} card`;
+    }
+    els.botActionReviewKicker.textContent = stage.kicker;
+    els.botActionReviewTitle.textContent = stage.title;
+    els.botActionReviewMessage.textContent = stage.message;
+    els.botActionReviewDetails.replaceChildren(...stage.details.map((detail) => {
+      const item = document.createElement("li");
+      item.textContent = detail;
+      return item;
+    }));
+
+    const finalStage = botActionReview.stageIndex >= botActionReview.stages.length - 1;
+    const nextStage = botActionReview.stages[botActionReview.stageIndex + 1];
+    els.advanceBotActionReview.textContent = nextStage?.kind === "movement"
+      ? "Show Movement"
+      : finalStage && botActionReview.battlePending
+        ? "Continue to Battle"
+        : finalStage
+          ? "OK"
+          : "Continue";
+    els.botActionReviewDialog.showModal();
+
+    if (stage.kind === "movement" && !botActionReview.movementFocused) {
+      botActionReview.movementFocused = true;
+      focusBoardArea(botActionReview.movementRoutes.at(-1)?.to);
+    }
+  }
+
+  function advanceBotActionReview() {
+    if (!botActionReview) return;
+    if (els.botActionReviewDialog.open) els.botActionReviewDialog.close();
+
+    if (botActionReview.stageIndex < botActionReview.stages.length - 1) {
+      botActionReview.stageIndex += 1;
+      render();
+      return;
+    }
+
+    botActionReview = null;
+    render();
+  }
+
+  function focusBoardArea(areaId) {
+    const area = areas[areaId];
+    if (!area || !els.board || !els.boardStage) return;
+
+    window.requestAnimationFrame(() => {
+      els.board.scrollLeft = Math.max(0, els.boardStage.offsetLeft + ((area.x / 100) * els.boardStage.offsetWidth) - (els.board.clientWidth / 2));
+      els.board.scrollTop = Math.max(0, els.boardStage.offsetTop + ((area.y / 100) * els.boardStage.offsetHeight) - (els.board.clientHeight / 2));
+    });
   }
 
   function botActionReportGroups(messages) {
@@ -1845,6 +1989,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     renderCommittedCards();
     showTurnAnnouncement();
+    showBotActionReview();
   }
 
   function renderStatus() {
@@ -2029,9 +2174,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMovementArrows() {
     if (!els.movementArrowLayer) return;
     els.movementArrowLayer.innerHTML = "";
-    if (!state.movement || piecesHidden) return;
+    const reviewingBotMovement = currentBotActionReviewStage()?.kind === "movement";
+    if ((!state.movement && !reviewingBotMovement) || piecesHidden) return;
 
-    const routes = battleEntryRoutes();
+    const routes = reviewingBotMovement ? botActionReview.movementRoutes : battleEntryRoutes();
     if (!routes.length) return;
 
     const definitions = document.createElementNS("http://www.w3.org/2000/svg", "defs");
@@ -3076,6 +3222,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
       if (els.battleDetails) els.battleDetails.replaceChildren();
       state.regroupUnit = null;
+      return;
+    }
+    if (botActionReview?.battlePending) {
+      if (els.battleDialog.open) els.battleDialog.close();
       return;
     }
     if (battleMapMode()) {
@@ -4134,6 +4284,8 @@ document.addEventListener("DOMContentLoaded", () => {
   els.resultDialog?.addEventListener("close", showNextResultDialog);
   els.turnDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.turnDialogForm?.addEventListener("submit", acknowledgeTurnAnnouncement);
+  els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
+  els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
   });

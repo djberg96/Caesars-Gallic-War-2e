@@ -47,6 +47,12 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#turn-dialog-supply", text: "15"
     end
     assert_select "#turn-dialog #acknowledge-turn", text: "OK"
+    assert_select "#bot-action-review-dialog" do
+      assert_select "#bot-action-review-card"
+      assert_select "#bot-action-review-title"
+      assert_select "#bot-action-review-details"
+      assert_select "#advance-bot-action-review", text: "Continue"
+    end
     assert_select "#battle-dialog #battle-zones + #battle-details"
     assert_select "dialog#winter-quarters-dialog", count: 0
     assert_select "form#winter-quarters-form.winter-quarters-panel[hidden]" do
