@@ -1996,7 +1996,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#mode-label").textContent = modeName();
     document.querySelector("#play-mode").value = state.mode;
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
-    document.querySelector("#phase-label").textContent = state.phase;
+    document.querySelector("#phase-label").textContent = phaseStatusLabel();
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = state.supply;
     document.querySelector("#vp-label").textContent = state.vp;
@@ -2014,6 +2014,18 @@ document.addEventListener("DOMContentLoaded", () => {
       els.finishRegroup.hidden = !battleMapMode();
       els.finishRegroup.textContent = state.retreating ? "Retreat Complete" : "Finished Regroup";
     }
+  }
+
+  function phaseStatusLabel() {
+    if (state.phase !== "Card Phase") return state.phase;
+
+    const romanCards = state.hands?.roman?.length || 0;
+    const cardsRemaining = state.mode === "hotseat"
+      ? Math.max(romanCards, state.hands?.barbarian?.length || 0)
+      : romanCards;
+    const cardPlay = Math.min(5, Math.max(1, 6 - cardsRemaining));
+
+    return `${state.phase} / ${cardPlay}`;
   }
 
   function renderYearlyObjectives() {
