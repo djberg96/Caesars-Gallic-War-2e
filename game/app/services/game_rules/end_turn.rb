@@ -4,11 +4,11 @@ module GameRules
 
     YEARS = 8
 
-    END_TURN_PHASES = %w[romanWintering romanReplacements romanReinforcements].freeze
+    END_TURN_PHASES = %w[romanWintering romanReplacements romanSupplyProduction romanReinforcements].freeze
     INITIAL_FORCE_POOL = %w[legion_i legion_xiii legion_xiv legion_xv].freeze
     MASSIVE_REVOLT_REINFORCEMENTS = %w[legion_v legion_vi].freeze
 
-    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil, replacement_steps: nil, reinforcement_builds: nil)
+    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil, replacement_steps: nil, supply_production_acknowledged: false, reinforcement_builds: nil)
       @session = session
       @state = state.deep_dup
       @harvest_roll = harvest_roll&.to_i
@@ -16,6 +16,7 @@ module GameRules
       @wintering_unit_ids = Array(wintering_unit_ids).map(&:to_s).uniq
       @replacements_submitted = !replacement_steps.nil?
       @replacement_steps = normalize_numeric_choices(replacement_steps)
+      @supply_production_acknowledged = ActiveModel::Type::Boolean.new.cast(supply_production_acknowledged)
       @reinforcements_submitted = !reinforcement_builds.nil?
       @reinforcement_builds = normalize_numeric_choices(reinforcement_builds)
     end
@@ -68,7 +69,10 @@ module GameRules
         raise InvalidAction, "Choose Roman replacement steps or continue without replacements." unless @replacements_submitted
 
         apply_roman_replacements!(@replacement_steps)
-        apply_roman_supply_production!
+        begin_roman_supply_production!
+      when "romanSupplyProduction"
+        raise InvalidAction, "Acknowledge Roman supply production before continuing." unless @supply_production_acknowledged
+
         begin_roman_reinforcements!
       when "romanReinforcements"
         raise InvalidAction, "Choose Roman reinforcements or continue without building a legion." unless @reinforcements_submitted
@@ -99,13 +103,21 @@ module GameRules
       options = roman_replacement_options
       if options.empty?
         log("Roman Replacements and Reorganization: no damaged legions are eligible.")
-        apply_roman_supply_production!
-        return begin_roman_reinforcements!
+        return begin_roman_supply_production!
       end
 
       @state["endTurn"] = @state.fetch("endTurn", {}).merge(
         "phase" => "romanReplacements",
         "replacementOptions" => options
+      )
+      persist!
+    end
+
+    def begin_roman_supply_production!
+      summary = apply_roman_supply_production!
+      @state["endTurn"] = @state.fetch("endTurn", {}).merge(
+        "phase" => "romanSupplyProduction",
+        "supplyProduction" => summary
       )
       persist!
     end
@@ -428,6 +440,14 @@ module GameRules
       source_text = sources.map { |name, amount| "#{name} +#{amount}" }.join(", ")
       cap_text = gained < produced ? " (limited by the 19-supply maximum)" : ""
       log("Roman Supply Production: #{source_text}; supply #{before} to #{@state.fetch("supply")}#{cap_text}.")
+      {
+        "sources" => sources.map { |name, amount| { "name" => name, "amount" => amount } },
+        "before" => before,
+        "produced" => produced,
+        "gained" => gained,
+        "after" => @state.fetch("supply"),
+        "capped" => gained < produced
+      }
     end
 
     def roman_controls_area?(area)

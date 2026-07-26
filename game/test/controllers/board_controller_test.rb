@@ -21,14 +21,25 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".board-toolbar #deal-cards", count: 0
     assert_select ".board-toolbar #save-game", count: 0
     assert_select ".board-toolbar #load-game", count: 0
-    assert_select ".board-toolbar #import-game", text: "Load"
-    assert_select ".board-toolbar #export-game", text: "Save"
+    assert_select ".board-toolbar details#game-menu.toolbar-game-menu" do
+      assert_select "summary", text: "Game"
+      assert_select ".toolbar-game-menu-items #new-game", text: "New Game"
+      assert_select ".toolbar-game-menu-items #import-game", text: "Load"
+      assert_select ".toolbar-game-menu-items #export-game", text: "Save"
+    end
+    assert_select ".board-toolbar #yearly-objectives-toggle" do
+      assert_select "input#yearly-objectives[type='checkbox']"
+    end
     assert_select ".board-toolbar #map-zoom" do
       assert_select "option", text: "50%"
       assert_select "option", text: "75%"
       assert_select "option[selected]", text: "100%"
       assert_select "option", text: "125%"
       assert_select "option", text: "150%"
+    end
+    assert_select ".board-toolbar #bot-movement-review[hidden]" do
+      assert_select "#bot-movement-review-routes"
+      assert_select "#continue-bot-movement-review", text: "Continue to Battle"
     end
     assert_select "#board > #board-stage > #board-canvas" do
       assert_select "img[alt=?]", "Caesar's Gallic War map"

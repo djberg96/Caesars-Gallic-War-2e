@@ -17,7 +17,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal 3, pending.dig("endTurn", "garrisonLimit")
     assert_equal "allobroges", pending.dig("units", "legion_vii", "location")
 
-    result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: []).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: []).end_turn!
+    result = acknowledge_supply(session, supply_production)
 
     assert_equal 1, result["turn"]
     assert result["turnAnnouncementPending"]
@@ -113,7 +114,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     state["units"]["legion_vii"]["location"] = "transalpine_gaul"
     session = GameSession.create!(data: state)
 
-    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    result = acknowledge_supply(session, supply_production)
 
     assert_equal 7, result["turn"]
     assert_equal "Card Phase", result["phase"]
@@ -133,7 +135,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     session = GameSession.create!(data: state)
 
     pending = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
-    result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: ["legion_vii"]).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: ["legion_vii"]).end_turn!
+    result = acknowledge_supply(session, supply_production)
 
     assert_equal 3, result["vp"]
     assert_equal "helvetii", result.dig("units", "legion_vii", "location")
@@ -248,11 +251,22 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "romanReplacements", replacements.dig("endTurn", "phase")
     assert_equal 2, replacements.dig("endTurn", "replacementOptions", 0, "maximumSteps")
 
-    reinforcements = GameRules::EndTurn.new(
+    supply_production = GameRules::EndTurn.new(
       session: session,
       state: replacements,
       replacement_steps: { "legion_vii" => 2 }
     ).end_turn!
+
+    assert_equal "romanSupplyProduction", supply_production.dig("endTurn", "phase")
+    assert_equal(
+      [{ "name" => "Transalpine Gaul", "amount" => 2 }],
+      supply_production.dig("endTurn", "supplyProduction", "sources")
+    )
+    assert_equal 4, supply_production.dig("endTurn", "supplyProduction", "before")
+    assert_equal 2, supply_production.dig("endTurn", "supplyProduction", "gained")
+    assert_equal 6, supply_production.dig("endTurn", "supplyProduction", "after")
+
+    reinforcements = acknowledge_supply(session, supply_production)
 
     assert_equal "romanReinforcements", reinforcements.dig("endTurn", "phase")
     assert_equal 0, reinforcements.dig("units", "legion_vii", "step")
@@ -303,8 +317,36 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     replacements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
     result = GameRules::EndTurn.new(session: session, state: replacements, replacement_steps: {}).end_turn!
 
+    assert_equal "romanSupplyProduction", result.dig("endTurn", "phase")
     assert_equal 14, result["supply"]
+    assert_equal 4, result.dig("endTurn", "supplyProduction", "produced")
+    assert_equal 4, result.dig("endTurn", "supplyProduction", "gained")
+    assert_not result.dig("endTurn", "supplyProduction", "capped")
     assert_match "Transalpine Gaul +2, Avaricum +2", result["log"].join(" ")
+  end
+
+  test "pauses for capped supply production to be acknowledged" do
+    state = base_state
+    state["supply"] = 18
+    session = GameSession.create!(data: state)
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    supply_production = GameRules::EndTurn.new(
+      session: session,
+      state: wintering,
+      wintering_unit_ids: []
+    ).end_turn!
+
+    assert_equal "romanSupplyProduction", supply_production.dig("endTurn", "phase")
+    assert_equal 18, supply_production.dig("endTurn", "supplyProduction", "before")
+    assert_equal 2, supply_production.dig("endTurn", "supplyProduction", "produced")
+    assert_equal 1, supply_production.dig("endTurn", "supplyProduction", "gained")
+    assert_equal 19, supply_production.dig("endTurn", "supplyProduction", "after")
+    assert supply_production.dig("endTurn", "supplyProduction", "capped")
+
+    error = assert_raises(GameRules::EndTurn::InvalidAction) do
+      GameRules::EndTurn.new(session: session, state: supply_production).end_turn!
+    end
+    assert_equal "Acknowledge Roman supply production before continuing.", error.message
   end
 
   test "returns an eliminated legion at full strength at the end of the following turn" do
@@ -318,7 +360,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     )
     session = GameSession.create!(data: state)
 
-    result = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    result = acknowledge_supply(session, supply_production)
 
     assert_equal "roman_off_map", result.dig("units", "legion_vii", "location")
     assert_equal 0, result.dig("units", "legion_vii", "step")
@@ -338,7 +381,8 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     end
     session = GameSession.create!(data: state)
     wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
-    reinforcements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    reinforcements = acknowledge_supply(session, supply_production)
 
     assert_equal 2, reinforcements.dig("endTurn", "reinforcementLimit")
     assert_equal %w[legion_v legion_vi], reinforcements.dig("endTurn", "reinforcementOptions").map { |option| option["id"] }.sort
@@ -365,13 +409,23 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     end
     session = GameSession.create!(data: state)
     wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
-    reinforcements = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    reinforcements = acknowledge_supply(session, supply_production)
 
     assert_equal 1, reinforcements.dig("endTurn", "reinforcementLimit")
     assert_equal ["legion_i"], reinforcements.dig("endTurn", "reinforcementOptions").map { |option| option["id"] }
   end
 
   private
+
+  def acknowledge_supply(session, state)
+    assert_equal "romanSupplyProduction", state.dig("endTurn", "phase")
+    GameRules::EndTurn.new(
+      session: session,
+      state: state,
+      supply_production_acknowledged: true
+    ).end_turn!
+  end
 
   def base_state
     {

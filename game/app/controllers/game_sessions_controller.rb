@@ -103,6 +103,7 @@ class GameSessionsController < ApplicationController
       harvest_roll: params[:harvest_roll],
       wintering_unit_ids: params[:wintering_unit_ids],
       replacement_steps: params[:replacement_steps],
+      supply_production_acknowledged: params[:supply_production_acknowledged],
       reinforcement_builds: params[:reinforcement_builds]
     ).end_turn!
 

@@ -61,7 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
     romanAdministrationError: document.querySelector("#roman-administration-error"),
     romanAdministrationContinue: document.querySelector("#roman-administration-continue"),
     finishRegroup: document.querySelector("#finish-regroup"),
+    gameMenu: document.querySelector("#game-menu"),
     yearlyObjectives: document.querySelector("#yearly-objectives"),
+    yearlyObjectivesToggle: document.querySelector("#yearly-objectives-toggle"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
     objectiveTitle: document.querySelector("#objective-title"),
     objectiveYear: document.querySelector("#objective-year"),
@@ -87,7 +89,10 @@ document.addEventListener("DOMContentLoaded", () => {
     botActionReviewTitle: document.querySelector("#bot-action-review-title"),
     botActionReviewMessage: document.querySelector("#bot-action-review-message"),
     botActionReviewDetails: document.querySelector("#bot-action-review-details"),
-    advanceBotActionReview: document.querySelector("#advance-bot-action-review")
+    advanceBotActionReview: document.querySelector("#advance-bot-action-review"),
+    botMovementReview: document.querySelector("#bot-movement-review"),
+    botMovementReviewRoutes: document.querySelector("#bot-movement-review-routes"),
+    continueBotMovementReview: document.querySelector("#continue-bot-movement-review")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -1448,11 +1453,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function showBotActionReview() {
     const stage = currentBotActionReviewStage();
     if (!stage || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
+    if (stage.kind === "movement") {
+      if (!botActionReview.movementFocused) {
+        botActionReview.movementFocused = true;
+        focusBoardArea(botActionReview.movementRoutes.at(-1)?.to);
+      }
+      return;
+    }
     if (document.querySelector("dialog[open]")) return;
 
     const image = botActionReview.card ? cardImage(botActionReview.card) : null;
-    els.botActionReviewDialog.classList.toggle("is-movement-review", stage.kind === "movement");
-    els.botActionReviewCard.hidden = !image || stage.kind === "movement";
+    els.botActionReviewCard.hidden = !image;
     if (image) {
       els.botActionReviewCard.src = image;
       els.botActionReviewCard.alt = `${botActionReview.card.title} card`;
@@ -1477,10 +1488,22 @@ document.addEventListener("DOMContentLoaded", () => {
           : "Continue";
     els.botActionReviewDialog.showModal();
 
-    if (stage.kind === "movement" && !botActionReview.movementFocused) {
-      botActionReview.movementFocused = true;
-      focusBoardArea(botActionReview.movementRoutes.at(-1)?.to);
-    }
+  }
+
+  function renderBotMovementReview() {
+    if (!els.botMovementReview) return;
+
+    const stage = currentBotActionReviewStage();
+    const visible = stage?.kind === "movement";
+    els.botMovementReview.hidden = !visible;
+    if (!visible) return;
+
+    els.botMovementReviewRoutes.textContent = stage.details
+      .map((detail) => detail.replace(/^Barbarian moves /, "").replace(/\.$/, ""))
+      .join(" · ");
+    els.continueBotMovementReview.textContent = botActionReview.battlePending
+      ? "Continue to Battle"
+      : "Finish Review";
   }
 
   function advanceBotActionReview() {
@@ -1948,6 +1971,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const payload = { state };
     if (phase === "romanReplacements") {
       payload.replacement_steps = state.endTurn.replacementSteps || {};
+    } else if (phase === "romanSupplyProduction") {
+      payload.supply_production_acknowledged = true;
     } else if (phase === "romanReinforcements") {
       payload.reinforcement_builds = state.endTurn.reinforcementBuilds || {};
     } else {
@@ -1991,6 +2016,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderLog();
     renderModeControls();
     renderActionButtons();
+    renderBotMovementReview();
     renderUndoButton();
     renderPieceToggle();
     renderHandToggle();
@@ -2019,6 +2045,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const locked = yearlyObjectivesLocked();
       els.yearlyObjectives.checked = objectivesEnabled;
       els.yearlyObjectives.disabled = locked;
+      if (els.yearlyObjectivesToggle) {
+        els.yearlyObjectivesToggle.hidden = locked && !objectivesEnabled;
+      }
       els.yearlyObjectives.closest("label")?.setAttribute(
         "title",
         locked ? "Yearly Objectives are fixed after the first card is played" : "Apply the optional Yearly Objectives victory-point schedule"
@@ -3862,6 +3891,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (state.endTurn?.phase === "romanSupplyProduction") {
+      endTurnButton.textContent = "Supply Production";
+      endTurnButton.disabled = true;
+      endTurnButton.title = "Review Roman supply production above the map.";
+      battleButton.disabled = true;
+      return;
+    }
+
     if (state.endTurn?.phase === "romanReinforcements") {
       endTurnButton.textContent = "Roman Reinforcements";
       endTurnButton.disabled = true;
@@ -3978,7 +4015,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderRomanAdministration() {
     if (!els.romanAdministrationForm) return;
     const phase = state.endTurn?.phase;
-    if (!["romanReplacements", "romanReinforcements"].includes(phase)) {
+    if (!["romanReplacements", "romanSupplyProduction", "romanReinforcements"].includes(phase)) {
       els.romanAdministrationForm.hidden = true;
       setRomanAdministrationError();
       return;
@@ -3987,6 +4024,8 @@ document.addEventListener("DOMContentLoaded", () => {
     els.romanAdministrationForm.hidden = false;
     if (phase === "romanReplacements") {
       renderRomanReplacementOptions();
+    } else if (phase === "romanSupplyProduction") {
+      renderRomanSupplyProduction();
     } else {
       renderRomanReinforcementOptions();
     }
@@ -4038,6 +4077,37 @@ document.addEventListener("DOMContentLoaded", () => {
     els.romanAdministrationStatus.textContent = `${builds} of ${limit} legion${limit === 1 ? "" : "s"} · ${cost} supply · ${state.supply - cost} remaining`;
     els.romanAdministrationContinue.textContent = builds ? "Build Reinforcements" : "Skip Reinforcements";
     bindRomanAdministrationButtons();
+  }
+
+  function renderRomanSupplyProduction() {
+    const production = state.endTurn.supplyProduction || {};
+    const sources = production.sources || [];
+    const produced = Number(production.produced || 0);
+    const gained = Number(production.gained || 0);
+    const before = Number(production.before || 0);
+    const after = Number(production.after ?? state.supply ?? 0);
+
+    els.romanAdministrationTitle.textContent = "Roman Supply\nProduction";
+    els.romanAdministrationOptions.innerHTML = `
+      <div class="roman-supply-production-summary">
+        <div class="roman-supply-production-sources">
+          ${sources.map((source) => `
+            <span class="roman-supply-production-source">
+              <strong>${source.name}</strong>
+              <b>+${source.amount}</b>
+            </span>
+          `).join("")}
+        </div>
+        <div class="roman-supply-production-total">
+          <span>${before}</span>
+          <b>+${gained}</b>
+          <strong>${after} supply</strong>
+        </div>
+      </div>`;
+    els.romanAdministrationStatus.textContent = production.capped
+      ? `${produced} produced · ${gained} gained due to the 19-supply maximum`
+      : `${produced} supply produced`;
+    els.romanAdministrationContinue.textContent = "OK";
   }
 
   function administrationChoiceHtml({ kind, id, name, detail, value, maximum, valueLabel }) {
@@ -4282,6 +4352,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!state.gameSessionId) throw new Error("No database session is available.");
   }
 
+  function closeGameMenu() {
+    els.gameMenu?.removeAttribute("open");
+  }
+
   async function postJson(url, body) {
     const response = await fetch(url, {
       method: "POST",
@@ -4304,7 +4378,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return payload;
   }
 
-  document.querySelector("#new-game").addEventListener("click", requestNewGame);
+  document.querySelector("#new-game").addEventListener("click", () => {
+    closeGameMenu();
+    requestNewGame();
+  });
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
@@ -4312,6 +4389,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.turnDialogForm?.addEventListener("submit", acknowledgeTurnAnnouncement);
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
+  els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
   });
@@ -4324,8 +4402,14 @@ document.addEventListener("DOMContentLoaded", () => {
   els.mapZoom?.addEventListener("change", (event) => setMapZoom(event.target.value));
   els.toggleHand?.addEventListener("click", toggleHand);
   els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
-  document.querySelector("#import-game").addEventListener("click", openImportDialog);
-  document.querySelector("#export-game").addEventListener("click", exportGame);
+  document.querySelector("#import-game").addEventListener("click", () => {
+    closeGameMenu();
+    openImportDialog();
+  });
+  document.querySelector("#export-game").addEventListener("click", () => {
+    closeGameMenu();
+    exportGame();
+  });
   document.querySelector("#download-export").addEventListener("click", () => downloadExport());
   document.querySelector("#cancel-import").addEventListener("click", () => els.importDialog.close());
   document.querySelector("#cancel-new-game").addEventListener("click", () => els.newGameDialog.close());
@@ -4342,9 +4426,16 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !zoomedCardId) return;
-    zoomedCardId = null;
-    render();
+    if (event.key !== "Escape") return;
+    closeGameMenu();
+    if (zoomedCardId) {
+      zoomedCardId = null;
+      render();
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!els.gameMenu?.open || els.gameMenu.contains(event.target)) return;
+    closeGameMenu();
   });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
 

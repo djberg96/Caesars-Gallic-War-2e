@@ -7,7 +7,14 @@
 <main class="shell">
   <section class="board-panel" aria-label="Game board">
     <div class="board-toolbar">
-      <button id="new-game" type="button">New</button>
+      <details id="game-menu" class="toolbar-game-menu">
+        <summary>Game</summary>
+        <div class="toolbar-game-menu-items" role="group" aria-label="Game file actions">
+          <button id="new-game" type="button">New Game</button>
+          <button id="export-game" type="button">Save</button>
+          <button id="import-game" type="button">Load</button>
+        </div>
+      </details>
       <button id="end-turn" type="button">End Turn</button>
       <button id="resolve-battles" type="button">Battles</button>
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
@@ -21,18 +28,23 @@
         <option value="1.25">125%</option>
         <option value="1.5">150%</option>
       </select>
-      <button id="export-game" type="button">Save</button>
-      <button id="import-game" type="button">Load</button>
       <label class="select-label" for="play-mode">Mode</label>
       <select id="play-mode">
         <option value="hotseat">Hotseat</option>
         <option value="solitaire" selected>Solitaire Roman</option>
         <option value="ai">AI Opponent</option>
       </select>
-      <label class="optional-rule-toggle" title="Apply the optional Yearly Objectives victory-point schedule">
+      <label id="yearly-objectives-toggle" class="optional-rule-toggle" title="Apply the optional Yearly Objectives victory-point schedule">
         <input id="yearly-objectives" type="checkbox">
         Yearly Objectives
       </label>
+      <div id="bot-movement-review" class="bot-movement-review" role="status" aria-live="polite" hidden>
+        <div class="bot-movement-review-copy">
+          <strong>Barbarian Movement</strong>
+          <span id="bot-movement-review-routes"></span>
+        </div>
+        <button id="continue-bot-movement-review" type="button">Continue to Battle</button>
+      </div>
     </div>
 
     <form id="winter-quarters-form" class="winter-quarters-panel" hidden>

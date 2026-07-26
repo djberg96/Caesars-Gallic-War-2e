@@ -693,6 +693,19 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     body = JSON.parse(response.body)
+    assert_equal "romanSupplyProduction", body.dig("state", "endTurn", "phase")
+    assert_equal 2, body.dig("state", "endTurn", "supplyProduction", "produced")
+    assert_equal 15, body.dig("state", "endTurn", "supplyProduction", "after")
+
+    post end_turn_game_session_url(session, host: "localhost"),
+         params: {
+           state: body.fetch("state"),
+           supply_production_acknowledged: true
+         },
+         as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
     session.reload
 
     assert_equal 1, body.dig("state", "turn")
