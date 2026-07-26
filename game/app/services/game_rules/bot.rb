@@ -22,7 +22,11 @@ module GameRules
 
       @state["botDeck"] = deck
       log("Bot reveals #{card.fetch("title")}.")
-      resolve_card(card)
+      action = resolve_card(card)
+      @state["lastBotAction"] = {
+        "cardId" => card.fetch("id"),
+        "kind" => action
+      }
       @state["discard"] ||= []
       @state["discard"] << card
       persist!
@@ -35,19 +39,18 @@ module GameRules
         neutral_activation!(card["area"])
         @state["botNeutralActivations"] = @state.fetch("botNeutralActivations", 0).to_i + 1
         record_neutral_activation_card(card)
-        return
+        return "neutral_tribe_activation"
       end
 
       if card["area"].present? && (neutral_area?(card["area"]) || roman_controlled_area?(card["area"]))
         bot_political_action(card["area"], card)
-        return
+        return "political_action"
       end
 
       if card["area"].present?
-        return if bot_move_from(card["area"])
+        return "movement" if bot_move_from(card["area"])
 
-        resolve_failed_area_movement(card)
-        return
+        return resolve_failed_area_movement(card)
       end
 
       resolve_event(card)
@@ -135,17 +138,18 @@ module GameRules
     def resolve_failed_area_movement(card)
       if card["area"] != "germania" && bot_move_from("germania")
         log("Bot activates Germania because #{area_name(card.fetch("area"))} cannot attack.")
-        return
+        return "movement"
       end
 
       target = @target || random_target
       unless target
         log("Bot #{card.fetch("title")} found no valid political target.")
-        return
+        return "political_action"
       end
 
       log("Bot uses #{card.fetch("title")} for a fallback political action.")
       bot_political_action(target, card.merge("ap" => 3))
+      "political_action"
     end
 
     def activate_neutral_defenders!(target, attacker:, entering_units:)
@@ -202,17 +206,17 @@ module GameRules
 
     def resolve_event(card)
       if card.fetch("title") == "Baggage Train"
-        return if bot_move_from("germania")
+        return "movement" if bot_move_from("germania")
 
         @state["supply"] = [@state.fetch("supply", 0).to_i - 2, 0].max
         log("Bot Baggage Train reduces Roman supply by 2.")
-        return
+        return "event"
       end
 
       target = @target || random_target
       unless target
         log("Bot #{card.fetch("title")} found no valid revolt target.")
-        return
+        return "event"
       end
 
       effective_title = effective_revolt_title(card)
@@ -222,7 +226,7 @@ module GameRules
       targets = revolt_targets(target, revolt_area_count(effective_title))
       targets.each { |area_id| activate_area!(area_id, "barbarian") }
       log("Bot revolt areas: #{targets.map { |area_id| area_name(area_id) }.join(", ")}.") if targets.many?
-      return if effective_title == "Minor Revolt"
+      return "event" if effective_title == "Minor Revolt"
 
       if effective_title == "Massive Revolt"
         vercingetorix = units["vercingetorix"]
@@ -235,6 +239,7 @@ module GameRules
       end
       moved = targets.map { |area_id| bot_move_from(area_id, resolve_battle: false) }.any?
       resolve_next_bot_battle! if moved
+      "event"
     end
 
     def effective_revolt_title(card)

@@ -1396,6 +1396,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function botActionReviewLabel(card, messages) {
+    const recordedAction = state.lastBotAction?.cardId === card?.id
+      ? state.lastBotAction.kind
+      : null;
+    const recordedLabels = {
+      event: "Event",
+      movement: "Movement",
+      political_action: "Political Action",
+      neutral_tribe_activation: "Neutral Tribe Activation"
+    };
+    if (recordedLabels[recordedAction]) return recordedLabels[recordedAction];
+
+    if (card?.title === "Baggage Train" && messages.some((message) => botReportEntryKind(message).key === "movement")) {
+      return "Movement";
+    }
     if (card?.type === "event") return "Event";
     if (messages.some((message) => /political action/i.test(message))) return "Political Action";
     if (messages.some((message) => botReportEntryKind(message).key === "movement")) return "Movement";

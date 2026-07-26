@@ -123,10 +123,46 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     result = GameRules::Bot.new(session: session, state: session.data, target: "allobroges").draw!
 
+    assert_equal(
+      { "cardId" => "event_1_minor_revolt", "kind" => "event" },
+      result["lastBotAction"]
+    )
     assert_equal "barbarian", result.dig("units", "allobroges", "owner")
     assert_empty result["botDeck"]
     assert_equal ["event_1_minor_revolt"], result["discard"].map { |card| card.fetch("id") }
     assert_includes result["log"], "Barbarian activates Allobroges."
+  end
+
+  test "records Baggage Train as movement when Germans can attack" do
+    state = bot_state(bot_deck: [card_hash("event_0_baggage_train")])
+    state["units"] = {
+      "ariovistus" => german_unit("ariovistus", "Ariovistus"),
+      "german_marcomanni" => german_unit("german_marcomanni", "German - Marcomanni"),
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal(
+      { "cardId" => "event_0_baggage_train", "kind" => "movement" },
+      result["lastBotAction"]
+    )
+    assert_equal ["leuci", "leuci"], %w[ariovistus german_marcomanni].map { |id| result.dig("units", id, "location") }
+    assert_equal 15, result["supply"]
+  end
+
+  test "records Baggage Train as an event when no Germans can attack" do
+    state = bot_state(bot_deck: [card_hash("event_0_baggage_train")]).merge("supply" => 15)
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data).draw!
+
+    assert_equal(
+      { "cardId" => "event_0_baggage_train", "kind" => "event" },
+      result["lastBotAction"]
+    )
+    assert_equal 13, result["supply"]
   end
 
   test "major revolt takes control of Roman allied tribes and returns every home-area tribe" do
