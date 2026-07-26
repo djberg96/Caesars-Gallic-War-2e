@@ -42,6 +42,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session = GameSession.find(body.fetch("game_session_id"))
 
     assert_equal "solitaire", body.dig("state", "mode")
+    assert body.dig("state", "turnAnnouncementPending")
     assert_equal 64, session.game_units.count
     assert_equal 5, body.dig("state", "hands", "roman").length
     assert_empty body.dig("state", "hands", "barbarian")
@@ -61,6 +62,18 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_not session.revealed
     assert_not session.dice_rolled_this_turn
     assert_equal 0, session.bot_neutral_activations
+  end
+
+  test "acknowledges the current turn announcement" do
+    state = base_state.merge(turnAnnouncementPending: true)
+    session = GameSession.create!(data: state)
+
+    post acknowledge_turn_game_session_url(session, host: "localhost"), as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_not body.dig("state", "turnAnnouncementPending")
+    assert_not session.reload.data["turnAnnouncementPending"]
   end
 
   test "enables yearly objectives when creating a new game" do

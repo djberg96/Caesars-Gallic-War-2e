@@ -174,6 +174,15 @@ class GameSessionsController < ApplicationController
     render json: { game_session_id: session.id, options: state.fetch("options") }
   end
 
+  def acknowledge_turn
+    session = GameSession.find(params[:id])
+    state = session.data.deep_dup
+    state["turnAnnouncementPending"] = false
+    session.update!(data: state)
+
+    render json: { game_session_id: session.id, state: state }
+  end
+
   private
 
   def create_state

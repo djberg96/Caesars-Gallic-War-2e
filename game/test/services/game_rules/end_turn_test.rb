@@ -20,6 +20,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     result = GameRules::EndTurn.new(session: session, state: pending, wintering_unit_ids: []).end_turn!
 
     assert_equal 1, result["turn"]
+    assert result["turnAnnouncementPending"]
     assert_equal 19, result["supply"]
     assert_equal 1, result["vp"]
     assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")

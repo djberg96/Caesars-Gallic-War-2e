@@ -16,6 +16,7 @@ module GameRules
 
       state = {
         "turn" => 0,
+        "turnAnnouncementPending" => true,
         "phase" => "Card Phase",
         "active" => "roman",
         "supply" => 15,

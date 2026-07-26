@@ -143,6 +143,7 @@ module GameRules
       return complete_campaign! if campaign_finished
 
       @state["turn"] = @state.fetch("turn", 0).to_i + 1
+      @state["turnAnnouncementPending"] = true
       GameRules::Deal.new(session: @session, state: @state).deal!
     end
 

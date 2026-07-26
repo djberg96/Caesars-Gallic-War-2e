@@ -2060,6 +2060,70 @@ dialog {
   width: min(520px, 92vw);
 }
 
+.turn-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  width: min(360px, 92vw);
+  height: fit-content;
+  margin: auto;
+  padding: 1.35rem;
+  text-align: center;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.68);
+}
+
+.turn-dialog h2 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 1.75rem;
+}
+
+.turn-dialog-message {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.turn-dialog-status {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.turn-dialog-status[hidden] {
+  display: none;
+}
+
+.turn-dialog-status span {
+  min-width: 6.4rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid rgba(217, 180, 95, 0.35);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.turn-dialog-status strong {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.turn-dialog .dialog-actions {
+  justify-content: center;
+  margin-top: 1.15rem;
+}
+
+.turn-dialog button {
+  min-width: 6rem;
+}
+
 .dialog-kicker {
   color: var(--accent);
   font-size: 0.72rem;

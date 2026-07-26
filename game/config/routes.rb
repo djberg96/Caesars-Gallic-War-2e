@@ -29,5 +29,6 @@ Rails.application.routes.draw do
     post :political_action, on: :member
     post :event_action, on: :member
     post :update_options, on: :member
+    post :acknowledge_turn, on: :member
   end
 end

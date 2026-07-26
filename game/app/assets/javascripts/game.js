@@ -73,7 +73,14 @@ document.addEventListener("DOMContentLoaded", () => {
     importFile: document.querySelector("#import-file"),
     importText: document.querySelector("#import-text"),
     importError: document.querySelector("#import-error"),
-    newGameDialog: document.querySelector("#new-game-dialog")
+    newGameDialog: document.querySelector("#new-game-dialog"),
+    turnDialog: document.querySelector("#turn-dialog"),
+    turnDialogForm: document.querySelector("#turn-dialog-form"),
+    turnDialogTitle: document.querySelector("#turn-dialog-title"),
+    turnDialogStatus: document.querySelector("#turn-dialog-status"),
+    turnDialogVp: document.querySelector("#turn-dialog-vp"),
+    turnDialogSupply: document.querySelector("#turn-dialog-supply"),
+    acknowledgeTurn: document.querySelector("#acknowledge-turn")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -1015,8 +1022,53 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showNextResultDialog() {
-    if (!resultDialogQueue.length) return;
+    if (!resultDialogQueue.length) {
+      showTurnAnnouncement();
+      return;
+    }
     displayResultDialog(resultDialogQueue.shift());
+  }
+
+  function turnAnnouncementText() {
+    const year = String(gameData.years[state.turn] || "").replace(/\s+/g, "");
+    return `Turn ${state.turn + 1}${year ? ` (${year})` : ""}`;
+  }
+
+  function showTurnAnnouncement() {
+    if (!state?.turnAnnouncementPending || state.gameOver || !state.gameSessionId || !els.turnDialog) return;
+    if (els.turnDialog.open) return;
+    if (document.querySelector("dialog[open]")) return;
+
+    els.turnDialogTitle.textContent = turnAnnouncementText();
+    const showStatus = state.mode === "solitaire";
+    els.turnDialogStatus.hidden = !showStatus;
+    if (showStatus) {
+      els.turnDialogVp.textContent = state.vp;
+      els.turnDialogSupply.textContent = state.supply;
+    }
+    els.turnDialog.show();
+  }
+
+  async function acknowledgeTurnAnnouncement(event) {
+    event.preventDefault();
+    if (!state?.turnAnnouncementPending) {
+      els.turnDialog.close();
+      return;
+    }
+
+    els.acknowledgeTurn.disabled = true;
+    try {
+      const result = await postJson(`/game_sessions/${state.gameSessionId}/acknowledge_turn`, {});
+      state = result.state;
+      state.gameSessionId = result.game_session_id;
+      normalizeLoadedState();
+      els.turnDialog.close();
+      render();
+    } catch (error) {
+      window.alert(`The turn announcement could not be acknowledged: ${error.message}`);
+    } finally {
+      els.acknowledgeTurn.disabled = false;
+    }
   }
 
   async function startMovement() {
@@ -1792,6 +1844,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
     renderCommittedCards();
+    showTurnAnnouncement();
   }
 
   function renderStatus() {
@@ -4079,6 +4132,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#commit-card").addEventListener("click", () => commitCard());
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
+  els.turnDialog?.addEventListener("cancel", (event) => event.preventDefault());
+  els.turnDialogForm?.addEventListener("submit", acknowledgeTurnAnnouncement);
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
   });
