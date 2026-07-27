@@ -1565,6 +1565,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function botReportEntryKind(message) {
+    if (/^Ariovistus special ability:/i.test(message)) return { key: "control", label: "Control", battleDetail: false };
     if (/\b(fires|rolled)\b/i.test(message)) return { key: "combat", label: "Combat", battleDetail: true };
     if (/\b(eliminated|wins the battle|holds .+ after battle|battle .+ continues|retreated)\b/i.test(message)) {
       return { key: "outcome", label: "Outcome", battleDetail: true };

@@ -14,7 +14,7 @@ class GameSessionsController < ApplicationController
 
   def move
     session = GameSession.find(params[:id])
-    result = GameRules::Movement.new(session: session, state: action_state(session)).move!(
+    result = GameRules::Movement.new(session: session, state: action_state(session), rolls: params[:rolls]).move!(
       unit_id: params.require(:unit_id),
       target: params.require(:target)
     )
@@ -35,6 +35,7 @@ class GameSessionsController < ApplicationController
       session: session,
       state: action_state(session),
       roll: params[:roll],
+      rolls: params[:rolls],
       target: params[:target]
     ).draw!
 

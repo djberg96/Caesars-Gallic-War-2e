@@ -1,9 +1,10 @@
 module GameRules
   class Bot
-    def initialize(session:, state:, roll: nil, target: nil)
+    def initialize(session:, state:, roll: nil, rolls: nil, target: nil)
       @session = session
       @state = state.deep_dup
       @roll = roll&.to_i
+      @rolls = Array(rolls).map(&:to_i)
       @target = target
     end
 
@@ -155,6 +156,10 @@ module GameRules
     def activate_neutral_defenders!(target, attacker:, entering_units:)
       defender = attacker == "roman" ? "barbarian" : "roman"
       entrant_names = entering_units.map { |unit| unit.fetch("name") }.join(", ")
+      GameRules::Ariovistus.new(state: @state, roll: method(:d6)).resolve!(
+        area_id: target.key,
+        entering_units: entering_units
+      ) if attacker == "barbarian"
       area_units(target.key).select { |unit| unit["owner"] == "neutral" }.each do |unit|
         unit["owner"] = defender
         log("#{unit.fetch("name")} joins the #{player_name(defender)} player as #{entrant_names} enters #{target.name}.")
@@ -345,6 +350,8 @@ module GameRules
     def d6
       @state["diceRolledThisTurn"] = true
       @state["undoStack"] = []
+      queued = @rolls.shift
+      return queued if queued&.between?(1, 6)
       return @roll if @roll&.between?(1, 6)
 
       rand(1..6)

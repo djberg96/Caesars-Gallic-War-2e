@@ -2,9 +2,10 @@ module GameRules
   class Movement
     class InvalidMove < StandardError; end
 
-    def initialize(session:, state:)
+    def initialize(session:, state:, rolls: nil)
       @session = session
       @state = state.deep_dup
+      @rolls = Array(rolls).map(&:to_i)
     end
 
     def move!(unit_id:, target:)
@@ -263,10 +264,51 @@ module GameRules
     end
 
     def activate_neutral_units_in_target!
+      record = neutral_attack_record
+      if ariovistus_entering? && record && !record["resolved"]
+        record["outcomes"] = GameRules::Ariovistus.new(state: @state, roll: method(:d6)).resolve!(
+          area_id: @target,
+          entering_units: [@unit],
+          eligible_unit_ids: record.fetch("unitIds")
+        )
+        record["resolved"] = true
+      end
+
       units.values.select { |other| other["location"] == @target && other["owner"] == "neutral" }.each do |other|
         other["owner"] = active_player == "roman" ? "barbarian" : "roman"
         log("#{other.fetch("name")} joins the #{player_name(other.fetch("owner"))} player as #{unit_name} enters #{area_name(@target)}.")
       end
+    end
+
+    def neutral_attack_record
+      return unless active_player == "barbarian"
+
+      records = movement["neutralAttacks"] ||= {}
+      return records[@target] if records.key?(@target)
+
+      neutral_ids = units.values.filter_map do |other|
+        other.fetch("id") if other["location"] == @target && other["owner"] == "neutral" && other["type"] == "barbarian"
+      end
+      return if neutral_ids.empty?
+
+      records[@target] = {
+        "unitIds" => neutral_ids,
+        "resolved" => false,
+        "outcomes" => []
+      }
+    end
+
+    def ariovistus_entering?
+      @unit_id == "ariovistus" && @unit["owner"] == "barbarian"
+    end
+
+    def d6
+      @state["diceRolledThisTurn"] = true
+      @state["undoStack"] = []
+      queued = @rolls.shift
+      return queued if queued&.between?(1, 6)
+
+      rand(1..6)
     end
 
     def naval_invasion_cost_due?

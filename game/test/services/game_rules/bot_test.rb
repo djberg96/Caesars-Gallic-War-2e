@@ -107,7 +107,7 @@ class GameRules::BotTest < ActiveSupport::TestCase
     }
     session = GameSession.create!(data: state)
 
-    result = GameRules::Bot.new(session: session, state: session.data).draw!
+    result = GameRules::Bot.new(session: session, state: session.data, roll: 6).draw!
 
     german_locations = %w[ariovistus german_marcomanni german_tencteri german_usipetes]
       .map { |id| result.dig("units", id, "location") }
@@ -115,6 +115,48 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal 1, result.fetch("pendingBattleEntries").length
     assert result["battle"].present?
     assert_equal "barbarian", result.dig("battle", "attacker")
+  end
+
+  test "Ariovistus subdues neutral Gallic units before a bot battle" do
+    state = bot_state(bot_deck: [card_hash("germania")])
+    state["units"] = {
+      "ariovistus" => german_unit("ariovistus", "Ariovistus"),
+      "german_marcomanni" => german_unit("german_marcomanni", "German - Marcomanni"),
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "neutral", [2, 1], fire: 1)
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, roll: 2).draw!
+
+    assert_equal "barbarian", result.dig("units", "leuci", "owner")
+    assert_nil result["battle"]
+    assert result["diceRolledThisTurn"]
+    assert_match "Ariovistus special ability: rolled 2 for Leuci", result["log"].join(" ")
+    assert_match "Leuci joins the Barbarian attacking force", result["log"].join(" ")
+  end
+
+  test "Ariovistus resolves each neutral Gallic unit separately" do
+    state = bot_state(bot_deck: [])
+    state["units"] = {
+      "ariovistus" => german_unit("ariovistus", "Ariovistus"),
+      "german_marcomanni" => german_unit("german_marcomanni", "German - Marcomanni"),
+      "leuci" => barbarian_unit("leuci", "Leuci", "leuci", "neutral", [2, 1], fire: 1),
+      "mediomatrici" => barbarian_unit("mediomatrici", "Mediomatrici", "mediomatrici", "neutral", [2, 1], fire: 1).merge(
+        "location" => "leuci"
+      )
+    }
+    session = GameSession.create!(data: state)
+    bot = GameRules::Bot.new(session: session, state: session.data, rolls: [1, 5])
+
+    assert bot.send(:bot_move_from_germania, Area.find_by!(key: "germania"), resolve_battle: false)
+    result = bot.send(:persist!)
+
+    assert_equal "barbarian", result.dig("units", "leuci", "owner")
+    assert_equal "roman", result.dig("units", "mediomatrici", "owner")
+    assert_match "rolled 1 for Leuci", result["log"].join(" ")
+    assert_match "rolled 5 for Mediomatrici", result["log"].join(" ")
+    assert_match "Mediomatrici resists and joins the Roman defense", result["log"].join(" ")
+    assert_equal "barbarian", result.dig("pendingBattleEntries", "leuci", "attacker")
   end
 
   test "draws a revolt event and activates its target" do

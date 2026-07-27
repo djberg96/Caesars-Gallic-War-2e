@@ -246,10 +246,54 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_match "cannot retreat more than one area", error.message
   end
 
+  test "Ariovistus rolls for original neutral defenders even when another German moves first" do
+    state = {
+      "active" => "barbarian",
+      "supply" => 15,
+      "units" => {
+        "ariovistus" => german_unit("ariovistus", "Ariovistus"),
+        "german_marcomanni" => german_unit("german_marcomanni", "German - Marcomanni"),
+        "leuci" => {
+          "id" => "leuci",
+          "name" => "Leuci",
+          "type" => "barbarian",
+          "owner" => "neutral",
+          "location" => "leuci",
+          "home" => "leuci",
+          "step" => 0,
+          "strengths" => [3, 2, 1]
+        }
+      },
+      "movement" => {
+        "areas" => ["germania"],
+        "remaining" => 0,
+        "units" => {},
+        "crossings" => {}
+      },
+      "selectedUnit" => nil,
+      "log" => []
+    }
+    session = GameSession.create!(data: state)
+
+    first = move(session, "german_marcomanni", "leuci")
+    assert_equal "roman", first.dig("units", "leuci", "owner")
+
+    result = move(session, "ariovistus", "leuci", rolls: [1])
+
+    assert_equal "barbarian", result.dig("units", "leuci", "owner")
+    assert result["diceRolledThisTurn"]
+    assert result.dig("movement", "neutralAttacks", "leuci", "resolved")
+    assert_equal(
+      [{ "unitId" => "leuci", "roll" => 1, "subdued" => true }],
+      result.dig("movement", "neutralAttacks", "leuci", "outcomes")
+    )
+    assert_match "Ariovistus special ability: rolled 1 for Leuci", result["log"].join(" ")
+  end
+
   private
 
-  def move(session, unit_id, target)
-    GameRules::Movement.new(session: session.reload, state: session.data).move!(unit_id: unit_id, target: target)
+  def move(session, unit_id, target, rolls: nil)
+    GameRules::Movement.new(session: session.reload, state: session.data, rolls: rolls).move!(unit_id: unit_id, target: target)
   end
 
   def base_state(target_area: "helvetii")
@@ -284,5 +328,18 @@ class GameRules::MovementTest < ActiveSupport::TestCase
         }
       ]
     end
+  end
+
+  def german_unit(id, name)
+    {
+      "id" => id,
+      "name" => name,
+      "type" => "german",
+      "owner" => "barbarian",
+      "location" => "germania",
+      "home" => "germania",
+      "step" => 0,
+      "strengths" => [3, 2, 1]
+    }
   end
 end
