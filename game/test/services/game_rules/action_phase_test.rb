@@ -41,6 +41,35 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal ["allobroges"], session.reload.data.dig("movement", "areas")
   end
 
+  test "selecting the Roman Off-Map area defers activation spending until each legion moves" do
+    state = base_state.merge(
+      "currentAction" => "movement",
+      "movement" => {
+        "player" => "roman",
+        "cardId" => "allobroges",
+        "remaining" => 2,
+        "areas" => [],
+        "units" => {},
+        "crossings" => {}
+      }
+    )
+    state["units"]["legion_i"] = {
+      "id" => "legion_i",
+      "name" => "Legion I",
+      "type" => "roman",
+      "owner" => "roman",
+      "location" => "roman_off_map",
+      "step" => 0
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::ActionPhase.new(session: session, state: session.data).activate_movement_area!(area_id: "roman_off_map")
+
+    assert_equal ["roman_off_map"], result.dig("movement", "areas")
+    assert_equal 2, result.dig("movement", "remaining")
+    assert_match "Each legion moved to Transalpine Gaul will use one group activation", result["log"].first
+  end
+
   test "rejects activation of an area without active player units" do
     state = base_state.merge(
       "movement" => {

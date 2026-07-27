@@ -195,6 +195,57 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     ], result.dig("movement", "units", "legion_vii", "path")
   end
 
+  test "each legion leaving the Roman Off-Map area uses an activation and stops in Transalpine Gaul" do
+    state = base_state(target_area: "transalpine_gaul")
+    state["movement"] = {
+      "areas" => ["roman_off_map"],
+      "remaining" => 2,
+      "units" => {},
+      "crossings" => {}
+    }
+    state["units"] = %w[legion_i legion_xiii legion_xiv].to_h do |unit_id|
+      [
+        unit_id,
+        {
+          "id" => unit_id,
+          "name" => unit_id.titleize,
+          "type" => "roman",
+          "owner" => "roman",
+          "location" => "roman_off_map",
+          "home" => "roman_off_map",
+          "step" => 0
+        }
+      ]
+    end
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_i", "allobroges")
+    end
+    assert_match "may only move from the Roman Off-Map area to Transalpine Gaul", error.message
+    assert_equal 2, session.reload.data.dig("movement", "remaining")
+
+    first = move(session, "legion_i", "transalpine_gaul")
+    assert_equal 1, first.dig("movement", "remaining")
+    assert first.dig("movement", "units", "legion_i", "stopped")
+    assert_equal 15, first["supply"]
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_i", "allobroges")
+    end
+    assert_match "already finished movement", error.message
+
+    second = move(session, "legion_xiii", "transalpine_gaul")
+    assert_equal 0, second.dig("movement", "remaining")
+    assert second.dig("movement", "units", "legion_xiii", "stopped")
+
+    error = assert_raises(GameRules::Movement::InvalidMove) do
+      move(session, "legion_xiv", "transalpine_gaul")
+    end
+    assert_match "No group activations remain", error.message
+    assert_equal "roman_off_map", session.reload.data.dig("units", "legion_xiv", "location")
+  end
+
   test "rejects moving a legion to its current area without marking it stopped" do
     state = base_state
     state["units"]["legion_xii"] = {

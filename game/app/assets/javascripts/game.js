@@ -542,6 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (unit.location === target) return null;
     if (!legalAreaForUnit(unit, target)) return null;
     if (!canUnitMoveThisCard(unit)) return null;
+    if (unit.location === "roman_off_map" && target !== "transalpine_gaul") return null;
 
     const directBorder = borderType(unit.location, target);
     if (directBorder && borderHasCapacity(unit.location, target, directBorder)) {
@@ -577,8 +578,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (unit.location === target) return `${unit.name} is already in ${areaName(target)}.`;
     if (!legalAreaForUnit(unit, target)) return illegalAreaReason(unit, target);
     if (!state.movement) return "Play a card for movement before moving blocks.";
+    if (unit.location === "roman_off_map" && target !== "transalpine_gaul") {
+      return `${unit.name} may only move from the Roman Off-Map area to Transalpine Gaul.`;
+    }
 
     const moved = state.movement.units?.[unit.id];
+    if (unit.location === "roman_off_map" && !moved && state.movement.remaining <= 0) {
+      return `No group activations remain to move ${unit.name} from the Roman Off-Map area.`;
+    }
     if (!moved && !movementAreaActivated(unit.location)) return `Activate ${areaName(unit.location)} for movement before moving ${unit.name}.`;
     if (retreatMovement() && moved?.stopped) return `${unit.name} has already retreated from this battle.`;
     if (moved?.stopped) return `${unit.name} has already finished movement for this card.`;
@@ -602,6 +609,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!state.movement) return false;
     state.movement.units ||= {};
     const moved = state.movement.units[unit.id];
+    if (unit.location === "roman_off_map" && !moved) {
+      return movementAreaActivated(unit.location) && state.movement.remaining > 0;
+    }
     if (!moved) return movementAreaActivated(unit.location);
     if (moved.stopped || moved.steps >= 2) return false;
     if (retreatMovement()) return false;
@@ -610,6 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function forceMarchRoute(unit, target) {
     if (retreatMovement()) return null;
+    if (unit.location === "roman_off_map") return null;
     if (unit.owner !== "roman" || unit.type !== "roman" || state.supply <= 0) return null;
     if (state.movement) state.movement.units ||= {};
     if (state.movement?.units[unit.id]?.steps) return null;
@@ -628,6 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function forceMarchFailureReason(unit, target) {
+    if (unit.location === "roman_off_map") return `${unit.name} cannot force march from the Roman Off-Map area.`;
     if (unit.owner !== "roman" || unit.type !== "roman") return `${unit.name} cannot force march.`;
     if (state.supply <= 0) return "Roman legions need 1 supply to force march.";
     if (state.movement?.units?.[unit.id]?.steps) return `${unit.name} cannot force march after it has already moved.`;

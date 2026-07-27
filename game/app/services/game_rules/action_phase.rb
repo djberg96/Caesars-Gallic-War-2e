@@ -45,9 +45,14 @@ module GameRules
 
       movement["areas"] ||= []
       movement["areas"] << area_id
-      movement["remaining"] = remaining - 1
       movement["units"] ||= {}
       movement["crossings"] ||= {}
+      if area_id == "roman_off_map"
+        log("Roman Off-Map area selected. Each legion moved to Transalpine Gaul will use one group activation.")
+        return persist!
+      end
+
+      movement["remaining"] = remaining - 1
       log("#{area.name} activated for movement. #{movement["remaining"]} group activation#{movement["remaining"] == 1 ? "" : "s"} remaining.")
       persist!
     end

@@ -46,6 +46,7 @@ module GameRules
       return nil if @from == @target
       return nil unless legal_area_for_unit?
       return nil unless can_unit_move_this_card?
+      return nil if off_map_departure? && @target != "transalpine_gaul"
 
       direct_border = border(@from, @target)
       if direct_border && border_has_capacity?(@from, @target, direct_border)
@@ -63,6 +64,7 @@ module GameRules
       return "#{unit_name} is not on the map." if offboard?(@from)
       return "#{unit_name} is already in #{area_name(@target)}." if @from == @target
       return illegal_area_reason unless legal_area_for_unit?
+      return "#{unit_name} may only move from the Roman Off-Map area to Transalpine Gaul." if off_map_departure? && @target != "transalpine_gaul"
       return movement_limit_reason unless can_unit_move_this_card?
       return "#{unit_name} cannot retreat more than one area." if retreat_movement?
 
@@ -89,6 +91,9 @@ module GameRules
 
     def movement_limit_reason
       moved = movement_units[@unit_id]
+      if off_map_departure? && !moved && movement.fetch("remaining", 0).to_i <= 0
+        return "No group activations remain to move #{unit_name} from the Roman Off-Map area."
+      end
       return "Activate #{area_name(@from)} for movement before moving #{unit_name}." unless moved
       return "#{unit_name} has already retreated from this battle." if retreat_movement? && moved["stopped"]
       return "#{unit_name} has already finished movement for this card." if moved["stopped"]
@@ -102,6 +107,9 @@ module GameRules
       return false unless movement
 
       moved = movement_units[@unit_id]
+      if off_map_departure? && !moved
+        return movement_area_activated?(@from) && movement.fetch("remaining", 0).to_i.positive?
+      end
       return movement_area_activated?(@from) unless moved
       return false if moved["stopped"] || moved["steps"].to_i >= 2
       return false if retreat_movement?
@@ -111,6 +119,7 @@ module GameRules
 
     def force_route
       return nil if retreat_movement?
+      return nil if off_map_departure?
       return nil unless roman_legion?
       return nil unless supply.positive?
       return nil if movement_units.dig(@unit_id, "steps").to_i.positive?
@@ -197,6 +206,7 @@ module GameRules
     end
 
     def apply_move!(plan)
+      consume_off_map_activation!
       @unit["location"] = @target
       record_unit_movement!(plan)
       record_yearly_objective_progress!(plan)
@@ -256,6 +266,10 @@ module GameRules
         moved["stopped"] = true
         return
       end
+      if off_map_departure?
+        moved["stopped"] = true
+        return
+      end
 
       if !roman_legion? || border_stops?(plan.fetch("steps").first.third) || area_has_stopper?(@target, @unit["owner"]) || moved["steps"] >= 2
         moved["stopped"] = true
@@ -300,6 +314,20 @@ module GameRules
 
     def ariovistus_entering?
       @unit_id == "ariovistus" && @unit["owner"] == "barbarian"
+    end
+
+    def off_map_departure?
+      @from == "roman_off_map"
+    end
+
+    def consume_off_map_activation!
+      return unless off_map_departure?
+
+      remaining = movement.fetch("remaining", 0).to_i
+      raise InvalidMove, "No group activations remain to move #{unit_name} from the Roman Off-Map area." unless remaining.positive?
+
+      movement["remaining"] = remaining - 1
+      log("#{unit_name} uses one group activation to enter Transalpine Gaul from the Roman Off-Map area; #{movement["remaining"]} remaining.")
     end
 
     def d6
