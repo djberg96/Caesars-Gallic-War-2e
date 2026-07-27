@@ -175,6 +175,41 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_includes result["log"], "Barbarian activates Allobroges."
   end
 
+  test "minor revolt attacks Roman occupants in the revolting tribe's home area" do
+    state = bot_state(bot_deck: [card_hash("event_1_minor_revolt")])
+    state["units"] = {
+      "sequani" => barbarian_unit("sequani", "Sequani", "sequani", "roman", [4, 3, 2, 1], fire: 2).merge(
+        "initiative" => "B"
+      ),
+      "allobroges" => barbarian_unit("allobroges", "Allobroges", "allobroges", "roman", [2, 1], fire: 1).merge(
+        "location" => "sequani"
+      ),
+      "legion_xii" => {
+        "id" => "legion_xii",
+        "name" => "Legion XII",
+        "type" => "roman",
+        "owner" => "roman",
+        "location" => "sequani",
+        "home" => "transalpine_gaul",
+        "step" => 0,
+        "strengths" => [4, 3, 2, 1],
+        "initiative" => "A",
+        "fire" => 2
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Bot.new(session: session, state: session.data, target: "sequani").draw!
+
+    assert_equal "barbarian", result.dig("units", "sequani", "owner")
+    assert_equal "sequani", result.dig("battle", "area")
+    assert_equal "barbarian", result.dig("battle", "attacker")
+    assert_equal "roman", result.dig("battle", "defender")
+    assert_equal ["sequani"], result.dig("battle", "attackers")
+    assert_equal ["allobroges", "legion_xii"], result.dig("battle", "defenders").sort
+    assert_match "Battle board opened for Sequani", result["log"].join(" ")
+  end
+
   test "records Baggage Train as movement when Germans can attack" do
     state = bot_state(bot_deck: [card_hash("event_0_baggage_train")])
     state["units"] = {

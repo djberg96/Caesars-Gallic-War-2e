@@ -231,7 +231,11 @@ module GameRules
       targets = revolt_targets(target, revolt_area_count(effective_title))
       targets.each { |area_id| activate_area!(area_id, "barbarian") }
       log("Bot revolt areas: #{targets.map { |area_id| area_name(area_id) }.join(", ")}.") if targets.many?
-      return "event" if effective_title == "Minor Revolt"
+      if effective_title == "Minor Revolt"
+        battle_area = targets.find { |area_id| contested_area?(area_id) }
+        resolve_bot_battle!(battle_area, { "attacker" => "barbarian", "entries" => {} }) if battle_area
+        return "event"
+      end
 
       if effective_title == "Massive Revolt"
         vercingetorix = units["vercingetorix"]
