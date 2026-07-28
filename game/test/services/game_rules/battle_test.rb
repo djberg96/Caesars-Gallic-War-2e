@@ -853,7 +853,7 @@ class GameRules::BattleTest < ActiveSupport::TestCase
 
     result = GameRules::Battle.new(session: session, state: session.data, rolls: Array.new(10, 6)).resolve!
     assert_includes result.dig("battle", "fort"), "sequani"
-    assert_match "Sequani starts inside bibracte", result["log"].join(" ")
+    assert_match "Sequani starts inside vesontio", result["log"].join(" ")
 
     2.times do
       result = GameRules::Battle.new(session: session, state: result, rolls: Array.new(10, 6)).act!(
