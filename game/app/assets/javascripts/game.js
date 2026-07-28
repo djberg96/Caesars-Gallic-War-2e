@@ -62,6 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
     romanAdministrationContinue: document.querySelector("#roman-administration-continue"),
     finishRegroup: document.querySelector("#finish-regroup"),
     gameMenu: document.querySelector("#game-menu"),
+    playMode: document.querySelector("#play-mode"),
+    playModeLabel: document.querySelector("#play-mode-label"),
     yearlyObjectives: document.querySelector("#yearly-objectives"),
     yearlyObjectivesToggle: document.querySelector("#yearly-objectives-toggle"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
@@ -2057,19 +2059,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderStatus() {
     document.querySelector("#mode-label").textContent = modeName();
-    document.querySelector("#play-mode").value = state.mode;
+    els.playMode.value = state.mode;
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
     document.querySelector("#phase-label").textContent = phaseStatusLabel();
     document.querySelector("#active-label").textContent = playerName(state.active);
     document.querySelector("#supply-label").textContent = state.supply;
     document.querySelector("#vp-label").textContent = state.vp;
     const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
+    const setupLocked = yearlyObjectivesLocked();
+    els.playMode.hidden = setupLocked;
+    els.playModeLabel.hidden = setupLocked;
     if (els.yearlyObjectives) {
-      const locked = yearlyObjectivesLocked();
+      const locked = setupLocked;
       els.yearlyObjectives.checked = objectivesEnabled;
       els.yearlyObjectives.disabled = locked;
       if (els.yearlyObjectivesToggle) {
-        els.yearlyObjectivesToggle.hidden = locked && !objectivesEnabled;
+        els.yearlyObjectivesToggle.hidden = locked;
       }
       els.yearlyObjectives.closest("label")?.setAttribute(
         "title",
@@ -4113,6 +4118,7 @@ document.addEventListener("DOMContentLoaded", () => {
     els.romanAdministrationTitle.textContent = "Roman Reinforcements";
     els.romanAdministrationOptions.innerHTML = options.map((option) => {
       const strength = Number(choices[option.id] || 0);
+      const buildUnavailable = builds >= limit && strength === 0;
       return administrationChoiceHtml({
         kind: "reinforcement",
         id: option.id,
@@ -4120,7 +4126,8 @@ document.addEventListener("DOMContentLoaded", () => {
         detail: "Force Pool",
         value: strength,
         maximum: option.maximumStrength,
-        valueLabel: strength ? `strength ${strength}` : "not built"
+        valueLabel: strength ? `strength ${strength}` : "not built",
+        disabled: buildUnavailable
       });
     }).join("");
     els.romanAdministrationStatus.textContent = `${builds} of ${limit} legion${limit === 1 ? "" : "s"} · ${cost} supply · ${state.supply - cost} remaining`;
@@ -4159,10 +4166,10 @@ document.addEventListener("DOMContentLoaded", () => {
     els.romanAdministrationContinue.textContent = "OK";
   }
 
-  function administrationChoiceHtml({ kind, id, name, detail, value, maximum, valueLabel }) {
+  function administrationChoiceHtml({ kind, id, name, detail, value, maximum, valueLabel, disabled = false }) {
     const unit = state.units[id];
     return `
-      <div class="roman-administration-choice">
+      <div class="roman-administration-choice${disabled ? " is-disabled" : ""}"${disabled ? " aria-disabled=\"true\"" : ""}>
         <span class="roman-administration-counter" title="${name}">
           ${unit ? unitCounterMarkup(unit, { showStats: false, showStrength: false }) : ""}
         </span>
@@ -4171,7 +4178,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="roman-administration-stepper">
             <button type="button" aria-label="Decrease ${name}" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="-1"${value <= 0 ? " disabled" : ""}>−</button>
             <output>${valueLabel}</output>
-            <button type="button" aria-label="Increase ${name}" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="1"${value >= maximum ? " disabled" : ""}>+</button>
+            <button type="button" aria-label="Increase ${name}" data-administration-kind="${kind}" data-unit-id="${id}" data-delta="1"${disabled || value >= maximum ? " disabled" : ""}>+</button>
           </div>
         </div>
       </div>`;

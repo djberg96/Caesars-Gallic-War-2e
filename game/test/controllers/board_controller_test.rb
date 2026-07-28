@@ -30,6 +30,8 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select ".board-toolbar #yearly-objectives-toggle" do
       assert_select "input#yearly-objectives[type='checkbox']"
     end
+    assert_select ".board-toolbar label#play-mode-label[for='play-mode']", text: "Mode"
+    assert_select ".board-toolbar select#play-mode"
     assert_select ".board-toolbar #map-zoom" do
       assert_select "option", text: "50%"
       assert_select "option", text: "75%"

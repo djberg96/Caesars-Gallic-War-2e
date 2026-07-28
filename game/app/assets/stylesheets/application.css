@@ -2463,6 +2463,12 @@ dialog {
   background: rgba(10, 14, 11, 0.34);
 }
 
+.roman-administration-choice.is-disabled {
+  border-color: rgba(185, 181, 163, 0.18);
+  filter: saturate(0.4);
+  opacity: 0.52;
+}
+
 .roman-administration-panel .winter-quarters-heading {
   grid-area: heading;
   min-width: 13.5rem;
