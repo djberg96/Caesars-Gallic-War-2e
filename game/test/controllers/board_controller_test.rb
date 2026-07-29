@@ -73,6 +73,14 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#winter-quarters-selection"
       assert_select "button[type='submit']", text: "Continue End Turn"
     end
+    assert_select ".board-panel > form#roman-administration-form", count: 0
+    assert_select "dialog#roman-administration-dialog.roman-administration-dialog" do
+      assert_select "form#roman-administration-form.roman-administration-modal-form"
+      assert_select "#roman-administration-title", text: "Roman Administration"
+      assert_select "#roman-administration-options"
+      assert_select "#roman-administration-status"
+      assert_select "#roman-administration-continue", text: "Continue"
+    end
     assert_select ".command-panel .campaign-status"
     assert_select "#hotseat-controls[hidden]"
     assert_select "#bot-card", count: 0

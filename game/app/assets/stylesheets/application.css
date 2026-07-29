@@ -2381,18 +2381,57 @@ dialog {
   font-weight: 750;
 }
 
+.roman-administration-dialog {
+  width: min(900px, 94vw);
+  max-height: 88vh;
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(217, 180, 95, 0.72);
+  background: #252a24;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72), inset 0 1px rgba(255, 239, 185, 0.08);
+}
+
+.roman-administration-dialog::backdrop {
+  background: rgba(5, 7, 5, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.roman-administration-modal-form {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: 88vh;
+}
+
+.roman-administration-modal-header {
+  padding: 1rem 1.1rem 0.8rem;
+  border-bottom: 1px solid rgba(217, 180, 95, 0.34);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(217, 180, 95, 0.16), transparent 42%),
+    #2a3029;
+}
+
+.roman-administration-modal-header h2 {
+  margin: 0.12rem 0 0;
+  font-family: Georgia, serif;
+  font-size: 1.55rem;
+  line-height: 1.05;
+  white-space: pre-line;
+}
+
 .roman-administration-options {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 12.5rem);
+  align-content: start;
+  justify-content: start;
   gap: 0.7rem;
-  grid-area: options;
-  width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  padding: 0.12rem 0;
+  padding: 1rem 1.1rem;
+  overflow: auto;
 }
 
 .roman-supply-production-summary {
   display: flex;
+  grid-column: 1 / -1;
   flex: 1;
   min-width: 0;
   align-items: center;
@@ -2442,22 +2481,13 @@ dialog {
   font-size: 1rem;
 }
 
-.roman-administration-panel {
-  display: grid;
-  grid-template-areas:
-    "heading options"
-    ". footer";
-  grid-template-columns: 13.5rem minmax(0, 1fr);
-  gap: 0.35rem 0.8rem;
-}
-
 .roman-administration-choice {
   display: grid;
   grid-template-columns: 3.25rem minmax(4.9rem, 1fr);
   align-items: center;
   gap: 0.48rem;
-  min-width: 9.25rem;
-  padding: 0.3rem 0.4rem;
+  min-width: 0;
+  padding: 0.5rem;
   border: 1px solid rgba(217, 180, 95, 0.32);
   border-radius: 0.45rem;
   background: rgba(10, 14, 11, 0.34);
@@ -2469,23 +2499,15 @@ dialog {
   opacity: 0.52;
 }
 
-.roman-administration-panel .winter-quarters-heading {
-  grid-area: heading;
-  min-width: 13.5rem;
-}
-
-.roman-administration-panel .winter-quarters-heading strong {
-  line-height: 1.02;
-  white-space: pre-line;
-}
-
 .roman-administration-footer {
-  grid-area: footer;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
   min-width: 0;
+  padding: 0.8rem 1.1rem 1rem;
+  border-top: 1px solid rgba(217, 180, 95, 0.28);
+  background: rgba(10, 14, 11, 0.22);
 }
 
 .roman-administration-footer .winter-quarters-status {
@@ -2600,16 +2622,18 @@ dialog {
     flex-basis: 100%;
   }
 
-  .roman-administration-panel {
-    grid-template-areas:
-      "heading"
-      "options"
-      "footer";
-    grid-template-columns: minmax(0, 1fr);
+  .roman-administration-options {
+    grid-template-columns: repeat(auto-fill, 12.5rem);
   }
 
   .roman-administration-footer {
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 520px) {
+  .roman-administration-options {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

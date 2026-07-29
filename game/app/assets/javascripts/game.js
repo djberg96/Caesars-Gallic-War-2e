@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     winterQuartersSummary: document.querySelector("#winter-quarters-summary"),
     winterQuartersSelection: document.querySelector("#winter-quarters-selection"),
     winterQuartersError: document.querySelector("#winter-quarters-error"),
+    romanAdministrationDialog: document.querySelector("#roman-administration-dialog"),
     romanAdministrationForm: document.querySelector("#roman-administration-form"),
     romanAdministrationTitle: document.querySelector("#roman-administration-title"),
     romanAdministrationOptions: document.querySelector("#roman-administration-options"),
@@ -4067,15 +4068,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderRomanAdministration() {
-    if (!els.romanAdministrationForm) return;
+    if (!els.romanAdministrationDialog || !els.romanAdministrationForm) return;
     const phase = state.endTurn?.phase;
     if (!["romanReplacements", "romanSupplyProduction", "romanReinforcements"].includes(phase)) {
-      els.romanAdministrationForm.hidden = true;
+      if (els.romanAdministrationDialog.open) els.romanAdministrationDialog.close();
       setRomanAdministrationError();
       return;
     }
 
-    els.romanAdministrationForm.hidden = false;
     if (phase === "romanReplacements") {
       renderRomanReplacementOptions();
     } else if (phase === "romanSupplyProduction") {
@@ -4083,6 +4083,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       renderRomanReinforcementOptions();
     }
+    if (!els.romanAdministrationDialog.open) els.romanAdministrationDialog.showModal();
   }
 
   function renderRomanReplacementOptions() {
@@ -4446,6 +4447,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
   els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
+  els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
   });

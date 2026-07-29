@@ -63,21 +63,6 @@
       <button type="submit" class="winter-quarters-continue">Continue End Turn</button>
     </form>
 
-    <form id="roman-administration-form" class="winter-quarters-panel roman-administration-panel" hidden>
-      <div class="winter-quarters-heading">
-        <span class="dialog-kicker">End of Year</span>
-        <strong id="roman-administration-title">Roman Administration</strong>
-      </div>
-      <div id="roman-administration-options" class="roman-administration-options"></div>
-      <div class="roman-administration-footer">
-        <div class="winter-quarters-status">
-          <strong id="roman-administration-status"></strong>
-          <p id="roman-administration-error" class="import-error" role="alert" hidden></p>
-        </div>
-        <button id="roman-administration-continue" type="submit" class="winter-quarters-continue">Continue</button>
-      </div>
-    </form>
-
     <div id="board" class="board">
       <div id="board-stage" class="board-stage">
         <div id="board-canvas" class="board-canvas">
@@ -227,6 +212,23 @@
       </div>
     </section>
   </div>
+</dialog>
+
+<dialog id="roman-administration-dialog" class="roman-administration-dialog" aria-labelledby="roman-administration-title">
+  <form id="roman-administration-form" class="roman-administration-modal-form">
+    <header class="roman-administration-modal-header">
+      <span class="dialog-kicker">End of Year</span>
+      <h2 id="roman-administration-title">Roman Administration</h2>
+    </header>
+    <div id="roman-administration-options" class="roman-administration-options"></div>
+    <footer class="roman-administration-footer">
+      <div class="winter-quarters-status">
+        <strong id="roman-administration-status"></strong>
+        <p id="roman-administration-error" class="import-error" role="alert" hidden></p>
+      </div>
+      <button id="roman-administration-continue" type="submit" class="winter-quarters-continue">Continue</button>
+    </footer>
+  </form>
 </dialog>
 
 <dialog id="battle-dialog" class="battle-dialog">
