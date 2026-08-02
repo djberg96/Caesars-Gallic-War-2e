@@ -104,7 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
     revoltTargetPanel: document.querySelector("#revolt-target-panel"),
     revoltTargetTitle: document.querySelector("#revolt-target-title"),
     revoltTargetInstructions: document.querySelector("#revolt-target-instructions"),
-    cancelRevoltTarget: document.querySelector("#cancel-revolt-target")
+    cancelRevoltTarget: document.querySelector("#cancel-revolt-target"),
+    retreatTargetPanel: document.querySelector("#retreat-target-panel"),
+    retreatTargetInstructions: document.querySelector("#retreat-target-instructions"),
+    cancelRetreatTarget: document.querySelector("#cancel-retreat-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -127,6 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let botRollReview = null;
   let battleTransitionReview = null;
   let revoltTargetSelection = null;
+  let voluntaryRetreatSelection = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
@@ -426,6 +430,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function unitFaceVisibleToActivePlayer(unit) {
+    if (voluntaryRetreatTargeting()) {
+      return unit.owner === state.units[voluntaryRetreatSelection.unitId]?.owner;
+    }
     if (battleMapMode()) {
       const mapOwner = retreatingOnMap() ? state.battle.retreating : state.battle.winner;
       return unit.owner === mapOwner;
@@ -482,6 +489,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectUnit(id) {
+    if (voluntaryRetreatTargeting()) {
+      await chooseVoluntaryRetreatTarget(state.units[id]?.location);
+      return;
+    }
     if (revoltTargeting()) {
       chooseRevoltTargetUnit(id);
       return;
@@ -523,6 +534,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectArea(id) {
+    if (voluntaryRetreatTargeting()) {
+      await chooseVoluntaryRetreatTarget(id);
+      return;
+    }
     if (revoltTargeting()) {
       chooseRevoltTargetArea(id);
       return;
@@ -731,6 +746,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function moveSelectedTo(target) {
+    if (voluntaryRetreatTargeting()) {
+      chooseVoluntaryRetreatTarget(target);
+      return;
+    }
     if (!state.selectedUnit) {
       selectArea(target);
       return;
@@ -2161,6 +2180,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActionButtons();
     renderBotMovementReview();
     renderRevoltTargeting();
+    renderVoluntaryRetreatTargeting();
     renderUndoButton();
     renderPieceToggle();
     renderHandToggle();
@@ -2186,6 +2206,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const count = revoltTargetSelection.unitIds.size;
     els.revoltTargetTitle.textContent = revoltTargetSelection.title;
     els.revoltTargetInstructions.textContent = `Choose 1 of ${count} highlighted tribe${count === 1 ? "" : "s"} on the map.`;
+  }
+
+  function renderVoluntaryRetreatTargeting() {
+    if (!els.retreatTargetPanel) return;
+    const targeting = voluntaryRetreatTargeting();
+    els.retreatTargetPanel.hidden = !targeting;
+    if (!targeting) return;
+
+    const unit = state.units[voluntaryRetreatSelection.unitId];
+    const targetNames = voluntaryRetreatSelection.targets.map(areaName).join(" or ");
+    els.retreatTargetInstructions.textContent = `${unit.name}: choose ${targetNames} on the map.`;
   }
 
   function renderStatus() {
@@ -2268,7 +2299,8 @@ document.addEventListener("DOMContentLoaded", () => {
     clickCatcher.addEventListener("click", (event) => {
       const areaId = areaFromMapClick(event);
       if (!areaId) return;
-      if (revoltTargeting()) chooseRevoltTargetArea(areaId);
+      if (voluntaryRetreatTargeting()) chooseVoluntaryRetreatTarget(areaId);
+      else if (revoltTargeting()) chooseRevoltTargetArea(areaId);
       else moveSelectedTo(areaId);
     });
     els.areaLayer.append(clickCatcher);
@@ -2302,6 +2334,7 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
       marker.classList.toggle("is-targeting", targetingPoliticalAction());
       marker.classList.toggle("is-revolt-target", revoltTargeting() && revoltTargetAreaIds().includes(area.id));
+      marker.classList.toggle("is-retreat-target", voluntaryRetreatTargetAreaIds().includes(area.id));
       marker.classList.toggle(
         "is-politically-controlled",
         targetingPoliticalAction() && activePlayerControlsPoliticalArea(area.id)
@@ -2393,6 +2426,14 @@ document.addEventListener("DOMContentLoaded", () => {
         fill: [217, 180, 95, 66],
         stripe: [139, 88, 42, 96],
         edge: [255, 231, 145, 245]
+      };
+    }
+    if (voluntaryRetreatTargetAreaIds().includes(area.id)) {
+      return {
+        name: "retreat-target",
+        fill: [91, 171, 205, 76],
+        stripe: [46, 112, 148, 108],
+        edge: [170, 229, 255, 248]
       };
     }
     if (targeting && activePlayerControlsPoliticalArea(area.id)) {
@@ -2945,6 +2986,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activeSplayArea() {
+    if (voluntaryRetreatTargeting()) return state.battle?.area;
     if (revoltTargeting()) return revoltTargetSelection.focusedArea;
     if (battleMapMode()) return state.battle.area;
     if (!state.movement) return null;
@@ -2962,7 +3004,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
     splayedPieceStack = null;
-    if ((piecesHidden && !revoltTargeting()) || targetingPoliticalAction()) return;
+    if ((piecesHidden && !revoltTargeting() && !voluntaryRetreatTargeting()) || targetingPoliticalAction()) return;
 
     const byArea = {};
     Object.values(state.units).forEach((unit) => {
@@ -3069,7 +3111,9 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selectUnit(unit.id);
         });
-        if (!winterQuartersActive() && !revoltTargeting()) piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
+        if (!winterQuartersActive() && !revoltTargeting() && !voluntaryRetreatTargeting()) {
+          piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
+        }
         stack.append(piece);
       });
       els.pieceLayer.append(stack);
@@ -3079,7 +3123,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderNeutralActivationCards() {
     els.neutralActivationLayer.innerHTML = "";
     els.neutralActivationLayer.hidden = false;
-    els.neutralActivationLayer.classList.toggle("is-passive", battleMapMode() || winterQuartersActive() || revoltTargeting());
+    els.neutralActivationLayer.classList.toggle(
+      "is-passive",
+      battleMapMode() || winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting()
+    );
 
     const slots = [
       { player: "barbarian", label: "German player neutral tribe activation", cards: state.neutralActivationCards.barbarian || [] },
@@ -3503,6 +3550,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (els.battleDialog.open) els.battleDialog.close();
       return;
     }
+    if (voluntaryRetreatTargeting()) {
+      if (els.battleDialog.open) els.battleDialog.close();
+      return;
+    }
     if (!els.battleDialog.open) {
       if (els.resultDialog?.open) els.resultDialog.close();
       els.battleDialog.showModal();
@@ -3734,14 +3785,63 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        const target = await chooseOptionWithDialog({
-          title: `Retreat ${unit.name}`,
-          message: "Choose an adjacent friendly or empty area. The enemy's entry area is prohibited.",
-          options: targets.map((areaId) => ({ value: areaId, label: areaName(areaId) }))
-        });
-        if (target) await battleAction("retreat", unitId, target);
+        startVoluntaryRetreatTargeting(unitId, targets);
       });
     });
+  }
+
+  function voluntaryRetreatTargeting() {
+    return Boolean(
+      voluntaryRetreatSelection &&
+      state.battle &&
+      state.units[voluntaryRetreatSelection.unitId]?.location === state.battle.area
+    );
+  }
+
+  function voluntaryRetreatTargetAreaIds() {
+    return voluntaryRetreatTargeting() ? voluntaryRetreatSelection.targets : [];
+  }
+
+  function startVoluntaryRetreatTargeting(unitId, targets) {
+    const unit = state.units[unitId];
+    if (!unit || !targets.length) return;
+
+    voluntaryRetreatSelection = { unitId, targets };
+    state.selectedUnit = unitId;
+    state.selectedArea = state.battle.area;
+    piecesHidden = false;
+    els.selection.textContent = `Retreat ${unit.name} from ${areaName(state.battle.area)}.`;
+    els.areaDetail.textContent = "Choose one of the highlighted legal destinations on the map. The enemy entry area is prohibited.";
+    if (els.battleDialog?.open) els.battleDialog.close();
+    document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
+    render();
+  }
+
+  async function chooseVoluntaryRetreatTarget(areaId) {
+    if (!voluntaryRetreatTargeting() || !areaId) return;
+    const { unitId, targets } = voluntaryRetreatSelection;
+    const unit = state.units[unitId];
+    if (!targets.includes(areaId)) {
+      state.selectedArea = areaId;
+      els.selection.textContent = `${areaName(areaId)} is not a legal retreat for ${unit.name}.`;
+      els.areaDetail.textContent = areas[state.battle.area]?.links?.includes(areaId)
+        ? `Blocked: ${voluntaryRetreatBlockReason(state.battle, unit, areaId) || "not a legal destination"}.`
+        : "Retreats must move to an adjacent highlighted area.";
+      render();
+      return;
+    }
+
+    voluntaryRetreatSelection = null;
+    state.selectedUnit = null;
+    state.selectedArea = areaId;
+    await battleAction("retreat", unitId, areaId);
+  }
+
+  function cancelVoluntaryRetreatTargeting() {
+    voluntaryRetreatSelection = null;
+    state.selectedUnit = null;
+    state.selectedArea = state.battle?.area || null;
+    render();
   }
 
   function legalVoluntaryRetreatTargets(battle, unit) {
@@ -4420,16 +4520,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const button = document.querySelector("#toggle-pieces");
     button.textContent = piecesHidden ? "Show Units" : "Hide Units";
     button.setAttribute("aria-pressed", piecesHidden ? "true" : "false");
-    button.disabled = winterQuartersActive() || revoltTargeting();
+    button.disabled = winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting();
     button.title = winterQuartersActive()
       ? "Units remain visible while choosing winter quarters."
       : revoltTargeting()
         ? "Units remain visible while choosing a revolt target."
+        : voluntaryRetreatTargeting()
+          ? "Units remain visible while choosing a retreat destination."
         : "";
   }
 
   function togglePieces() {
-    if (winterQuartersActive() || revoltTargeting()) return;
+    if (winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting()) return;
     piecesHidden = !piecesHidden;
     render();
   }
@@ -4466,6 +4568,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.regrouping = false;
       state.retreating = false;
       battleTransitionReview = null;
+      voluntaryRetreatSelection = null;
       if (els.battleTransitionDialog?.open) els.battleTransitionDialog.close();
     }
     if (state.battle) {
@@ -4637,6 +4740,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.battleTransitionForm?.addEventListener("submit", continueToNextBattle);
   els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
+  els.cancelRetreatTarget?.addEventListener("click", cancelVoluntaryRetreatTargeting);
   els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
@@ -4676,6 +4780,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeGameMenu();
+    if (voluntaryRetreatTargeting()) {
+      cancelVoluntaryRetreatTargeting();
+      return;
+    }
     if (revoltTargeting()) {
       revoltTargetSelection.settle(false);
       return;

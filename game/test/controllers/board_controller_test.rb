@@ -48,6 +48,10 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#revolt-target-instructions"
       assert_select "#cancel-revolt-target", text: "Cancel"
     end
+    assert_select ".board-toolbar #retreat-target-panel[hidden]" do
+      assert_select "#retreat-target-instructions", text: "Choose a highlighted destination on the map."
+      assert_select "#cancel-retreat-target", text: "Back to Battle"
+    end
     assert_select "#board > #board-stage > #board-canvas" do
       assert_select "img[alt=?]", "Caesar's Gallic War map"
       assert_select "#area-layer"
