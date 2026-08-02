@@ -2302,6 +2302,20 @@ dialog {
   min-width: 6rem;
 }
 
+.battle-transition-dialog {
+  width: min(440px, 92vw);
+  border-color: rgba(217, 180, 95, 0.72);
+}
+
+.battle-transition-dialog .dialog-kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.battle-transition-dialog .turn-dialog-message {
+  line-height: 1.45;
+}
+
 .bot-action-review-dialog {
   width: min(620px, 92vw);
   max-height: 86vh;

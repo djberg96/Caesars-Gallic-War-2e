@@ -93,6 +93,11 @@ document.addEventListener("DOMContentLoaded", () => {
     botActionReviewMessage: document.querySelector("#bot-action-review-message"),
     botActionReviewDetails: document.querySelector("#bot-action-review-details"),
     advanceBotActionReview: document.querySelector("#advance-bot-action-review"),
+    battleTransitionDialog: document.querySelector("#battle-transition-dialog"),
+    battleTransitionForm: document.querySelector("#battle-transition-form"),
+    battleTransitionTitle: document.querySelector("#battle-transition-title"),
+    battleTransitionMessage: document.querySelector("#battle-transition-message"),
+    continueNextBattle: document.querySelector("#continue-next-battle"),
     botMovementReview: document.querySelector("#bot-movement-review"),
     botMovementReviewRoutes: document.querySelector("#bot-movement-review-routes"),
     continueBotMovementReview: document.querySelector("#continue-bot-movement-review"),
@@ -120,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let resultDialogQueue = [];
   let botActionReview = null;
   let botRollReview = null;
+  let battleTransitionReview = null;
   let revoltTargetSelection = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
@@ -1121,11 +1127,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showNextResultDialog() {
     if (!resultDialogQueue.length) {
+      showBattleTransitionReview();
       showTurnAnnouncement();
       showBotActionReview();
       return;
     }
     displayResultDialog(resultDialogQueue.shift());
+  }
+
+  function showBattleTransitionReview() {
+    if (!battleTransitionReview || !els.battleTransitionDialog) return;
+    if (els.battleTransitionDialog.open || document.querySelector("dialog[open]")) return;
+
+    els.battleTransitionTitle.textContent = `Next Battle: ${areaName(battleTransitionReview.to)}`;
+    els.battleTransitionMessage.textContent = `The battle in ${areaName(battleTransitionReview.from)} is complete. Another unresolved battle is ready.`;
+    els.continueNextBattle.textContent = `Continue to ${areaName(battleTransitionReview.to)}`;
+    els.battleTransitionDialog.showModal();
+  }
+
+  function continueToNextBattle(event) {
+    event.preventDefault();
+    if (!battleTransitionReview) return;
+
+    const nextArea = battleTransitionReview.to;
+    battleTransitionReview = null;
+    if (els.battleTransitionDialog?.open) els.battleTransitionDialog.close();
+    focusBoardArea(nextArea);
+    render();
   }
 
   function turnAnnouncementText() {
@@ -1923,6 +1951,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function battleAction(action, unitId = null, target = null) {
     const hadBattle = Boolean(state.battle);
+    const previousBattleArea = state.battle?.area;
     const playedCard = currentActionCard();
     const wasRegrouping = state.regrouping;
     const wasRetreating = state.retreating;
@@ -1937,6 +1966,12 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      if (previousBattleArea && state.battle?.area && state.battle.area !== previousBattleArea) {
+        battleTransitionReview = {
+          from: previousBattleArea,
+          to: state.battle.area
+        };
+      }
       if (state.battle) {
         state.regrouping = Boolean(wasRegrouping && state.battle.phase === "regroup");
         state.retreating = Boolean(wasRetreating && state.battle.phase === "retreat");
@@ -2137,6 +2172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle("is-active", button.dataset.player === state.active);
     });
     renderCommittedCards();
+    showBattleTransitionReview();
     showTurnAnnouncement();
     showBotActionReview();
   }
@@ -3455,6 +3491,10 @@ document.addEventListener("DOMContentLoaded", () => {
       state.regroupUnit = null;
       return;
     }
+    if (battleTransitionReview) {
+      if (els.battleDialog.open) els.battleDialog.close();
+      return;
+    }
     if (botActionReview?.battlePending) {
       if (els.battleDialog.open) els.battleDialog.close();
       return;
@@ -4425,6 +4465,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!state.battle) {
       state.regrouping = false;
       state.retreating = false;
+      battleTransitionReview = null;
+      if (els.battleTransitionDialog?.open) els.battleTransitionDialog.close();
     }
     if (state.battle) {
       state.battle.acted ||= [];
@@ -4591,6 +4633,8 @@ document.addEventListener("DOMContentLoaded", () => {
   els.turnDialogForm?.addEventListener("submit", acknowledgeTurnAnnouncement);
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
+  els.battleTransitionDialog?.addEventListener("cancel", (event) => event.preventDefault());
+  els.battleTransitionForm?.addEventListener("submit", continueToNextBattle);
   els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
   els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());

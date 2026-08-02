@@ -71,6 +71,11 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#bot-action-review-details"
       assert_select "#advance-bot-action-review", text: "Continue"
     end
+    assert_select "#battle-transition-dialog[aria-labelledby='battle-transition-title']" do
+      assert_select "#battle-transition-title", text: "Next Battle"
+      assert_select "#battle-transition-message"
+      assert_select "#continue-next-battle", text: "Continue to Battle"
+    end
     assert_select "#battle-dialog #battle-zones + #battle-details"
     assert_select "dialog#winter-quarters-dialog", count: 0
     assert_select "form#winter-quarters-form.winter-quarters-panel[hidden]" do
