@@ -95,7 +95,11 @@ document.addEventListener("DOMContentLoaded", () => {
     advanceBotActionReview: document.querySelector("#advance-bot-action-review"),
     botMovementReview: document.querySelector("#bot-movement-review"),
     botMovementReviewRoutes: document.querySelector("#bot-movement-review-routes"),
-    continueBotMovementReview: document.querySelector("#continue-bot-movement-review")
+    continueBotMovementReview: document.querySelector("#continue-bot-movement-review"),
+    revoltTargetPanel: document.querySelector("#revolt-target-panel"),
+    revoltTargetTitle: document.querySelector("#revolt-target-title"),
+    revoltTargetInstructions: document.querySelector("#revolt-target-instructions"),
+    cancelRevoltTarget: document.querySelector("#cancel-revolt-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -116,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let resultDialogQueue = [];
   let botActionReview = null;
   let botRollReview = null;
+  let revoltTargetSelection = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
@@ -471,6 +476,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectUnit(id) {
+    if (revoltTargeting()) {
+      chooseRevoltTargetUnit(id);
+      return;
+    }
     if (targetingPoliticalAction()) return;
 
     const unit = state.units[id];
@@ -508,6 +517,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectArea(id) {
+    if (revoltTargeting()) {
+      chooseRevoltTargetArea(id);
+      return;
+    }
     if (targetingPoliticalAction()) {
       await resolvePoliticalTarget(id);
       return;
@@ -957,6 +970,53 @@ document.addEventListener("DOMContentLoaded", () => {
     return state.targetingAction === "political";
   }
 
+  function revoltTargeting() {
+    return Boolean(revoltTargetSelection);
+  }
+
+  function revoltTargetEligible(unit) {
+    return Boolean(unit && revoltTargetSelection?.unitIds.has(unit.id));
+  }
+
+  function revoltTargetAreaIds() {
+    if (!revoltTargetSelection) return [];
+    return [...revoltTargetSelection.unitIds]
+      .map((unitId) => state.units[unitId]?.location)
+      .filter((areaId, index, ids) => areaId && ids.indexOf(areaId) === index);
+  }
+
+  function chooseRevoltTargetUnit(unitId) {
+    const unit = state.units[unitId];
+    if (!revoltTargetEligible(unit)) {
+      els.selection.textContent = "Choose one of the highlighted Barbarian-controlled tribes.";
+      return;
+    }
+
+    state.selectedUnit = unitId;
+    state.selectedArea = unit.location;
+    revoltTargetSelection.settle(unitId);
+  }
+
+  function chooseRevoltTargetArea(areaId) {
+    if (!revoltTargetSelection) return;
+    const candidates = [...revoltTargetSelection.unitIds]
+      .map((unitId) => state.units[unitId])
+      .filter((unit) => unit?.location === areaId);
+    if (!candidates.length) {
+      els.selection.textContent = "Choose a highlighted area or tribe.";
+      return;
+    }
+    if (candidates.length === 1) {
+      chooseRevoltTargetUnit(candidates[0].id);
+      return;
+    }
+
+    revoltTargetSelection.focusedArea = areaId;
+    state.selectedArea = areaId;
+    els.selection.textContent = `Choose ${candidates.map((unit) => unit.name).join(" or ")} in ${areaName(areaId)}.`;
+    render();
+  }
+
   function activePlayerControlsPoliticalArea(areaId) {
     return Object.values(state.units).some((unit) =>
       unit.type === "barbarian" &&
@@ -1230,17 +1290,39 @@ document.addEventListener("DOMContentLoaded", () => {
       return false;
     }
 
-    const unitId = await chooseOptionWithDialog({
-      title: card.title,
-      message: "Select an active Barbarian-controlled tribe to return home.",
-      options: targets.map((unit) => ({
-        value: unit.id,
-        label: `${unit.name} in ${areaName(unit.location)}`
-      }))
-    });
+    const unitId = await chooseRevoltTargetOnMap(card, targets);
     if (!unitId) return false;
 
     return { unit_id: unitId };
+  }
+
+  function chooseRevoltTargetOnMap(card, targets) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const previousPiecesHidden = piecesHidden;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        revoltTargetSelection = null;
+        piecesHidden = previousPiecesHidden;
+        render();
+        resolve(value);
+      };
+
+      revoltTargetSelection = {
+        title: card.title,
+        unitIds: new Set(targets.map((unit) => unit.id)),
+        focusedArea: null,
+        settle
+      };
+      piecesHidden = false;
+      state.selectedUnit = null;
+      state.selectedArea = null;
+      els.selection.textContent = `${card.title}: choose a highlighted Barbarian-controlled tribe. Its current area and home are shown on the counter tooltip.`;
+      els.areaDetail.textContent = "Click a highlighted counter. Hover over a stack to separate its tribes.";
+      render();
+      document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
+    });
   }
 
   function romanRevoltTargets() {
@@ -2043,6 +2125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderModeControls();
     renderActionButtons();
     renderBotMovementReview();
+    renderRevoltTargeting();
     renderUndoButton();
     renderPieceToggle();
     renderHandToggle();
@@ -2056,6 +2139,17 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCommittedCards();
     showTurnAnnouncement();
     showBotActionReview();
+  }
+
+  function renderRevoltTargeting() {
+    if (!els.revoltTargetPanel) return;
+    const targeting = revoltTargeting();
+    els.revoltTargetPanel.hidden = !targeting;
+    if (!targeting) return;
+
+    const count = revoltTargetSelection.unitIds.size;
+    els.revoltTargetTitle.textContent = revoltTargetSelection.title;
+    els.revoltTargetInstructions.textContent = `Choose 1 of ${count} highlighted tribe${count === 1 ? "" : "s"} on the map.`;
   }
 
   function renderStatus() {
@@ -2137,7 +2231,9 @@ document.addEventListener("DOMContentLoaded", () => {
     clickCatcher.classList.add("area-click-catcher");
     clickCatcher.addEventListener("click", (event) => {
       const areaId = areaFromMapClick(event);
-      if (areaId) moveSelectedTo(areaId);
+      if (!areaId) return;
+      if (revoltTargeting()) chooseRevoltTargetArea(areaId);
+      else moveSelectedTo(areaId);
     });
     els.areaLayer.append(clickCatcher);
 
@@ -2169,6 +2265,7 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-selected", state.selectedArea === area.id);
       marker.classList.toggle("is-movement", movementAreaActivated(area.id));
       marker.classList.toggle("is-targeting", targetingPoliticalAction());
+      marker.classList.toggle("is-revolt-target", revoltTargeting() && revoltTargetAreaIds().includes(area.id));
       marker.classList.toggle(
         "is-politically-controlled",
         targetingPoliticalAction() && activePlayerControlsPoliticalArea(area.id)
@@ -2253,6 +2350,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (blocked) {
       return { name: "disabled", fill: [104, 102, 94, 28], edge: [142, 138, 126, 125] };
+    }
+    if (revoltTargeting() && revoltTargetAreaIds().includes(area.id)) {
+      return {
+        name: "revolt-target",
+        fill: [217, 180, 95, 66],
+        stripe: [139, 88, 42, 96],
+        edge: [255, 231, 145, 245]
+      };
     }
     if (targeting && activePlayerControlsPoliticalArea(area.id)) {
       return state.active === "roman"
@@ -2804,6 +2909,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activeSplayArea() {
+    if (revoltTargeting()) return revoltTargetSelection.focusedArea;
     if (battleMapMode()) return state.battle.area;
     if (!state.movement) return null;
 
@@ -2820,7 +2926,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
     splayedPieceStack = null;
-    if (piecesHidden || targetingPoliticalAction()) return;
+    if ((piecesHidden && !revoltTargeting()) || targetingPoliticalAction()) return;
 
     const byArea = {};
     Object.values(state.units).forEach((unit) => {
@@ -2831,7 +2937,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     Object.entries(byArea).forEach(([areaId, units]) => {
       const area = areas[areaId];
-      const canSplay = units.length > 1 && units.every(unitFaceVisibleToActivePlayer);
+      const canSplay = units.length > 1 && (
+        units.every(unitFaceVisibleToActivePlayer) ||
+        (revoltTargeting() && units.some(revoltTargetEligible))
+      );
       const columns = Math.min(4, units.length);
       const rows = Math.ceil(units.length / columns);
       const stack = document.createElement("div");
@@ -2857,6 +2966,10 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       stack.addEventListener("pointerenter", keepStackSplayed);
       stack.addEventListener("focusin", keepStackSplayed);
+      if (revoltTargetSelection?.focusedArea === areaId && canSplay) {
+        stack.classList.add("is-splayed");
+        splayedPieceStack = stack;
+      }
       stack.addEventListener("click", (event) => {
         if (event.target !== stack) return;
         event.stopPropagation();
@@ -2875,8 +2988,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
         const winterEligible = winterQuartersEligible(unit.id);
-        const faceVisible = winterEligible || unitFaceVisibleToActivePlayer(unit);
+        const revoltEligible = revoltTargetEligible(unit);
+        const faceVisible = winterEligible || revoltEligible || unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
+        piece.classList.toggle("is-revolt-target", revoltEligible);
+        piece.classList.toggle("is-revolt-ineligible", revoltTargeting() && !revoltEligible);
         piece.classList.toggle("is-winter-eligible", winterEligible);
         piece.classList.toggle("is-wintering", winterEligible && winteringUnitIds().includes(unit.id));
         piece.classList.toggle("is-winter-ineligible", winterQuartersActive() && !winterEligible);
@@ -2896,10 +3012,15 @@ document.addEventListener("DOMContentLoaded", () => {
             ? `${unit.name} will winter in ${areaName(unit.location)}. Click to send it to Transalpine Gaul.`
             : `${unit.name} will return to Transalpine Gaul. Click to winter it in ${areaName(unit.location)}.`;
           piece.setAttribute("aria-pressed", winteringUnitIds().includes(unit.id) ? "true" : "false");
+        } else if (revoltEligible) {
+          piece.title = `${unit.name}, currently in ${areaName(unit.location)}; returns home to ${areaName(unit.home)}. Click to choose.`;
         } else {
           piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
         }
-        piece.innerHTML = unitCounterMarkup(unit, { faceVisible });
+        piece.innerHTML = unitCounterMarkup(unit, {
+          faceVisible,
+          showStrength: !revoltEligible || unitFaceVisibleToActivePlayer(unit)
+        });
         piece.addEventListener("click", (event) => {
           event.stopPropagation();
           if (suppressNextPieceClick) {
@@ -2912,7 +3033,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selectUnit(unit.id);
         });
-        if (!winterQuartersActive()) piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
+        if (!winterQuartersActive() && !revoltTargeting()) piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
         stack.append(piece);
       });
       els.pieceLayer.append(stack);
@@ -2922,7 +3043,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderNeutralActivationCards() {
     els.neutralActivationLayer.innerHTML = "";
     els.neutralActivationLayer.hidden = false;
-    els.neutralActivationLayer.classList.toggle("is-passive", battleMapMode() || winterQuartersActive());
+    els.neutralActivationLayer.classList.toggle("is-passive", battleMapMode() || winterQuartersActive() || revoltTargeting());
 
     const slots = [
       { player: "barbarian", label: "German player neutral tribe activation", cards: state.neutralActivationCards.barbarian || [] },
@@ -3413,8 +3534,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (battle.phase === "retreat") {
       const retreat = document.createElement("button");
       retreat.type = "button";
-      retreat.textContent = "Retreat";
-      retreat.addEventListener("click", startMapRetreat);
+      const trapped = forcedRetreatUnits(battle).every((unit) => legalVoluntaryRetreatTargets(battle, unit).length === 0);
+      retreat.textContent = trapped ? "Resolve Trapped Units" : "Retreat";
+      retreat.addEventListener("click", trapped ? () => battleAction("finish_retreat") : startMapRetreat);
       els.battleActions.append(retreat);
       return;
     }
@@ -3422,7 +3544,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function battleStatusText(battle, activeUnit) {
     if (battle.phase === "regroup") return `${playerName(battle.winner)} won. Regroup victorious units or hold the field.`;
-    if (battle.phase === "retreat") return `${playerName(battle.retreating)} is defeated and must retreat.`;
+    if (battle.phase === "retreat") {
+      const retreaters = forcedRetreatUnits(battle);
+      if (retreaters.length && retreaters.every((unit) => legalVoluntaryRetreatTargets(battle, unit).length === 0)) {
+        return `${playerName(battle.retreating)} is defeated. Its trapped units have no legal retreat and will be eliminated.`;
+      }
+      return `${playerName(battle.retreating)} is defeated and must retreat.`;
+    }
     if (battle.pendingHits?.targetIds?.length) {
       const owner = state.units[battle.pendingHits.targetIds[0]]?.owner;
       const remaining = battle.pendingHits.remaining || 1;
@@ -3580,6 +3708,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!battle || !unit) return [];
 
     return areas[battle.area].links.filter((areaId) => !voluntaryRetreatBlockReason(battle, unit, areaId));
+  }
+
+  function forcedRetreatUnits(battle) {
+    if (!battle) return [];
+    return [...(battle.attackers || []), ...(battle.defenders || [])]
+      .filter((unitId, index, ids) => ids.indexOf(unitId) === index)
+      .map((unitId) => state.units[unitId])
+      .filter((unit) =>
+        unit &&
+        unit.owner === battle.retreating &&
+        unit.location === battle.area &&
+        currentStrength(unit) > 0
+      );
   }
 
   function voluntaryRetreatBlockReason(battle, unit, areaId) {
@@ -4239,12 +4380,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const button = document.querySelector("#toggle-pieces");
     button.textContent = piecesHidden ? "Show Units" : "Hide Units";
     button.setAttribute("aria-pressed", piecesHidden ? "true" : "false");
-    button.disabled = winterQuartersActive();
-    button.title = winterQuartersActive() ? "Units remain visible while choosing winter quarters." : "";
+    button.disabled = winterQuartersActive() || revoltTargeting();
+    button.title = winterQuartersActive()
+      ? "Units remain visible while choosing winter quarters."
+      : revoltTargeting()
+        ? "Units remain visible while choosing a revolt target."
+        : "";
   }
 
   function togglePieces() {
-    if (winterQuartersActive()) return;
+    if (winterQuartersActive() || revoltTargeting()) return;
     piecesHidden = !piecesHidden;
     render();
   }
@@ -4447,6 +4592,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
   els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
+  els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
   els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
@@ -4486,6 +4632,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeGameMenu();
+    if (revoltTargeting()) {
+      revoltTargetSelection.settle(false);
+      return;
+    }
     if (zoomedCardId) {
       zoomedCardId = null;
       render();

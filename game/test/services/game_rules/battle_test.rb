@@ -444,6 +444,57 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "retreat complete", result["log"].join(" ")
   end
 
+  test "defeated units with no legal retreat are eliminated" do
+    state = battle_state
+    adjacent_areas = Area.find_by!(key: "allobroges").outgoing_borders.map(&:to_area).reject(&:sea?)
+    blocker_types = UnitType.where.not(key: state["units"].keys).first(adjacent_areas.length)
+    adjacent_areas.zip(blocker_types).each do |area, unit_type|
+      state["units"][unit_type.key] = {
+        "id" => unit_type.key,
+        "name" => unit_type.name,
+        "type" => unit_type.category,
+        "owner" => "neutral",
+        "location" => area.key,
+        "home" => unit_type.home,
+        "step" => 0,
+        "strengths" => unit_type.strengths,
+        "initiative" => unit_type.initiative,
+        "fire" => unit_type.fire
+      }
+    end
+    state["battle"] = {
+      "area" => "allobroges",
+      "round" => 3,
+      "maxRounds" => 3,
+      "phase" => "retreat",
+      "attacker" => "roman",
+      "defender" => "barbarian",
+      "activeUnit" => nil,
+      "acted" => [],
+      "fired" => [],
+      "actionResults" => [],
+      "attackers" => ["legion_vii"],
+      "defenders" => ["allobroges"],
+      "mainOrigin" => nil,
+      "entries" => {},
+      "reserves" => [],
+      "fort" => [],
+      "halfHits" => {},
+      "retreated" => [],
+      "crossings" => {},
+      "winner" => "barbarian",
+      "retreating" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).act!(action: "finish_retreat")
+
+    assert_nil result["battle"]
+    assert_equal "eliminated", result.dig("units", "legion_vii", "location")
+    assert_equal 0, result["vp"]
+    assert_match "Legion VII has no legal retreat from Allobroges and is eliminated", result["log"].join(" ")
+  end
+
   test "solitaire automatically retreats a defeated Barbarian attacker through its entry border" do
     state = battle_state
     state["mode"] = "solitaire"

@@ -421,9 +421,17 @@ module GameRules
 
     def finish_forced_retreat!
       remaining = live_combat_units.select { |unit| unit["owner"] == battle["retreating"] && unit["location"] == battle_area.key }
-      if remaining.any?
-        names = remaining.map { |unit| unit.fetch("name") }.join(", ")
+      retreatable = remaining.select { |unit| legal_retreat_targets(unit).any? }
+      if retreatable.any?
+        names = retreatable.map { |unit| unit.fetch("name") }.join(", ")
         raise InvalidAction, "Retreat #{names} before completing the retreat."
+      end
+
+      remaining.each do |unit|
+        eliminate_unit!(
+          unit,
+          reason: "#{unit.fetch("name")} has no legal retreat from #{battle_area.name} and is eliminated."
+        )
       end
 
       log("#{player_name(battle["retreating"])} retreat complete. #{player_name(battle["winner"])} holds #{battle_area.name}.")
@@ -526,7 +534,7 @@ module GameRules
 
       retreaters.each do |retreater|
         target = bot_forced_retreat_target(retreater)
-        return unless target
+        next unless target
 
         forced_retreat!(retreater.fetch("id"), target)
       end
@@ -762,28 +770,32 @@ module GameRules
       area_units(area_key).each do |unit|
         next if current_strength(unit).positive?
 
-        unit["location"] = "eliminated"
-        unit["eliminatedTurn"] = @state.fetch("turn", 0).to_i if unit["type"] == "roman"
-        remove_from_battle!(unit.fetch("id"))
-        if unit["id"] == "legion_x"
-          @state["gameOver"] = {
-            "winner" => "barbarian",
-            "result" => "Barbarian Instant Victory",
-            "vp" => @state.fetch("vp", 0).to_i
-          }
-          log("Caesar has been killed. Barbarian instant victory.")
-        elsif unit["type"] == "roman"
-          @state["vp"] = [@state.fetch("vp", 0).to_i - 5, 0].max
-          log("#{unit.fetch("name")} eliminated. Roman VP -5.")
-        elsif unit["type"] == "german"
-          @state["vp"] = @state.fetch("vp", 0).to_i + (unit["id"] == "ariovistus" ? 2 : 1)
-          log("#{unit.fetch("name")} eliminated. Roman VP increases.")
-        elsif unit["id"] == "vercingetorix"
-          @state["vp"] = @state.fetch("vp", 0).to_i + 3
-          log("Vercingetorix eliminated. Roman VP +3.")
-        else
-          log("#{unit.fetch("name")} eliminated.")
-        end
+        eliminate_unit!(unit)
+      end
+    end
+
+    def eliminate_unit!(unit, reason: nil)
+      unit["location"] = "eliminated"
+      unit["eliminatedTurn"] = @state.fetch("turn", 0).to_i if unit["type"] == "roman"
+      remove_from_battle!(unit.fetch("id"))
+      if unit["id"] == "legion_x"
+        @state["gameOver"] = {
+          "winner" => "barbarian",
+          "result" => "Barbarian Instant Victory",
+          "vp" => @state.fetch("vp", 0).to_i
+        }
+        log("#{reason || "Caesar has been killed."} Barbarian instant victory.")
+      elsif unit["type"] == "roman"
+        @state["vp"] = [@state.fetch("vp", 0).to_i - 5, 0].max
+        log("#{reason || "#{unit.fetch("name")} eliminated."} Roman VP -5.")
+      elsif unit["type"] == "german"
+        @state["vp"] = @state.fetch("vp", 0).to_i + (unit["id"] == "ariovistus" ? 2 : 1)
+        log("#{reason || "#{unit.fetch("name")} eliminated."} Roman VP increases.")
+      elsif unit["id"] == "vercingetorix"
+        @state["vp"] = @state.fetch("vp", 0).to_i + 3
+        log("#{reason || "Vercingetorix eliminated."} Roman VP +3.")
+      else
+        log(reason || "#{unit.fetch("name")} eliminated.")
       end
     end
 
@@ -828,6 +840,14 @@ module GameRules
 
       used = battle["crossings"].fetch("#{battle_area.key}->#{target}", 0).to_i
       used + 1 <= capacity
+    end
+
+    def legal_retreat_targets(acting)
+      battle_area.outgoing_borders
+        .map(&:to_area)
+        .reject(&:sea?)
+        .map(&:key)
+        .select { |target| legal_retreat_destination?(acting, target) }
     end
 
     def blocked_retreat_area?(acting, target)
