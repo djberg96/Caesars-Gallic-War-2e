@@ -107,7 +107,11 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelRevoltTarget: document.querySelector("#cancel-revolt-target"),
     retreatTargetPanel: document.querySelector("#retreat-target-panel"),
     retreatTargetInstructions: document.querySelector("#retreat-target-instructions"),
-    cancelRetreatTarget: document.querySelector("#cancel-retreat-target")
+    cancelRetreatTarget: document.querySelector("#cancel-retreat-target"),
+    mainForceTargetPanel: document.querySelector("#main-force-target-panel"),
+    mainForceTargetTitle: document.querySelector("#main-force-target-title"),
+    mainForceTargetInstructions: document.querySelector("#main-force-target-instructions"),
+    cancelMainForceTarget: document.querySelector("#cancel-main-force-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
   const mapAspectRatio = 2080 / 1664;
@@ -131,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let battleTransitionReview = null;
   let revoltTargetSelection = null;
   let voluntaryRetreatSelection = null;
+  let mainForceSelection = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
@@ -430,6 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function unitFaceVisibleToActivePlayer(unit) {
+    if (mainForceTargeting()) return unit.owner === state.active;
     if (voluntaryRetreatTargeting()) {
       return unit.owner === state.units[voluntaryRetreatSelection.unitId]?.owner;
     }
@@ -489,6 +495,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectUnit(id) {
+    if (mainForceTargeting()) {
+      chooseMainForceUnit(id);
+      return;
+    }
     if (voluntaryRetreatTargeting()) {
       await chooseVoluntaryRetreatTarget(state.units[id]?.location);
       return;
@@ -534,6 +544,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function selectArea(id) {
+    if (mainForceTargeting()) {
+      chooseMainForceOrigin(id);
+      return;
+    }
     if (voluntaryRetreatTargeting()) {
       await chooseVoluntaryRetreatTarget(id);
       return;
@@ -746,6 +760,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function moveSelectedTo(target) {
+    if (mainForceTargeting()) {
+      chooseMainForceOrigin(target);
+      return;
+    }
     if (voluntaryRetreatTargeting()) {
       chooseVoluntaryRetreatTarget(target);
       return;
@@ -1875,7 +1893,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (origins.length <= 1) return origins[0] || null;
 
-    return chooseMainForceWithDialog(areaId, origins);
+    return chooseMainForceOnMap(areaId, origins);
   }
 
   function chooseBattleAreaWithDialog(areaIds) {
@@ -1922,40 +1940,70 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function chooseMainForceWithDialog(areaId, origins) {
-    if (!els.mainForceDialog) return false;
-
+  function chooseMainForceOnMap(areaId, origins) {
     return new Promise((resolve) => {
       let settled = false;
+      const previousPiecesHidden = piecesHidden;
       const settle = (value) => {
         if (settled) return;
         settled = true;
-        els.mainForceDialog.removeEventListener("cancel", onCancel);
-        els.mainForceCancel.removeEventListener("click", onCancelClick);
-        if (els.mainForceDialog.open) els.mainForceDialog.close();
+        mainForceSelection = null;
+        piecesHidden = previousPiecesHidden;
+        state.selectedUnit = null;
+        state.selectedArea = null;
+        render();
         resolve(value);
       };
-      const onCancel = (event) => {
-        event.preventDefault();
-        settle(false);
-      };
-      const onCancelClick = () => settle(false);
 
-      els.mainForceTitle.textContent = "Choose Main Force";
-      els.mainForceMessage.textContent = `Multiple groups are attacking ${areaName(areaId)}. Choose the group that starts active; the others enter as reserves.`;
-      els.mainForceChoices.innerHTML = "";
-      origins.forEach((origin) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = areaName(origin);
-        button.addEventListener("click", () => settle(origin));
-        els.mainForceChoices.append(button);
-      });
-      els.mainForceDialog.addEventListener("cancel", onCancel);
-      els.mainForceCancel.addEventListener("click", onCancelClick);
-      if (els.resultDialog?.open) els.resultDialog.close();
-      els.mainForceDialog.showModal();
+      mainForceSelection = { areaId, origins, settle };
+      piecesHidden = false;
+      state.selectedUnit = null;
+      state.selectedArea = areaId;
+      els.selection.textContent = `Choose the main force attacking ${areaName(areaId)}.`;
+      els.areaDetail.textContent = "Choose a highlighted origin area, or an outlined attacking unit. That group starts active; the others enter as reserves.";
+      render();
+      document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
     });
+  }
+
+  function mainForceTargeting() {
+    return Boolean(mainForceSelection && state.movement);
+  }
+
+  function mainForceOriginIds() {
+    return mainForceTargeting() ? mainForceSelection.origins : [];
+  }
+
+  function mainForceEligible(unit) {
+    return Boolean(
+      mainForceTargeting() &&
+      unit &&
+      unit.owner === state.active &&
+      unit.location === mainForceSelection.areaId &&
+      mainForceSelection.origins.includes(movementEntry(unit, mainForceSelection.areaId))
+    );
+  }
+
+  function chooseMainForceUnit(unitId) {
+    const unit = state.units[unitId];
+    if (!mainForceEligible(unit)) {
+      els.selection.textContent = "Choose an outlined attacking unit or a highlighted entry area.";
+      return;
+    }
+
+    chooseMainForceOrigin(movementEntry(unit, mainForceSelection.areaId));
+  }
+
+  function chooseMainForceOrigin(areaId) {
+    if (!mainForceTargeting()) return;
+    if (!mainForceSelection.origins.includes(areaId)) {
+      els.selection.textContent = `${areaName(areaId)} is not an eligible main-force origin.`;
+      els.areaDetail.textContent = "Choose one of the highlighted entry areas or an outlined attacking unit.";
+      render();
+      return;
+    }
+
+    mainForceSelection.settle(areaId);
   }
 
   function movementEntry(unit, areaId) {
@@ -2181,6 +2229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBotMovementReview();
     renderRevoltTargeting();
     renderVoluntaryRetreatTargeting();
+    renderMainForceTargeting();
     renderUndoButton();
     renderPieceToggle();
     renderHandToggle();
@@ -2217,6 +2266,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const unit = state.units[voluntaryRetreatSelection.unitId];
     const targetNames = voluntaryRetreatSelection.targets.map(areaName).join(" or ");
     els.retreatTargetInstructions.textContent = `${unit.name}: choose ${targetNames} on the map.`;
+  }
+
+  function renderMainForceTargeting() {
+    if (!els.mainForceTargetPanel) return;
+    const targeting = mainForceTargeting();
+    els.mainForceTargetPanel.hidden = !targeting;
+    if (!targeting) return;
+
+    els.mainForceTargetTitle.textContent = `Main Force · ${areaName(mainForceSelection.areaId)}`;
+    const groups = mainForceSelection.origins.map((origin) => {
+      const names = areaUnits(mainForceSelection.areaId)
+        .filter((unit) => mainForceEligible(unit) && movementEntry(unit, mainForceSelection.areaId) === origin)
+        .map((unit) => unit.name)
+        .join(", ");
+      return `${areaName(origin)} (${names})`;
+    });
+    els.mainForceTargetInstructions.textContent = `Choose ${groups.join(" or ")}.`;
   }
 
   function renderStatus() {
@@ -2299,7 +2365,8 @@ document.addEventListener("DOMContentLoaded", () => {
     clickCatcher.addEventListener("click", (event) => {
       const areaId = areaFromMapClick(event);
       if (!areaId) return;
-      if (voluntaryRetreatTargeting()) chooseVoluntaryRetreatTarget(areaId);
+      if (mainForceTargeting()) chooseMainForceOrigin(areaId);
+      else if (voluntaryRetreatTargeting()) chooseVoluntaryRetreatTarget(areaId);
       else if (revoltTargeting()) chooseRevoltTargetArea(areaId);
       else moveSelectedTo(areaId);
     });
@@ -2335,6 +2402,7 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.classList.toggle("is-targeting", targetingPoliticalAction());
       marker.classList.toggle("is-revolt-target", revoltTargeting() && revoltTargetAreaIds().includes(area.id));
       marker.classList.toggle("is-retreat-target", voluntaryRetreatTargetAreaIds().includes(area.id));
+      marker.classList.toggle("is-main-force-target", mainForceOriginIds().includes(area.id));
       marker.classList.toggle(
         "is-politically-controlled",
         targetingPoliticalAction() && activePlayerControlsPoliticalArea(area.id)
@@ -2433,6 +2501,13 @@ document.addEventListener("DOMContentLoaded", () => {
         name: "retreat-target",
         fill: [91, 171, 205, 76],
         stripe: [46, 112, 148, 108],
+        edge: [170, 229, 255, 248]
+      };
+    }
+    if (mainForceOriginIds().includes(area.id)) {
+      return {
+        name: "main-force-target",
+        fill: [91, 171, 205, 58],
         edge: [170, 229, 255, 248]
       };
     }
@@ -2986,6 +3061,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activeSplayArea() {
+    if (mainForceTargeting()) return mainForceSelection.areaId;
     if (voluntaryRetreatTargeting()) return state.battle?.area;
     if (revoltTargeting()) return revoltTargetSelection.focusedArea;
     if (battleMapMode()) return state.battle.area;
@@ -3004,11 +3080,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
     splayedPieceStack = null;
-    if ((piecesHidden && !revoltTargeting() && !voluntaryRetreatTargeting()) || targetingPoliticalAction()) return;
+    if ((piecesHidden && !revoltTargeting() && !voluntaryRetreatTargeting() && !mainForceTargeting()) || targetingPoliticalAction()) return;
 
     const byArea = {};
     Object.values(state.units).forEach((unit) => {
       if (!areas[unit.location]) return;
+      if (mainForceOriginIds().includes(unit.location)) return;
+      if (mainForceTargeting() && unit.location === mainForceSelection.areaId && !mainForceEligible(unit)) return;
       byArea[unit.location] ||= [];
       byArea[unit.location].push(unit);
     });
@@ -3017,12 +3095,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const area = areas[areaId];
       const canSplay = units.length > 1 && (
         units.every(unitFaceVisibleToActivePlayer) ||
-        (revoltTargeting() && units.some(revoltTargetEligible))
+        (revoltTargeting() && units.some(revoltTargetEligible)) ||
+        (mainForceTargeting() && units.some(mainForceEligible))
       );
       const columns = Math.min(4, units.length);
       const rows = Math.ceil(units.length / columns);
       const stack = document.createElement("div");
-      stack.className = `piece-stack${units.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${units.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
+      const mainForceBattleStack = mainForceSelection?.areaId === areaId;
+      stack.className = `piece-stack${units.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${mainForceBattleStack ? " is-main-force-battle-stack" : ""}${units.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
       stack.style.left = `${area.x}%`;
       stack.style.top = `${area.y}%`;
       stack.style.setProperty("--compact-width", `${Math.max(58, columns * 16 + 38)}px`);
@@ -3048,6 +3128,10 @@ document.addEventListener("DOMContentLoaded", () => {
         stack.classList.add("is-splayed");
         splayedPieceStack = stack;
       }
+      if (mainForceSelection?.areaId === areaId && canSplay) {
+        stack.classList.add("is-splayed");
+        splayedPieceStack = stack;
+      }
       stack.addEventListener("click", (event) => {
         if (event.target !== stack) return;
         event.stopPropagation();
@@ -3067,10 +3151,13 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.className = `piece owner-${unit.owner}`;
         const winterEligible = winterQuartersEligible(unit.id);
         const revoltEligible = revoltTargetEligible(unit);
-        const faceVisible = winterEligible || revoltEligible || unitFaceVisibleToActivePlayer(unit);
+        const mainForceTarget = mainForceEligible(unit);
+        const faceVisible = winterEligible || revoltEligible || mainForceTarget || unitFaceVisibleToActivePlayer(unit);
         piece.classList.toggle("is-selected", state.selectedUnit === unit.id);
         piece.classList.toggle("is-revolt-target", revoltEligible);
         piece.classList.toggle("is-revolt-ineligible", revoltTargeting() && !revoltEligible);
+        piece.classList.toggle("is-main-force-target", mainForceTarget);
+        piece.classList.toggle("is-main-force-ineligible", mainForceTargeting() && !mainForceTarget);
         piece.classList.toggle("is-winter-eligible", winterEligible);
         piece.classList.toggle("is-wintering", winterEligible && winteringUnitIds().includes(unit.id));
         piece.classList.toggle("is-winter-ineligible", winterQuartersActive() && !winterEligible);
@@ -3092,6 +3179,8 @@ document.addEventListener("DOMContentLoaded", () => {
           piece.setAttribute("aria-pressed", winteringUnitIds().includes(unit.id) ? "true" : "false");
         } else if (revoltEligible) {
           piece.title = `${unit.name}, currently in ${areaName(unit.location)}; returns home to ${areaName(unit.home)}. Click to choose.`;
+        } else if (mainForceTarget) {
+          piece.title = `Choose ${unit.name}'s group from ${areaName(movementEntry(unit, mainForceSelection.areaId))} as the main force.`;
         } else {
           piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
         }
@@ -3111,7 +3200,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selectUnit(unit.id);
         });
-        if (!winterQuartersActive() && !revoltTargeting() && !voluntaryRetreatTargeting()) {
+        if (!winterQuartersActive() && !revoltTargeting() && !voluntaryRetreatTargeting() && !mainForceTargeting()) {
           piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
         }
         stack.append(piece);
@@ -3125,7 +3214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     els.neutralActivationLayer.hidden = false;
     els.neutralActivationLayer.classList.toggle(
       "is-passive",
-      battleMapMode() || winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting()
+      battleMapMode() || winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting() || mainForceTargeting()
     );
 
     const slots = [
@@ -4520,18 +4609,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const button = document.querySelector("#toggle-pieces");
     button.textContent = piecesHidden ? "Show Units" : "Hide Units";
     button.setAttribute("aria-pressed", piecesHidden ? "true" : "false");
-    button.disabled = winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting();
+    button.disabled = winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting() || mainForceTargeting();
     button.title = winterQuartersActive()
       ? "Units remain visible while choosing winter quarters."
       : revoltTargeting()
         ? "Units remain visible while choosing a revolt target."
         : voluntaryRetreatTargeting()
           ? "Units remain visible while choosing a retreat destination."
+          : mainForceTargeting()
+            ? "Units remain visible while choosing the main force."
         : "";
   }
 
   function togglePieces() {
-    if (winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting()) return;
+    if (winterQuartersActive() || revoltTargeting() || voluntaryRetreatTargeting() || mainForceTargeting()) return;
     piecesHidden = !piecesHidden;
     render();
   }
@@ -4741,6 +4832,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
   els.cancelRetreatTarget?.addEventListener("click", cancelVoluntaryRetreatTargeting);
+  els.cancelMainForceTarget?.addEventListener("click", () => mainForceSelection?.settle(false));
   els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
@@ -4780,6 +4872,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeGameMenu();
+    if (mainForceTargeting()) {
+      mainForceSelection.settle(false);
+      return;
+    }
     if (voluntaryRetreatTargeting()) {
       cancelVoluntaryRetreatTargeting();
       return;
