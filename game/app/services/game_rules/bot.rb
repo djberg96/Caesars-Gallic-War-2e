@@ -237,6 +237,15 @@ module GameRules
         return "event"
       end
 
+      if effective_title == "Major Revolt"
+        placement = minor_leaders.place_for_major_revolt!(targets)
+        if placement
+          leader = placement.fetch("leader")
+          area = placement.fetch("area")
+          log("#{leader.fetch("name")} enters at #{area.name}; this is now #{leader.fetch("name")}'s home area.")
+        end
+      end
+
       if effective_title == "Massive Revolt"
         vercingetorix = units["vercingetorix"]
         if vercingetorix
@@ -253,10 +262,10 @@ module GameRules
 
     def effective_revolt_title(card)
       title = card.fetch("title")
+      return "Minor Revolt" if title == "Major Revolt" && minor_leaders.both_in_play?
       return title unless title == "Massive Revolt"
 
-      turn = @state.fetch("turn", 0).to_i + 1
-      return "Major Revolt" if turn <= 5
+      return "Major Revolt" if @state.fetch("turn", 0).to_i.zero?
 
       title
     end
@@ -367,6 +376,10 @@ module GameRules
 
     def units
       @state.fetch("units")
+    end
+
+    def minor_leaders
+      @minor_leaders ||= GameRules::MinorLeaders.new(state: @state)
     end
 
     def persist!

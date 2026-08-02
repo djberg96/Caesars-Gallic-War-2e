@@ -422,6 +422,16 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
   test "treats turn one massive revolt as a major revolt in solitaire" do
     state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
+    state["units"]["dumnorix"] = {
+      "id" => "dumnorix",
+      "name" => "Dumnorix",
+      "type" => "leader",
+      "owner" => "neutral",
+      "location" => "offboard",
+      "home" => "offboard",
+      "step" => 0,
+      "strengths" => [3]
+    }
     state["units"]["vercingetorix"] = {
       "id" => "vercingetorix",
       "name" => "Vercingetorix",
@@ -450,14 +460,17 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "allobroges", result.dig("units", "allobroges", "location")
     assert_equal "barbarian", result.dig("units", "boii", "owner")
     assert_equal "offboard", result.dig("units", "vercingetorix", "location")
+    assert_equal "barbarian", result.dig("units", "dumnorix", "owner")
+    assert_equal "allobroges", result.dig("units", "dumnorix", "home")
     assert_not result["massiveRevoltPlayed"]
     assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Major Revolt."
+    assert_match(/Dumnorix enters at Allobroges/, result["log"].join(" "))
     assert_match(/Bot revolt areas: Allobroges, Boii/, result["log"].join(" "))
   end
 
-  test "Massive Revolt unlocks legions V and VI only when resolved as Massive" do
+  test "Massive Revolt resolves as Massive beginning on turn two" do
     state = bot_state(bot_deck: [card_hash("event_4_massive_revolt")])
-    state["turn"] = 5
+    state["turn"] = 1
     state["units"]["vercingetorix"] = {
       "id" => "vercingetorix",
       "name" => "Vercingetorix",
@@ -474,6 +487,7 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert result["massiveRevoltPlayed"]
     assert_equal "allobroges", result.dig("units", "vercingetorix", "location")
+    assert_no_match(/treated as a Major Revolt/, result["log"].join(" "))
   end
 
   private

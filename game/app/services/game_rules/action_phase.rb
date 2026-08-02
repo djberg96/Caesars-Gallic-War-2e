@@ -179,6 +179,13 @@ module GameRules
         log("Turn #{@state.fetch("turn", 0).to_i + 1}: #{card.fetch("title")} is treated as a #{effective_title}.")
       end
       activate_area!(area, active_player == "roman" ? "roman" : "barbarian")
+      if effective_title == "Major Revolt" && active_player == "barbarian"
+        placement = minor_leaders.place_for_major_revolt!([area.key])
+        if placement
+          leader = placement.fetch("leader")
+          log("#{leader.fetch("name")} enters at #{area.name}; this is now #{leader.fetch("name")}'s home area.")
+        end
+      end
       if effective_title == "Massive Revolt" && active_player == "barbarian"
         vercingetorix = units["vercingetorix"]
         if vercingetorix
@@ -233,10 +240,15 @@ module GameRules
 
     def effective_barbarian_revolt_title(card)
       title = card.fetch("title")
+      return "Minor Revolt" if active_player == "barbarian" && title == "Major Revolt" && minor_leaders.both_in_play?
       return title unless active_player == "barbarian" && title == "Massive Revolt"
       return "Minor Revolt" if @state.fetch("turn", 0).to_i.zero?
 
       title
+    end
+
+    def minor_leaders
+      @minor_leaders ||= GameRules::MinorLeaders.new(state: @state)
     end
 
     def roman_revolt_target?(unit)

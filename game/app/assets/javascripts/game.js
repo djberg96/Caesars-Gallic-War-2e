@@ -1825,7 +1825,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const effectiveTitle = card.title === "Massive Revolt"
-      ? state.turn < 5 ? "Major Revolt" : "Massive Revolt"
+      ? state.turn === 0 ? "Major Revolt" : "Massive Revolt"
       : card.title;
     if (effectiveTitle !== card.title) log(`Turn ${state.turn + 1}: ${card.title} is treated as a ${effectiveTitle}.`);
     activateArea(target, "barbarian");

@@ -31,6 +31,7 @@ module GameRules
       @state["currentAction"] = nil
       @state["undoStack"] = []
       @state["diceRolledThisTurn"] = false
+      announce_scheduled_minor_leader!
       log(deal_message)
 
       @session.update!(data: @state)
@@ -39,6 +40,15 @@ module GameRules
     end
 
     private
+
+    def announce_scheduled_minor_leader!
+      placement = GameRules::MinorLeaders.new(state: @state).place_scheduled!
+      return unless placement
+
+      leader = placement.fetch("leader")
+      area = placement.fetch("area")
+      log("#{leader.fetch("name")} enters at the start of Turn #{@state.fetch("turn", 0).to_i + 1} in #{area.name}; all tribes there become Barbarian allies.")
+    end
 
     def deal_message
       if @state["mode"] == "hotseat"
