@@ -20,14 +20,17 @@
       <button id="finish-regroup" type="button" hidden>Finished Regroup</button>
       <button id="undo-move" type="button">Undo</button>
       <button id="toggle-pieces" type="button" aria-pressed="false">Hide Units</button>
-      <label class="select-label" for="map-zoom">Zoom</label>
-      <select id="map-zoom" class="map-zoom" aria-label="Map zoom">
-        <option value="0.5">50%</option>
-        <option value="0.75">75%</option>
-        <option value="1" selected>100%</option>
-        <option value="1.25">125%</option>
-        <option value="1.5">150%</option>
-      </select>
+      <details id="zoom-menu" class="toolbar-game-menu toolbar-zoom-menu">
+        <summary>Zoom</summary>
+        <div class="toolbar-game-menu-items" role="group" aria-label="Map zoom">
+          <button type="button" data-map-zoom="0.5" aria-pressed="false">50%</button>
+          <button type="button" data-map-zoom="0.75" aria-pressed="false">75%</button>
+          <button type="button" data-map-zoom="1" aria-pressed="true">100%</button>
+          <button type="button" data-map-zoom="1.25" aria-pressed="false">125%</button>
+          <button type="button" data-map-zoom="1.5" aria-pressed="false">150%</button>
+        </div>
+      </details>
+      <input id="map-zoom" type="hidden" value="1">
       <details id="mode-menu" class="toolbar-game-menu toolbar-mode-menu">
         <summary>Mode</summary>
         <div class="toolbar-game-menu-items" role="group" aria-label="Play mode">

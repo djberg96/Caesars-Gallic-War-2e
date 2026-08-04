@@ -170,11 +170,13 @@ h3 {
   text-align: left;
 }
 
-.toolbar-mode-menu .toolbar-game-menu-items {
+.toolbar-mode-menu .toolbar-game-menu-items,
+.toolbar-zoom-menu .toolbar-game-menu-items {
   min-width: 11rem;
 }
 
-.toolbar-mode-menu [data-play-mode][aria-pressed="true"] {
+.toolbar-mode-menu [data-play-mode][aria-pressed="true"],
+.toolbar-zoom-menu [data-map-zoom][aria-pressed="true"] {
   border-color: var(--accent);
   background: #3c402f;
   color: var(--accent);
@@ -192,10 +194,6 @@ h3 {
 .select-label {
   margin-left: 0.4rem;
   color: var(--muted);
-}
-
-.map-zoom {
-  min-width: 4.8rem;
 }
 
 .optional-rule-toggle {

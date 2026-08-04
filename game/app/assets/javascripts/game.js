@@ -16,7 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
     boardCanvas: document.querySelector("#board-canvas"),
     areaLayer: document.querySelector("#area-layer"),
     boardImage: document.querySelector("#board-canvas > img"),
+    zoomMenu: document.querySelector("#zoom-menu"),
     mapZoom: document.querySelector("#map-zoom"),
+    mapZoomButtons: [...document.querySelectorAll("[data-map-zoom]")],
     movementArrowLayer: document.querySelector("#movement-arrow-layer"),
     leaderHomeMarkerLayer: document.querySelector("#leader-home-marker-layer"),
     trackMarkerLayer: document.querySelector("#track-marker-layer"),
@@ -194,13 +196,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const requested = Number(value);
     if (!mapZoomLevels.includes(requested) || requested === mapZoom) return;
     mapZoom = requested;
-    els.mapZoom.value = String(mapZoom);
+    renderMapZoomControl();
     try {
       window.localStorage.setItem("cgw-map-zoom", String(mapZoom));
     } catch (_error) {
       // Zoom still works when browser storage is unavailable.
     }
     layoutMapZoom();
+  }
+
+  function renderMapZoomControl() {
+    els.mapZoom.value = String(mapZoom);
+    els.mapZoomButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.mapZoom) === mapZoom));
+    });
   }
 
   async function newGame() {
@@ -4905,6 +4914,10 @@ document.addEventListener("DOMContentLoaded", () => {
     els.modeMenu?.removeAttribute("open");
   }
 
+  function closeZoomMenu() {
+    els.zoomMenu?.removeAttribute("open");
+  }
+
   async function postJson(url, body) {
     const response = await fetch(url, {
       method: "POST",
@@ -4958,7 +4971,10 @@ document.addEventListener("DOMContentLoaded", () => {
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
   document.querySelector("#toggle-pieces").addEventListener("click", togglePieces);
-  els.mapZoom?.addEventListener("change", (event) => setMapZoom(event.target.value));
+  els.mapZoomButtons.forEach((button) => button.addEventListener("click", () => {
+    closeZoomMenu();
+    setMapZoom(button.dataset.mapZoom);
+  }));
   els.toggleHand?.addEventListener("click", toggleHand);
   els.toggleSidePanel?.addEventListener("click", toggleSidePanel);
   document.querySelector("#import-game").addEventListener("click", () => {
@@ -4988,6 +5004,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.key !== "Escape") return;
     closeGameMenu();
     closeModeMenu();
+    closeZoomMenu();
     if (mainForceTargeting()) {
       mainForceSelection.settle(false);
       return;
@@ -5008,10 +5025,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("click", (event) => {
     if (els.gameMenu?.open && !els.gameMenu.contains(event.target)) closeGameMenu();
     if (els.modeMenu?.open && !els.modeMenu.contains(event.target)) closeModeMenu();
+    if (els.zoomMenu?.open && !els.zoomMenu.contains(event.target)) closeZoomMenu();
   });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
 
-  if (els.mapZoom) els.mapZoom.value = String(mapZoom);
+  renderMapZoomControl();
   layoutMapZoom({ preserveCenter: false });
   if (window.ResizeObserver && els.board) {
     boardResizeObserver = new ResizeObserver(() => layoutMapZoom());

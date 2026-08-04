@@ -46,13 +46,15 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "[data-play-mode='ai']", text: "AI Opponent"
     end
     assert_select ".board-toolbar input#play-mode[type='hidden'][value='solitaire']"
-    assert_select ".board-toolbar #map-zoom" do
-      assert_select "option", text: "50%"
-      assert_select "option", text: "75%"
-      assert_select "option[selected]", text: "100%"
-      assert_select "option", text: "125%"
-      assert_select "option", text: "150%"
+    assert_select ".board-toolbar details#zoom-menu.toolbar-zoom-menu" do
+      assert_select "summary", text: "Zoom"
+      assert_select "[data-map-zoom='0.5']", text: "50%"
+      assert_select "[data-map-zoom='0.75']", text: "75%"
+      assert_select "[data-map-zoom='1'][aria-pressed='true']", text: "100%"
+      assert_select "[data-map-zoom='1.25']", text: "125%"
+      assert_select "[data-map-zoom='1.5']", text: "150%"
     end
+    assert_select ".board-toolbar input#map-zoom[type='hidden'][value='1']"
     assert_select ".board-toolbar #bot-movement-review[hidden]" do
       assert_select "#bot-movement-review-routes"
       assert_select "#continue-bot-movement-review", text: "Continue to Battle"
