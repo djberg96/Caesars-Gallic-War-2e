@@ -170,6 +170,15 @@ h3 {
   text-align: left;
 }
 
+.toolbar-options-menu .toolbar-game-menu-items {
+  min-width: 14.5rem;
+}
+
+.toolbar-options-menu .optional-rule-toggle {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .select-label {
   margin-left: 0.4rem;
   color: var(--muted);
@@ -343,6 +352,7 @@ h3 {
 
 #area-layer,
 .movement-arrow-layer,
+.leader-home-marker-layer,
 .track-marker-layer,
 .piece-layer,
 .neutral-activation-layer {
@@ -395,6 +405,26 @@ h3 {
 
 .track-marker-layer {
   z-index: 30;
+}
+
+.leader-home-marker-layer {
+  z-index: 28;
+}
+
+.leader-home-marker {
+  position: absolute;
+  width: clamp(24px, 2.8vw, 38px);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.58));
+  transform: translate(82%, 72%);
+}
+
+.leader-home-marker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: contain;
 }
 
 .track-marker-stack {
@@ -1244,6 +1274,14 @@ h3 {
   gap: 0.08rem;
   padding: 0.42rem 0.52rem;
   background: rgba(28, 32, 27, 0.96);
+}
+
+.campaign-status #optional-rules-status {
+  grid-column: 1 / -1;
+}
+
+.campaign-status #optional-rules-status[hidden] {
+  display: none;
 }
 
 .campaign-status span {

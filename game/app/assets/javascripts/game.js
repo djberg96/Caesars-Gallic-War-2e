@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     boardImage: document.querySelector("#board-canvas > img"),
     mapZoom: document.querySelector("#map-zoom"),
     movementArrowLayer: document.querySelector("#movement-arrow-layer"),
+    leaderHomeMarkerLayer: document.querySelector("#leader-home-marker-layer"),
     trackMarkerLayer: document.querySelector("#track-marker-layer"),
     pieceLayer: document.querySelector("#piece-layer"),
     neutralActivationLayer: document.querySelector("#neutral-activation-layer"),
@@ -63,11 +64,16 @@ document.addEventListener("DOMContentLoaded", () => {
     romanAdministrationContinue: document.querySelector("#roman-administration-continue"),
     finishRegroup: document.querySelector("#finish-regroup"),
     gameMenu: document.querySelector("#game-menu"),
+    optionsMenu: document.querySelector("#options-menu"),
     playMode: document.querySelector("#play-mode"),
     playModeLabel: document.querySelector("#play-mode-label"),
     yearlyObjectives: document.querySelector("#yearly-objectives"),
     yearlyObjectivesToggle: document.querySelector("#yearly-objectives-toggle"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
+    historicalReinforcements: document.querySelector("#historical-reinforcements"),
+    historicalReinforcementsToggle: document.querySelector("#historical-reinforcements-toggle"),
+    optionalRulesStatus: document.querySelector("#optional-rules-status"),
+    optionalRulesLabel: document.querySelector("#optional-rules-label"),
     objectiveTitle: document.querySelector("#objective-title"),
     objectiveYear: document.querySelector("#objective-year"),
     objectiveList: document.querySelector("#objective-list"),
@@ -133,6 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let botActionReview = null;
   let botRollReview = null;
   let battleTransitionReview = null;
+  let turnAnnouncementTimer = null;
+  let turnAnnouncementBlocker = null;
   let revoltTargetSelection = null;
   let voluntaryRetreatSelection = null;
   let mainForceSelection = null;
@@ -197,8 +205,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function newGame() {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
     const yearlyObjectives = Boolean(els.yearlyObjectives?.checked);
+    const historicalReinforcements = Boolean(els.historicalReinforcements?.checked);
     try {
-      const result = await postJson("/game_sessions", { mode, yearly_objectives: yearlyObjectives });
+      const result = await postJson("/game_sessions", {
+        mode,
+        yearly_objectives: yearlyObjectives,
+        historical_reinforcements: historicalReinforcements
+      });
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
@@ -229,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await newGame();
   }
 
-  function yearlyObjectivesLocked() {
+  function optionalRulesLocked() {
     return Boolean(
       state?.turn > 0 ||
       state?.discard?.length ||
@@ -244,25 +257,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function changeYearlyObjectives(enabled) {
+    await changeOptionalRule("yearlyObjectives", enabled);
+  }
+
+  async function changeHistoricalReinforcements(enabled) {
+    await changeOptionalRule("historicalReinforcements", enabled);
+  }
+
+  async function changeOptionalRule(option, enabled) {
     if (!state) return;
-    if (yearlyObjectivesLocked()) {
+    if (optionalRulesLocked()) {
       render();
       return;
     }
 
-    const previous = Boolean(state.options?.yearlyObjectives);
+    const previous = Boolean(state.options?.[option]);
     state.options ||= {};
-    state.options.yearlyObjectives = Boolean(enabled);
+    state.options[option] = Boolean(enabled);
     render();
 
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/update_options`, {
-        yearly_objectives: state.options.yearlyObjectives
+        yearly_objectives: Boolean(state.options.yearlyObjectives),
+        historical_reinforcements: Boolean(state.options.historicalReinforcements)
       });
       state.options = result.options;
     } catch (error) {
-      state.options.yearlyObjectives = previous;
+      state.options[option] = previous;
       log(error.message);
     }
     render();
@@ -1198,11 +1220,37 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Turn ${state.turn + 1}${year ? ` (${year})` : ""}`;
   }
 
-  function showTurnAnnouncement() {
-    if (!state?.turnAnnouncementPending || state.gameOver || !state.gameSessionId || !els.turnDialog) return;
+  function showTurnAnnouncement({ immediate = false } = {}) {
+    if (!state?.turnAnnouncementPending || state.gameOver || !state.gameSessionId || !els.turnDialog) {
+      if (turnAnnouncementTimer) window.clearTimeout(turnAnnouncementTimer);
+      turnAnnouncementTimer = null;
+      turnAnnouncementBlocker = null;
+      return;
+    }
     if (els.turnDialog.open) return;
-    if (document.querySelector("dialog[open]")) return;
 
+    const blocker = document.querySelector("dialog[open]");
+    if (blocker) {
+      if (turnAnnouncementBlocker !== blocker) {
+        turnAnnouncementBlocker = blocker;
+        blocker.addEventListener("close", () => {
+          if (turnAnnouncementBlocker === blocker) turnAnnouncementBlocker = null;
+          showTurnAnnouncement();
+        }, { once: true });
+      }
+      return;
+    }
+
+    if (!immediate) {
+      if (turnAnnouncementTimer) return;
+      turnAnnouncementTimer = window.setTimeout(() => {
+        turnAnnouncementTimer = null;
+        showTurnAnnouncement({ immediate: true });
+      }, 250);
+      return;
+    }
+
+    turnAnnouncementBlocker = null;
     els.turnDialogTitle.textContent = turnAnnouncementText();
     const showStatus = state.mode === "solitaire";
     els.turnDialogStatus.hidden = !showStatus;
@@ -1215,6 +1263,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function acknowledgeTurnAnnouncement(event) {
     event.preventDefault();
+    if (turnAnnouncementTimer) window.clearTimeout(turnAnnouncementTimer);
+    turnAnnouncementTimer = null;
     if (!state?.turnAnnouncementPending) {
       els.turnDialog.close();
       return;
@@ -2219,6 +2269,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderYearlyObjectives();
     renderAreas();
     renderMovementArrows();
+    renderLeaderHomeMarkers();
     renderTrackMarkers();
     renderPieces();
     renderNeutralActivationCards();
@@ -2294,9 +2345,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#supply-label").textContent = state.supply;
     document.querySelector("#vp-label").textContent = state.vp;
     const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
-    const setupLocked = yearlyObjectivesLocked();
+    const historicalReinforcementsEnabled = Boolean(state.options?.historicalReinforcements);
+    const setupLocked = optionalRulesLocked();
     els.playMode.hidden = setupLocked;
     els.playModeLabel.hidden = setupLocked;
+    if (els.optionsMenu) {
+      els.optionsMenu.hidden = setupLocked;
+      if (setupLocked) els.optionsMenu.removeAttribute("open");
+    }
     if (els.yearlyObjectives) {
       const locked = setupLocked;
       els.yearlyObjectives.checked = objectivesEnabled;
@@ -2306,8 +2362,23 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       els.yearlyObjectives.closest("label")?.setAttribute(
         "title",
-        locked ? "Yearly Objectives are fixed after the first card is played" : "Apply the optional Yearly Objectives victory-point schedule"
+        locked ? "Historical Objectives are fixed after the first card is played" : "Apply the optional Yearly Objectives victory-point schedule"
       );
+    }
+    if (els.historicalReinforcements) {
+      els.historicalReinforcements.checked = historicalReinforcementsEnabled;
+      els.historicalReinforcements.disabled = setupLocked;
+      els.historicalReinforcementsToggle?.setAttribute(
+        "title",
+        setupLocked ? "Historical Reinforcements are fixed after the first card is played" : "Use the historical Roman reinforcement schedule printed on the turn track"
+      );
+    }
+    if (els.optionalRulesStatus && els.optionalRulesLabel) {
+      const enabledOptions = [];
+      if (objectivesEnabled) enabledOptions.push("Historical Objectives");
+      if (historicalReinforcementsEnabled) enabledOptions.push("Historical Reinforcements");
+      els.optionalRulesStatus.hidden = enabledOptions.length === 0;
+      els.optionalRulesLabel.textContent = enabledOptions.join(" · ");
     }
     if (els.finishRegroup) {
       els.finishRegroup.hidden = !battleMapMode();
@@ -2751,6 +2822,36 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       els.trackMarkerLayer.append(stack);
+    });
+  }
+
+  function renderLeaderHomeMarkers() {
+    if (!els.leaderHomeMarkerLayer) return;
+    els.leaderHomeMarkerLayer.innerHTML = "";
+    if (piecesHidden) return;
+
+    [
+      { unitId: "ambiorix", image: gameData.markers.ambiorix_home },
+      { unitId: "dumnorix", image: gameData.markers.dumnorix_home }
+    ].forEach(({ unitId, image }) => {
+      const leader = state.units?.[unitId];
+      const area = areas[leader?.home];
+      const inPlay = leader && ![null, undefined, "offboard", "eliminated"].includes(leader.location);
+      if (!inPlay || !area || !image) return;
+
+      const marker = document.createElement("div");
+      marker.className = `leader-home-marker is-${unitId}`;
+      marker.style.left = `${area.x}%`;
+      marker.style.top = `${area.y}%`;
+      marker.title = `${leader.name} home area: ${area.name}`;
+      marker.setAttribute("role", "img");
+      marker.setAttribute("aria-label", marker.title);
+
+      const markerImage = document.createElement("img");
+      markerImage.src = image;
+      markerImage.alt = "";
+      marker.append(markerImage);
+      els.leaderHomeMarkerLayer.append(marker);
     });
   }
 
@@ -4641,6 +4742,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.neutralActivationCards.barbarian ||= [];
     state.options ||= {};
     state.options.yearlyObjectives ||= false;
+    state.options.historicalReinforcements ||= false;
     state.yearlyObjectiveProgress ||= {};
     state.yearlyObjectiveHistory ||= [];
     state.dragArea = null;
@@ -4824,7 +4926,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
   els.turnDialog?.addEventListener("cancel", (event) => event.preventDefault());
-  els.turnDialogForm?.addEventListener("submit", acknowledgeTurnAnnouncement);
+  els.acknowledgeTurn?.addEventListener("click", acknowledgeTurnAnnouncement);
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
   els.battleTransitionDialog?.addEventListener("cancel", (event) => event.preventDefault());
@@ -4839,6 +4941,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
   els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
+  els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);

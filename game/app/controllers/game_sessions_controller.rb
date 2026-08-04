@@ -105,7 +105,8 @@ class GameSessionsController < ApplicationController
       wintering_unit_ids: params[:wintering_unit_ids],
       replacement_steps: params[:replacement_steps],
       supply_production_acknowledged: params[:supply_production_acknowledged],
-      reinforcement_builds: params[:reinforcement_builds]
+      reinforcement_builds: params[:reinforcement_builds],
+      reinforcement_rolls: params[:reinforcement_rolls]
     ).end_turn!
 
     render json: { game_session_id: session.id, state: result }
@@ -171,6 +172,7 @@ class GameSessionsController < ApplicationController
     state = session.data.deep_dup
     state["options"] ||= {}
     state["options"]["yearlyObjectives"] = ActiveModel::Type::Boolean.new.cast(params[:yearly_objectives])
+    state["options"]["historicalReinforcements"] = ActiveModel::Type::Boolean.new.cast(params[:historical_reinforcements])
     session.update!(data: state)
 
     render json: { game_session_id: session.id, options: state.fetch("options") }
@@ -192,7 +194,8 @@ class GameSessionsController < ApplicationController
 
     GameRules::Setup.new(view_context: helpers).state(
       mode: params[:mode],
-      yearly_objectives: params[:yearly_objectives]
+      yearly_objectives: params[:yearly_objectives],
+      historical_reinforcements: params[:historical_reinforcements]
     )
   end
 
@@ -208,6 +211,7 @@ class GameSessionsController < ApplicationController
 
     submitted["options"] ||= {}
     submitted["options"]["yearlyObjectives"] = session.data.dig("options", "yearlyObjectives") || false
+    submitted["options"]["historicalReinforcements"] = session.data.dig("options", "historicalReinforcements") || false
     submitted
   end
 

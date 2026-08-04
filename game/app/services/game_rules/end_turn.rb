@@ -7,8 +7,14 @@ module GameRules
     END_TURN_PHASES = %w[romanWintering romanReplacements romanSupplyProduction romanReinforcements].freeze
     INITIAL_FORCE_POOL = %w[legion_i legion_xiii legion_xiv legion_xv].freeze
     MASSIVE_REVOLT_REINFORCEMENTS = %w[legion_v legion_vi].freeze
+    HISTORICAL_REINFORCEMENT_SCHEDULE = {
+      "legion_xiii" => { 0 => 2, 1 => 3, 2 => :automatic },
+      "legion_xiv" => { 0 => 2, 1 => 3, 2 => :automatic },
+      "legion_i" => { 4 => 3, 5 => 4, 6 => :automatic },
+      "legion_xv" => { 4 => 3, 5 => 4, 6 => :automatic }
+    }.freeze
 
-    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil, replacement_steps: nil, supply_production_acknowledged: false, reinforcement_builds: nil)
+    def initialize(session:, state:, harvest_roll: nil, wintering_unit_ids: nil, replacement_steps: nil, supply_production_acknowledged: false, reinforcement_builds: nil, reinforcement_rolls: nil)
       @session = session
       @state = state.deep_dup
       @harvest_roll = harvest_roll&.to_i
@@ -19,6 +25,7 @@ module GameRules
       @supply_production_acknowledged = ActiveModel::Type::Boolean.new.cast(supply_production_acknowledged)
       @reinforcements_submitted = !reinforcement_builds.nil?
       @reinforcement_builds = normalize_numeric_choices(reinforcement_builds)
+      @reinforcement_rolls = Array(reinforcement_rolls).map(&:to_i)
     end
 
     def end_turn!
@@ -125,6 +132,11 @@ module GameRules
     def begin_roman_reinforcements!
       returned = return_eliminated_roman_legions!
       log(returned.empty? ? "Eliminated Roman Legions: none return this year." : "Eliminated Roman Legions Return: #{returned.join(", ")} return at full strength in the Roman Off-Map area.")
+      if historical_reinforcements?
+        apply_historical_reinforcements!
+        return complete_end_turn!
+      end
+
       refresh_force_pool!
       options = roman_reinforcement_options
       if options.empty?
@@ -491,6 +503,68 @@ module GameRules
 
         @state["romanForcePool"] << unit_id unless @state["romanForcePool"].include?(unit_id)
       end
+    end
+
+    def historical_reinforcements?
+      ActiveModel::Type::Boolean.new.cast(@state.dig("options", "historicalReinforcements"))
+    end
+
+    def apply_historical_reinforcements!
+      turn = @state.fetch("turn", 0).to_i
+      reports = HISTORICAL_REINFORCEMENT_SCHEDULE.filter_map do |unit_id, schedule|
+        unit = units[unit_id]
+        next unless unit && unit["location"] == "offboard"
+
+        requirement = historical_reinforcement_requirement(schedule, turn)
+        next unless requirement
+
+        if requirement == :automatic
+          bring_historical_legion_into_play!(unit)
+          "#{unit.fetch("name")} enters automatically at full strength"
+        else
+          roll = roll_reinforcement_die
+          if roll <= requirement
+            bring_historical_legion_into_play!(unit)
+            "#{unit.fetch("name")} rolls #{roll} (needs 1-#{requirement}) and enters at full strength"
+          else
+            "#{unit.fetch("name")} rolls #{roll} (needs 1-#{requirement}) and remains unavailable"
+          end
+        end
+      end
+
+      if massive_revolt_reinforcements_unlocked?
+        revolt_legions = MASSIVE_REVOLT_REINFORCEMENTS.filter_map do |unit_id|
+          unit = units[unit_id]
+          next unless unit && unit["location"] == "offboard"
+
+          bring_historical_legion_into_play!(unit)
+          unit.fetch("name")
+        end
+        reports << "#{revolt_legions.join(" and ")} enter at full strength after Massive Revolt" if revolt_legions.any?
+      end
+
+      log(reports.empty? ? "Historical Reinforcements: no legions arrive." : "Historical Reinforcements: #{reports.join("; ")} in the Roman Off-Map area.")
+    end
+
+    def historical_reinforcement_requirement(schedule, turn)
+      automatic_turn = schedule.key(:automatic)
+      return :automatic if automatic_turn && turn >= automatic_turn
+
+      schedule[turn]
+    end
+
+    def bring_historical_legion_into_play!(unit)
+      unit["location"] = "roman_off_map"
+      unit["owner"] = "roman"
+      unit["step"] = 0
+      @state["romanForcePool"]&.delete(unit.fetch("id"))
+    end
+
+    def roll_reinforcement_die
+      queued = @reinforcement_rolls.shift
+      return queued if queued&.between?(1, 6)
+
+      rand(1..6)
     end
 
     def roman_reinforcement_options

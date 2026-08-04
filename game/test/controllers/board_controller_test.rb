@@ -13,6 +13,8 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_match %r{Blocks/Markers/Roman_VP_x1-[a-f0-9]+\.svg}, response.body
     assert_match %r{Blocks/Markers/Roman_VP_x10-[a-f0-9]+\.svg}, response.body
     assert_match %r{Blocks/Markers/Tribes_Controlled-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Ambiorix_Home_Area-[a-f0-9]+\.svg}, response.body
+    assert_match %r{Blocks/Markers/Dumnorix_Home_Area-[a-f0-9]+\.svg}, response.body
     assert_match %r{Blocks/Markers/Turn-[a-f0-9]+\.svg}, response.body
     assert_select "#track-marker-layer"
     assert_select ".side-panel h2", text: "Action", count: 0
@@ -27,9 +29,16 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select ".toolbar-game-menu-items #import-game", text: "Load"
       assert_select ".toolbar-game-menu-items #export-game", text: "Save"
     end
-    assert_select ".board-toolbar #yearly-objectives-toggle" do
-      assert_select "input#yearly-objectives[type='checkbox']"
+    assert_select ".board-toolbar details#options-menu.toolbar-options-menu" do
+      assert_select "summary", text: "Options"
+      assert_select "#yearly-objectives-toggle", text: "Historical Objectives" do
+        assert_select "input#yearly-objectives[type='checkbox']"
+      end
+      assert_select "#historical-reinforcements-toggle", text: "Historical Reinforcements" do
+        assert_select "input#historical-reinforcements[type='checkbox']"
+      end
     end
+    assert_select "#optional-rules-status[hidden] #optional-rules-label"
     assert_select ".board-toolbar label#play-mode-label[for='play-mode']", text: "Mode"
     assert_select ".board-toolbar select#play-mode"
     assert_select ".board-toolbar #map-zoom" do
@@ -61,6 +70,7 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "img[alt=?]", "Caesar's Gallic War map"
       assert_select "#area-layer"
       assert_select "#movement-arrow-layer[aria-label='Battle entry arrows']"
+      assert_select "#leader-home-marker-layer[aria-label='Leader home areas']"
       assert_select "#piece-layer"
     end
     assert_select "#import-dialog #import-form"

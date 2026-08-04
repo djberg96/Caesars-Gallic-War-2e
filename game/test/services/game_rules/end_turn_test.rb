@@ -22,6 +22,7 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
 
     assert_equal 1, result["turn"]
     assert result["turnAnnouncementPending"]
+    assert session.reload.data["turnAnnouncementPending"]
     assert_equal 19, result["supply"]
     assert_equal 1, result["vp"]
     assert_equal "transalpine_gaul", result.dig("units", "legion_vii", "location")
@@ -416,7 +417,100 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal ["legion_i"], reinforcements.dig("endTurn", "reinforcementOptions").map { |option| option["id"] }
   end
 
+  test "historical reinforcements roll individually on the turn-track schedule" do
+    state = base_state
+    state["options"] = { "historicalReinforcements" => true }
+    %w[legion_xiii legion_xiv].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    session = GameSession.create!(data: state)
+
+    result = complete_historical_end_turn(session, reinforcement_rolls: [4, 2])
+
+    assert_equal "offboard", result.dig("units", "legion_xiii", "location")
+    assert_equal "roman_off_map", result.dig("units", "legion_xiv", "location")
+    assert_equal 0, result.dig("units", "legion_xiv", "step")
+    assert_nil result["endTurn"]
+    assert_match "Legion Xiii rolls 4 (needs 1-2) and remains unavailable", result["log"].join(" ")
+    assert_match "Legion Xiv rolls 2 (needs 1-2) and enters at full strength", result["log"].join(" ")
+  end
+
+  test "historical legions enter automatically by their turn-track deadline" do
+    state = base_state
+    state["turn"] = 2
+    state["options"] = { "historicalReinforcements" => true }
+    %w[legion_xiii legion_xiv].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    session = GameSession.create!(data: state)
+
+    result = complete_historical_end_turn(session)
+
+    assert_equal "roman_off_map", result.dig("units", "legion_xiii", "location")
+    assert_equal "roman_off_map", result.dig("units", "legion_xiv", "location")
+    assert_match "Legion Xiii enters automatically at full strength", result["log"].join(" ")
+    assert_match "Legion Xiv enters automatically at full strength", result["log"].join(" ")
+  end
+
+  test "historical legions I and XV begin rolling in 54 BC" do
+    state = base_state
+    state["turn"] = 4
+    state["options"] = { "historicalReinforcements" => true }
+    %w[legion_i legion_xv].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    session = GameSession.create!(data: state)
+
+    result = complete_historical_end_turn(session, reinforcement_rolls: [3, 4])
+
+    assert_equal "roman_off_map", result.dig("units", "legion_i", "location")
+    assert_equal "offboard", result.dig("units", "legion_xv", "location")
+    assert_match "Legion I rolls 3 (needs 1-3) and enters at full strength", result["log"].join(" ")
+    assert_match "Legion Xv rolls 4 (needs 1-3) and remains unavailable", result["log"].join(" ")
+  end
+
+  test "historical legions V and VI enter for free after Massive Revolt" do
+    state = base_state
+    state["options"] = { "historicalReinforcements" => true }
+    state["massiveRevoltPlayed"] = true
+    state["units"]["vercingetorix"] = unit("vercingetorix", "leader", "barbarian", "arverni", "arverni")
+    %w[legion_v legion_vi].each do |unit_id|
+      state["units"][unit_id] = unit(unit_id, "roman", "roman", "offboard", "offboard")
+        .merge("strengths" => [4, 3, 2, 1])
+    end
+    supply_before = state.fetch("supply")
+    session = GameSession.create!(data: state)
+
+    result = complete_historical_end_turn(session, reinforcement_rolls: [6, 6])
+
+    assert_equal "roman_off_map", result.dig("units", "legion_v", "location")
+    assert_equal "roman_off_map", result.dig("units", "legion_vi", "location")
+    assert_equal supply_before + 2, result["supply"]
+    assert_match "Legion V and Legion Vi enter at full strength after Massive Revolt", result["log"].join(" ")
+  end
+
   private
+
+  def complete_historical_end_turn(session, reinforcement_rolls: [])
+    state = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    if state.dig("endTurn", "phase") == "romanWintering"
+      state = GameRules::EndTurn.new(session: session, state: state, wintering_unit_ids: []).end_turn!
+    end
+    if state.dig("endTurn", "phase") == "romanReplacements"
+      state = GameRules::EndTurn.new(session: session, state: state, replacement_steps: {}).end_turn!
+    end
+    assert_equal "romanSupplyProduction", state.dig("endTurn", "phase")
+
+    GameRules::EndTurn.new(
+      session: session,
+      state: state,
+      supply_production_acknowledged: true,
+      reinforcement_rolls: reinforcement_rolls
+    ).end_turn!
+  end
 
   def acknowledge_supply(session, state)
     assert_equal "romanSupplyProduction", state.dig("endTurn", "phase")

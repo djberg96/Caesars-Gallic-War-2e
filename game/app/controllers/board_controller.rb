@@ -7,6 +7,8 @@ class BoardController < ApplicationController
         roman_vp_x1: helpers.asset_path("Blocks/Markers/Roman_VP_x1.svg"),
         roman_vp_x10: helpers.asset_path("Blocks/Markers/Roman_VP_x10.svg"),
         tribes_controlled: helpers.asset_path("Blocks/Markers/Tribes_Controlled.svg"),
+        ambiorix_home: helpers.asset_path("Blocks/Markers/Ambiorix_Home_Area.svg"),
+        dumnorix_home: helpers.asset_path("Blocks/Markers/Dumnorix_Home_Area.svg"),
         turn: helpers.asset_path("Blocks/Markers/Turn.svg")
       },
       years: ["58 BC", "57 BC", "56 BC", "55 BC", "54 BC", "53 BC", "52 BC", "51 BC"],

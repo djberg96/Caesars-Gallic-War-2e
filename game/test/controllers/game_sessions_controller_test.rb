@@ -76,17 +76,19 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_not session.reload.data["turnAnnouncementPending"]
   end
 
-  test "enables yearly objectives when creating a new game" do
+  test "enables optional rules when creating a new game" do
     post game_sessions_url(host: "localhost"),
-         params: { mode: "solitaire", yearly_objectives: true },
+         params: { mode: "solitaire", yearly_objectives: true, historical_reinforcements: true },
          as: :json
 
     assert_response :success
     body = JSON.parse(response.body)
     assert body.dig("state", "options", "yearlyObjectives")
+    assert body.dig("state", "options", "historicalReinforcements")
     assert_empty body.dig("state", "yearlyObjectiveProgress")
     assert_empty body.dig("state", "yearlyObjectiveHistory")
     assert_match "Yearly Objectives optional rule enabled", body.dig("state", "log").join(" ")
+    assert_match "Historical Reinforcements optional rule enabled", body.dig("state", "log").join(" ")
   end
 
   test "moves through the session API" do
@@ -831,10 +833,10 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["allobroges"], session.reload.data.dig("hands", "roman").map { |card| card.fetch("id") }
   end
 
-  test "updates yearly objectives before the first card is played" do
+  test "updates optional rules before the first card is played" do
     state = base_state.merge(
       turn: 0,
-      options: { yearlyObjectives: false },
+      options: { yearlyObjectives: false, historicalReinforcements: false },
       movement: nil,
       currentAction: nil,
       battle: nil,
@@ -846,38 +848,42 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session = GameSession.create!(data: state)
 
     post update_options_game_session_url(session, host: "localhost"),
-         params: { yearly_objectives: true },
+         params: { yearly_objectives: true, historical_reinforcements: true },
          as: :json
 
     assert_response :success
     assert JSON.parse(response.body).dig("options", "yearlyObjectives")
+    assert JSON.parse(response.body).dig("options", "historicalReinforcements")
     assert session.reload.data.dig("options", "yearlyObjectives")
+    assert session.reload.data.dig("options", "historicalReinforcements")
   end
 
   test "rejects yearly objective changes after a card is played" do
     state = base_state.merge(
-      options: { yearlyObjectives: true },
+      options: { yearlyObjectives: true, historicalReinforcements: true },
       discard: [card_hash("helvetii")]
     )
     session = GameSession.create!(data: state)
 
     post update_options_game_session_url(session, host: "localhost"),
-         params: { yearly_objectives: false },
+         params: { yearly_objectives: false, historical_reinforcements: false },
          as: :json
 
     assert_response :unprocessable_entity
     assert_match "cannot be changed", JSON.parse(response.body).fetch("error")
     assert session.reload.data.dig("options", "yearlyObjectives")
+    assert session.reload.data.dig("options", "historicalReinforcements")
   end
 
   test "preserves the locked yearly objective setting during later actions" do
     state = base_state.merge(
-      options: { yearlyObjectives: true },
+      options: { yearlyObjectives: true, historicalReinforcements: true },
       discard: [card_hash("helvetii")]
     )
     session = GameSession.create!(data: state)
     submitted = session.data.deep_dup
     submitted["options"]["yearlyObjectives"] = false
+    submitted["options"]["historicalReinforcements"] = false
 
     post move_game_session_url(session, host: "localhost"),
          params: { state: submitted, unit_id: "legion_vii", target: "helvetii" },
@@ -885,7 +891,9 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert JSON.parse(response.body).dig("state", "options", "yearlyObjectives")
+    assert JSON.parse(response.body).dig("state", "options", "historicalReinforcements")
     assert session.reload.data.dig("options", "yearlyObjectives")
+    assert session.reload.data.dig("options", "historicalReinforcements")
   end
 
   test "repairs legacy games that incorrectly returned Nantuates offboard" do
