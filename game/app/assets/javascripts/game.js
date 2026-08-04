@@ -64,9 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
     romanAdministrationContinue: document.querySelector("#roman-administration-continue"),
     finishRegroup: document.querySelector("#finish-regroup"),
     gameMenu: document.querySelector("#game-menu"),
+    modeMenu: document.querySelector("#mode-menu"),
     optionsMenu: document.querySelector("#options-menu"),
     playMode: document.querySelector("#play-mode"),
-    playModeLabel: document.querySelector("#play-mode-label"),
+    playModeButtons: [...document.querySelectorAll("[data-play-mode]")],
     yearlyObjectives: document.querySelector("#yearly-objectives"),
     yearlyObjectivesToggle: document.querySelector("#yearly-objectives-toggle"),
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
@@ -2338,7 +2339,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderStatus() {
     document.querySelector("#mode-label").textContent = modeName();
-    els.playMode.value = state.mode;
     document.querySelector("#turn-label").textContent = gameData.years[state.turn];
     document.querySelector("#phase-label").textContent = phaseStatusLabel();
     document.querySelector("#active-label").textContent = playerName(state.active);
@@ -2347,8 +2347,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
     const historicalReinforcementsEnabled = Boolean(state.options?.historicalReinforcements);
     const setupLocked = optionalRulesLocked();
-    els.playMode.hidden = setupLocked;
-    els.playModeLabel.hidden = setupLocked;
+    els.playMode.value = state.mode;
+    els.playModeButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.playMode === state.mode));
+    });
+    if (els.modeMenu) {
+      els.modeMenu.hidden = setupLocked;
+      if (setupLocked) els.modeMenu.removeAttribute("open");
+    }
     if (els.optionsMenu) {
       els.optionsMenu.hidden = setupLocked;
       if (setupLocked) els.optionsMenu.removeAttribute("open");
@@ -4796,7 +4802,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function changeMode(mode) {
     if (mode === state.mode) return;
     if (!window.confirm("Changing modes deals fresh hands for the current year. Continue?")) {
-      document.querySelector("#play-mode").value = state.mode;
       return;
     }
     await setMode(mode);
@@ -4896,6 +4901,10 @@ document.addEventListener("DOMContentLoaded", () => {
     els.gameMenu?.removeAttribute("open");
   }
 
+  function closeModeMenu() {
+    els.modeMenu?.removeAttribute("open");
+  }
+
   async function postJson(url, body) {
     const response = await fetch(url, {
       method: "POST",
@@ -4939,7 +4948,10 @@ document.addEventListener("DOMContentLoaded", () => {
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
   });
-  document.querySelector("#play-mode").addEventListener("change", (event) => changeMode(event.target.value));
+  els.playModeButtons.forEach((button) => button.addEventListener("click", async () => {
+    closeModeMenu();
+    await changeMode(button.dataset.playMode);
+  }));
   els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
   els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
@@ -4975,6 +4987,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeGameMenu();
+    closeModeMenu();
     if (mainForceTargeting()) {
       mainForceSelection.settle(false);
       return;
@@ -4993,8 +5006,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   document.addEventListener("click", (event) => {
-    if (!els.gameMenu?.open || els.gameMenu.contains(event.target)) return;
-    closeGameMenu();
+    if (els.gameMenu?.open && !els.gameMenu.contains(event.target)) closeGameMenu();
+    if (els.modeMenu?.open && !els.modeMenu.contains(event.target)) closeModeMenu();
   });
   document.querySelectorAll(".player-button").forEach((button) => button.addEventListener("click", () => setActive(button.dataset.player)));
 

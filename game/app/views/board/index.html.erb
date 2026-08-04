@@ -28,12 +28,15 @@
         <option value="1.25">125%</option>
         <option value="1.5">150%</option>
       </select>
-      <label id="play-mode-label" class="select-label" for="play-mode">Mode</label>
-      <select id="play-mode">
-        <option value="hotseat">Hotseat</option>
-        <option value="solitaire" selected>Solitaire Roman</option>
-        <option value="ai">AI Opponent</option>
-      </select>
+      <details id="mode-menu" class="toolbar-game-menu toolbar-mode-menu">
+        <summary>Mode</summary>
+        <div class="toolbar-game-menu-items" role="group" aria-label="Play mode">
+          <button type="button" data-play-mode="hotseat" aria-pressed="false">Hotseat</button>
+          <button type="button" data-play-mode="solitaire" aria-pressed="true">Solitaire Roman</button>
+          <button type="button" data-play-mode="ai" aria-pressed="false">AI Opponent</button>
+        </div>
+      </details>
+      <input id="play-mode" type="hidden" value="solitaire">
       <details id="options-menu" class="toolbar-game-menu toolbar-options-menu">
         <summary>Options</summary>
         <div class="toolbar-game-menu-items" role="group" aria-label="Optional rules">

@@ -39,8 +39,13 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       end
     end
     assert_select "#optional-rules-status[hidden] #optional-rules-label"
-    assert_select ".board-toolbar label#play-mode-label[for='play-mode']", text: "Mode"
-    assert_select ".board-toolbar select#play-mode"
+    assert_select ".board-toolbar details#mode-menu.toolbar-mode-menu" do
+      assert_select "summary", text: "Mode"
+      assert_select "[data-play-mode='hotseat']", text: "Hotseat"
+      assert_select "[data-play-mode='solitaire'][aria-pressed='true']", text: "Solitaire Roman"
+      assert_select "[data-play-mode='ai']", text: "AI Opponent"
+    end
+    assert_select ".board-toolbar input#play-mode[type='hidden'][value='solitaire']"
     assert_select ".board-toolbar #map-zoom" do
       assert_select "option", text: "50%"
       assert_select "option", text: "75%"
