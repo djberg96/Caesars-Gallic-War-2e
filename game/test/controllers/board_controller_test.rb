@@ -37,6 +37,9 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#historical-reinforcements-toggle", text: "Historical Reinforcements" do
         assert_select "input#historical-reinforcements[type='checkbox']"
       end
+      assert_select "#animated-dice-toggle", text: /Animated Dice/ do
+        assert_select "input#animated-dice[type='checkbox']"
+      end
     end
     assert_select "#optional-rules-status[hidden] #optional-rules-label"
     assert_select ".board-toolbar details#mode-menu.toolbar-mode-menu" do

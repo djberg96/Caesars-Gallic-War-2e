@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
     historicalReinforcements: document.querySelector("#historical-reinforcements"),
     historicalReinforcementsToggle: document.querySelector("#historical-reinforcements-toggle"),
+    animatedDice: document.querySelector("#animated-dice"),
     optionalRulesStatus: document.querySelector("#optional-rules-status"),
     optionalRulesLabel: document.querySelector("#optional-rules-label"),
     objectiveTitle: document.querySelector("#objective-title"),
@@ -141,6 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let resultDialogQueue = [];
   let botActionReview = null;
   let botRollReview = null;
+  let diceRollAnimation = null;
+  let diceAudioContext = null;
   let battleTransitionReview = null;
   let turnAnnouncementTimer = null;
   let turnAnnouncementBlocker = null;
@@ -150,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
+  let animatedDice = storedAnimatedDice();
 
   function storedMapZoom() {
     try {
@@ -157,6 +161,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return mapZoomLevels.includes(stored) ? stored : 1;
     } catch (_error) {
       return 1;
+    }
+  }
+
+  function storedAnimatedDice() {
+    try {
+      return window.localStorage.getItem("cgw-animated-dice") === "true";
+    } catch (_error) {
+      return false;
     }
   }
 
@@ -272,6 +284,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function changeHistoricalReinforcements(enabled) {
     await changeOptionalRule("historicalReinforcements", enabled);
+  }
+
+  function changeAnimatedDice(enabled) {
+    animatedDice = Boolean(enabled);
+    try {
+      window.localStorage.setItem("cgw-animated-dice", String(animatedDice));
+    } catch (_error) {
+      // The option still works for this session when browser storage is unavailable.
+    }
+    if (!animatedDice) resetDiceRollAnimation();
+    render();
   }
 
   async function changeOptionalRule(option, enabled) {
@@ -2076,12 +2099,136 @@ document.addEventListener("DOMContentLoaded", () => {
     return finalStep?.from || moved.origin || null;
   }
 
+  function battleFireResult(battle, unitId) {
+    return [...(battle?.actionResults || [])].reverse().find((entry) => (
+      entry.type === "fire" &&
+      entry.unitId === unitId &&
+      Number(entry.round || battle.round) === Number(battle.round)
+    ));
+  }
+
+  function prepareDiceRollAnimation(battle, unitId) {
+    const result = battleFireResult(battle, unitId);
+    if (!result?.rolls?.length || solitaireBotRoll(battle, unitId)) {
+      resetDiceRollAnimation();
+      return;
+    }
+
+    resetDiceRollAnimation();
+    diceRollAnimation = {
+      key: [battle.area, battle.round, unitId, result.rolls.join(",")].join(":"),
+      unitId,
+      rolling: true,
+      displayRolls: result.rolls.map(() => randomDieFace()),
+      interval: null,
+      settleTimer: null,
+      soundTick: 0
+    };
+  }
+
+  function diceAnimationRollingFor(battle, unitId) {
+    if (!diceRollAnimation?.rolling || diceRollAnimation.unitId !== unitId) return false;
+    const result = battleFireResult(battle, unitId);
+    if (!result) return false;
+    const key = [battle.area, battle.round, unitId, (result.rolls || []).join(",")].join(":");
+    return diceRollAnimation.key === key;
+  }
+
+  function randomDieFace() {
+    return Math.floor(Math.random() * 6) + 1;
+  }
+
+  function startDiceRollAnimation() {
+    if (!diceRollAnimation?.rolling || diceRollAnimation.interval || diceRollAnimation.settleTimer) return;
+
+    playDiceClatter();
+    diceRollAnimation.interval = window.setInterval(() => {
+      if (!diceRollAnimation?.rolling) return;
+      diceRollAnimation.displayRolls = diceRollAnimation.displayRolls.map(() => randomDieFace());
+      document.querySelectorAll(`[data-battle-unit="${diceRollAnimation.unitId}"] .battle-roll-die`).forEach((die, index) => {
+        die.textContent = diceRollAnimation.displayRolls[index];
+      });
+      diceRollAnimation.soundTick += 1;
+      if (diceRollAnimation.soundTick % 2 === 0) playDiceClatter();
+    }, 90);
+
+    diceRollAnimation.settleTimer = window.setTimeout(() => {
+      const unitId = diceRollAnimation?.unitId;
+      if (!unitId || state.battle?.awaitingRollAcknowledgement !== unitId) {
+        resetDiceRollAnimation();
+        return;
+      }
+      window.clearInterval(diceRollAnimation.interval);
+      diceRollAnimation.interval = null;
+      diceRollAnimation.settleTimer = null;
+      diceRollAnimation.rolling = false;
+      playDiceSettle();
+      render();
+    }, 1050);
+  }
+
+  function resetDiceRollAnimation() {
+    if (diceRollAnimation?.interval) window.clearInterval(diceRollAnimation.interval);
+    if (diceRollAnimation?.settleTimer) window.clearTimeout(diceRollAnimation.settleTimer);
+    diceRollAnimation = null;
+  }
+
+  function primeDiceAudio() {
+    if (!animatedDice) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      diceAudioContext ||= new AudioContext();
+      if (diceAudioContext.state === "suspended") diceAudioContext.resume().catch(() => {});
+    } catch (_error) {
+      diceAudioContext = null;
+    }
+  }
+
+  function playDiceClatter() {
+    playDiceNoise({ duration: 0.045, volume: 0.045, frequency: 1050 + (Math.random() * 850) });
+  }
+
+  function playDiceSettle() {
+    playDiceNoise({ duration: 0.075, volume: 0.075, frequency: 620 });
+  }
+
+  function playDiceNoise({ duration, volume, frequency }) {
+    const context = diceAudioContext;
+    if (!animatedDice || !context || context.state !== "running") return;
+
+    try {
+      const frameCount = Math.max(1, Math.floor(context.sampleRate * duration));
+      const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+      const channel = buffer.getChannelData(0);
+      for (let index = 0; index < frameCount; index += 1) {
+        const decay = 1 - (index / frameCount);
+        channel[index] = ((Math.random() * 2) - 1) * decay;
+      }
+
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      const filter = context.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = frequency;
+      filter.Q.value = 0.8;
+      const gain = context.createGain();
+      gain.gain.setValueAtTime(volume, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+      source.connect(filter).connect(gain).connect(context.destination);
+      source.start();
+    } catch (_error) {
+      // Battle play continues silently when Web Audio is unavailable.
+    }
+  }
+
   async function battleAction(action, unitId = null, target = null) {
     const hadBattle = Boolean(state.battle);
     const previousBattleArea = state.battle?.area;
     const playedCard = currentActionCard();
     const wasRegrouping = state.regrouping;
     const wasRetreating = state.retreating;
+    if (action === "fire" && animatedDice) primeDiceAudio();
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/battle_action`, {
@@ -2093,6 +2240,11 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      if (action === "fire" && animatedDice && state.battle) {
+        prepareDiceRollAnimation(state.battle, unitId);
+      } else if (action === "acknowledge_roll") {
+        resetDiceRollAnimation();
+      }
       if (previousBattleArea && state.battle?.area && state.battle.area !== previousBattleArea) {
         battleTransitionReview = {
           from: previousBattleArea,
@@ -2111,6 +2263,7 @@ document.addEventListener("DOMContentLoaded", () => {
       log(error.message);
     }
     render();
+    startDiceRollAnimation();
   }
 
   function resolveBattle(areaId) {
@@ -2364,17 +2517,10 @@ document.addEventListener("DOMContentLoaded", () => {
       els.modeMenu.hidden = setupLocked;
       if (setupLocked) els.modeMenu.removeAttribute("open");
     }
-    if (els.optionsMenu) {
-      els.optionsMenu.hidden = setupLocked;
-      if (setupLocked) els.optionsMenu.removeAttribute("open");
-    }
     if (els.yearlyObjectives) {
       const locked = setupLocked;
       els.yearlyObjectives.checked = objectivesEnabled;
       els.yearlyObjectives.disabled = locked;
-      if (els.yearlyObjectivesToggle) {
-        els.yearlyObjectivesToggle.hidden = locked;
-      }
       els.yearlyObjectives.closest("label")?.setAttribute(
         "title",
         locked ? "Historical Objectives are fixed after the first card is played" : "Apply the optional Yearly Objectives victory-point schedule"
@@ -2387,6 +2533,9 @@ document.addEventListener("DOMContentLoaded", () => {
         "title",
         setupLocked ? "Historical Reinforcements are fixed after the first card is played" : "Use the historical Roman reinforcement schedule printed on the turn track"
       );
+    }
+    if (els.animatedDice) {
+      els.animatedDice.checked = animatedDice;
     }
     if (els.optionalRulesStatus && els.optionalRulesLabel) {
       const enabledOptions = [];
@@ -3737,6 +3886,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const battle = state.battle;
     if (!battle) {
       resetBotRollReview();
+      resetDiceRollAnimation();
       if (els.battleDialog.open) els.battleDialog.close();
       if (els.battleRoundHeader) els.battleRoundHeader.textContent = "";
       if (els.battleDetails) els.battleDetails.replaceChildren();
@@ -3846,6 +3996,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return `${playerName(battle.retreating)} is defeated. Its trapped units have no legal retreat and will be eliminated.`;
       }
       return `${playerName(battle.retreating)} is defeated and must retreat.`;
+    }
+    if (diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement)) {
+      const firingUnit = state.units[battle.awaitingRollAcknowledgement];
+      return `${firingUnit?.name || "The unit"} is rolling...`;
     }
     if (battle.pendingHits?.targetIds?.length) {
       const owner = state.units[battle.pendingHits.targetIds[0]]?.owner;
@@ -4199,7 +4353,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const unit = state.units[unitId];
     if (!unit) return "";
     const active = unitId === battle.activeUnit;
-    const hitTarget = (battle.pendingHits?.targetIds || []).includes(unitId);
+    const rollAnimating = diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement);
+    const hitTarget = !rollAnimating && (battle.pendingHits?.targetIds || []).includes(unitId);
     const awaitingRoll = battle.awaitingRollAcknowledgement === unitId;
     const manualRollReview = awaitingRoll && !solitaireBotRoll(battle, unitId);
     const canAct = battle.phase === "field" && active && !battle.pendingHits && !battle.awaitingRollAcknowledgement;
@@ -4213,7 +4368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const rollDice = battleUnitRollDice(unitId, battle, unit);
     const halfHit = battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
-    const status = hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const status = rollAnimating && awaitingRoll ? "Rolling dice" : hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -4250,31 +4405,29 @@ document.addEventListener("DOMContentLoaded", () => {
     if (battle.awaitingRollAcknowledgement !== unitId) return "";
     if (solitaireBotRoll(battle, unitId)) return "";
 
-    const result = [...(battle.actionResults || [])].reverse().find((action) => (
-      action.type === "fire" &&
-      action.unitId === unitId &&
-      Number(action.round || battle.round) === Number(battle.round)
-    ));
+    const result = battleFireResult(battle, unitId);
     if (!result) return "";
 
-    const rolls = result.rolls || [];
+    const rolling = diceAnimationRollingFor(battle, unitId);
+    const rolls = rolling ? diceRollAnimation.displayRolls : result.rolls || [];
     if (!rolls.length) return "";
 
     const hitCount = Number(result.hits || 0);
-    const label = `${unit.name} rolled ${rolls.join(", ")}; ${hitCount} hit${hitCount === 1 ? "" : "s"}`;
+    const label = rolling ? `${unit.name} is rolling` : `${unit.name} rolled ${rolls.join(", ")}; ${hitCount} hit${hitCount === 1 ? "" : "s"}`;
     const dice = rolls.map((roll) => {
-      const hit = Number(roll) <= Number(unit.fire);
-      return `<span class="battle-roll-die${hit ? " is-hit" : ""}" title="${roll}: ${hit ? "hit" : "miss"}">${roll}</span>`;
+      const hit = !rolling && Number(roll) <= Number(unit.fire);
+      const title = rolling ? "Rolling" : `${roll}: ${hit ? "hit" : "miss"}`;
+      return `<span class="battle-roll-die${rolling ? " is-rolling" : ""}${hit ? " is-hit" : ""}" title="${title}">${roll}</span>`;
     }).join("");
 
-    const acknowledgement = !battle.pendingHits
+    const acknowledgement = !rolling && !battle.pendingHits
       ? `<button type="button" class="battle-roll-acknowledge" data-battle-action="acknowledge_roll" data-unit-id="${unitId}">OK</button>`
       : "";
 
     return `
-      <div class="battle-roll-result" role="status" aria-label="${label}">
+      <div class="battle-roll-result${rolling ? " is-rolling" : " is-settled"}" role="status" aria-label="${label}">
         <div class="battle-roll-dice" role="img" aria-hidden="true">${dice}</div>
-        <strong>${hitCount ? `${hitCount} hit${hitCount === 1 ? "" : "s"}` : "No hits"}</strong>
+        <strong>${rolling ? "Rolling..." : hitCount ? `${hitCount} hit${hitCount === 1 ? "" : "s"}` : "No hits"}</strong>
         ${acknowledgement}
       </div>
     `;
@@ -4967,6 +5120,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }));
   els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
   els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
+  els.animatedDice?.addEventListener("change", (event) => changeAnimatedDice(event.target.checked));
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
