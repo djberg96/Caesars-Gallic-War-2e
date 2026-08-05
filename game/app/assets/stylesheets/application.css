@@ -1391,7 +1391,7 @@ h3 {
 }
 
 .hand-tray {
-  position: absolute;
+  position: fixed;
   right: var(--side-panel-width);
   bottom: 0;
   left: 0;
