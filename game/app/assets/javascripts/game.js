@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     historicalReinforcements: document.querySelector("#historical-reinforcements"),
     historicalReinforcementsToggle: document.querySelector("#historical-reinforcements-toggle"),
     animatedDice: document.querySelector("#animated-dice"),
+    movementSounds: document.querySelector("#movement-sounds"),
     optionalRulesStatus: document.querySelector("#optional-rules-status"),
     optionalRulesLabel: document.querySelector("#optional-rules-label"),
     objectiveTitle: document.querySelector("#objective-title"),
@@ -124,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelMainForceTarget: document.querySelector("#cancel-main-force-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
+  const botRollToastDuration = 2150;
   const mapAspectRatio = 2080 / 1664;
   const hitMapSize = { width: 1664, height: 2080 };
   const minimumHitComponentSize = 2000;
@@ -143,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let botActionReview = null;
   let botRollReview = null;
   let diceRollAnimation = null;
-  let diceAudioContext = null;
+  let gameAudioContext = null;
   let battleTransitionReview = null;
   let turnAnnouncementTimer = null;
   let turnAnnouncementBlocker = null;
@@ -154,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let boardResizeObserver = null;
   let mapZoom = storedMapZoom();
   let animatedDice = storedAnimatedDice();
+  let movementSounds = storedMovementSounds();
 
   function storedMapZoom() {
     try {
@@ -169,6 +172,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return window.localStorage.getItem("cgw-animated-dice") === "true";
     } catch (_error) {
       return false;
+    }
+  }
+
+  function storedMovementSounds() {
+    try {
+      const stored = window.localStorage.getItem("cgw-movement-sounds");
+      return stored === null ? true : stored === "true";
+    } catch (_error) {
+      return true;
     }
   }
 
@@ -294,6 +306,16 @@ document.addEventListener("DOMContentLoaded", () => {
       // The option still works for this session when browser storage is unavailable.
     }
     if (!animatedDice) resetDiceRollAnimation();
+    render();
+  }
+
+  function changeMovementSounds(enabled) {
+    movementSounds = Boolean(enabled);
+    try {
+      window.localStorage.setItem("cgw-movement-sounds", String(movementSounds));
+    } catch (_error) {
+      // The option still works for this session when browser storage is unavailable.
+    }
     render();
   }
 
@@ -844,7 +866,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const origin = unit.location;
+    primeGameAudio();
     await battleAction(state.retreating ? "forced_retreat" : "regroup", unitId, target);
+    if (state.units[unitId]?.location !== origin) playWoodenPieceTap();
   }
 
   async function moveUnitTo(unitId, target) {
@@ -880,6 +905,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    let moved = false;
+    primeGameAudio();
     saveUndoMove(unit, target);
     try {
       await ensureGameSession();
@@ -891,11 +918,13 @@ document.addEventListener("DOMContentLoaded", () => {
       state = result.state;
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
+      moved = true;
     } catch (error) {
       state.undoStack?.pop();
       log(error.message);
     }
     render();
+    if (moved) playWoodenPieceTap();
   }
 
   function saveUndoMove(unit, target) {
@@ -2173,15 +2202,14 @@ document.addEventListener("DOMContentLoaded", () => {
     diceRollAnimation = null;
   }
 
-  function primeDiceAudio() {
-    if (!animatedDice) return;
+  function primeGameAudio() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
-      diceAudioContext ||= new AudioContext();
-      if (diceAudioContext.state === "suspended") diceAudioContext.resume().catch(() => {});
+      gameAudioContext ||= new AudioContext();
+      if (gameAudioContext.state === "suspended") gameAudioContext.resume().catch(() => {});
     } catch (_error) {
-      diceAudioContext = null;
+      gameAudioContext = null;
     }
   }
 
@@ -2194,7 +2222,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function playDiceNoise({ duration, volume, frequency }) {
-    const context = diceAudioContext;
+    const context = gameAudioContext;
     if (!animatedDice || !context || context.state !== "running") return;
 
     try {
@@ -2222,13 +2250,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function playWoodenPieceTap() {
+    if (!movementSounds) return;
+    primeGameAudio();
+    const context = gameAudioContext;
+    if (!context) return;
+    if (context.state === "suspended") {
+      context.resume().then(() => emitWoodenPieceTap(context)).catch(() => {});
+      return;
+    }
+    if (context.state !== "running") return;
+    emitWoodenPieceTap(context);
+  }
+
+  function emitWoodenPieceTap(context) {
+    try {
+      const now = context.currentTime;
+      const resonance = context.createOscillator();
+      resonance.type = "triangle";
+      resonance.frequency.setValueAtTime(500, now);
+      resonance.frequency.exponentialRampToValueAtTime(330, now + 0.055);
+      const resonanceGain = context.createGain();
+      resonanceGain.gain.setValueAtTime(0.06, now);
+      resonanceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      resonance.connect(resonanceGain).connect(context.destination);
+
+      const duration = 0.045;
+      const frameCount = Math.max(1, Math.floor(context.sampleRate * duration));
+      const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+      const channel = buffer.getChannelData(0);
+      for (let index = 0; index < frameCount; index += 1) {
+        const decay = Math.pow(1 - (index / frameCount), 2);
+        channel[index] = ((Math.random() * 2) - 1) * decay;
+      }
+      const knock = context.createBufferSource();
+      knock.buffer = buffer;
+      const filter = context.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 900;
+      filter.Q.value = 0.65;
+      const knockGain = context.createGain();
+      knockGain.gain.setValueAtTime(0.095, now);
+      knockGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      knock.connect(filter).connect(knockGain).connect(context.destination);
+
+      resonance.start(now);
+      resonance.stop(now + 0.065);
+      knock.start(now);
+    } catch (_error) {
+      // Movement remains available when browser audio is unavailable.
+    }
+  }
+
   async function battleAction(action, unitId = null, target = null) {
     const hadBattle = Boolean(state.battle);
     const previousBattleArea = state.battle?.area;
     const playedCard = currentActionCard();
     const wasRegrouping = state.regrouping;
     const wasRetreating = state.retreating;
-    if (action === "fire" && animatedDice) primeDiceAudio();
+    if (action === "fire" && animatedDice) primeGameAudio();
     try {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/battle_action`, {
@@ -2536,6 +2616,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (els.animatedDice) {
       els.animatedDice.checked = animatedDice;
+    }
+    if (els.movementSounds) {
+      els.movementSounds.checked = movementSounds;
     }
     if (els.optionalRulesStatus && els.optionalRulesLabel) {
       const enabledOptions = [];
@@ -4463,7 +4546,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.battleRollToast.classList.toggle("is-hit", hits > 0);
         els.battleRollToast.hidden = false;
         window.requestAnimationFrame(() => els.battleRollToast.classList.add("is-visible"));
-        botRollReview.hideTimer = window.setTimeout(hideBotRollToast, 1650);
+        botRollReview.hideTimer = window.setTimeout(hideBotRollToast, botRollToastDuration);
       }
     }
 
@@ -4473,7 +4556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (battle.pendingHits || botRollReview.acknowledgementTimer) return;
 
     const elapsed = Date.now() - botRollReview.shownAt;
-    const delay = Math.max(0, 1650 - elapsed);
+    const delay = Math.max(0, botRollToastDuration - elapsed);
     botRollReview.acknowledgementTimer = window.setTimeout(async () => {
       const currentUnitId = state.battle?.awaitingRollAcknowledgement;
       botRollReview.acknowledgementTimer = null;
@@ -5121,6 +5204,8 @@ document.addEventListener("DOMContentLoaded", () => {
   els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
   els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
   els.animatedDice?.addEventListener("change", (event) => changeAnimatedDice(event.target.checked));
+  els.movementSounds?.addEventListener("change", (event) => changeMovementSounds(event.target.checked));
+  document.addEventListener("click", primeGameAudio, { passive: true });
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
   document.querySelector("#undo-move").addEventListener("click", undoMove);
