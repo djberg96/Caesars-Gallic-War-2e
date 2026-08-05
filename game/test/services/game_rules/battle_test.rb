@@ -30,11 +30,13 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal 1, result.dig("battle", "lastAction", "round")
     assert_equal [1], result.dig("battle", "lastAction", "rolls")
     assert_equal 1, result.dig("battle", "lastAction", "hits")
+    assert_equal({ "step" => 0, "zone" => "field" }, result.dig("battle", "rollReviewEliminations", "allobroges"))
     assert_equal 1, result.dig("battle", "actionResults").last.fetch("round")
     assert_match "eliminated", result["log"].join(" ")
 
     result = acknowledge_roll(session, result)
     assert_equal "regroup", result.dig("battle", "phase")
+    assert_nil result.dig("battle", "rollReviewEliminations")
 
     session.reload
     assert session.dice_rolled_this_turn

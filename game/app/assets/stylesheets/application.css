@@ -2153,6 +2153,20 @@ h3 {
   color: #aaa697;
 }
 
+.battle-unit-card.is-roll-eliminated {
+  border-color: rgba(205, 108, 86, 0.72);
+  opacity: 0.68;
+}
+
+.battle-unit-card.is-roll-eliminated .battle-unit-counter {
+  filter: grayscale(0.45);
+}
+
+.battle-unit-card.is-roll-eliminated .battle-unit-status {
+  background: rgba(205, 108, 86, 0.16);
+  color: #e7a08f;
+}
+
 .battle-unit-stats {
   display: flex;
   flex-wrap: wrap;

@@ -4021,12 +4021,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const reserveIds = new Set(battle.round === 1 ? battle.reserves || [] : []);
     const fortIds = new Set(battle.fort || []);
-    const attackers = (battle.attackers || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
-    const defenders = (battle.defenders || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area);
+    const rollReviewEliminatedIds = Object.keys(battle.rollReviewEliminations || {});
+    const reviewedEliminations = (owner, zone = "field") => rollReviewEliminatedIds.filter((id) => (
+      state.units[id]?.owner === owner && battle.rollReviewEliminations[id]?.zone === zone
+    ));
+    const attackers = [
+      ...(battle.attackers || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area),
+      ...reviewedEliminations(battle.attacker, "field")
+    ];
+    const defenders = [
+      ...(battle.defenders || []).filter((id) => !reserveIds.has(id) && !fortIds.has(id) && state.units[id]?.location === battle.area),
+      ...reviewedEliminations(battle.defender, "field")
+    ];
     const reserves = battle.round === 1
       ? (battle.reserves || []).filter((id) => state.units[id]?.location === battle.area)
       : [];
-    const fort = (battle.fort || []).filter((id) => state.units[id]?.location === battle.area);
+    const fort = [
+      ...(battle.fort || []).filter((id) => state.units[id]?.location === battle.area),
+      ...reviewedEliminations(battle.defender, "fort")
+    ];
     const attackerReserves = reserves.filter((id) => state.units[id]?.owner === battle.attacker);
     const defenderReserves = reserves.filter((id) => state.units[id]?.owner === battle.defender);
     els.battleZones.innerHTML = [
@@ -4436,6 +4449,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function battleUnitCard(unitId, battle, selected = false, zone = "field") {
     const unit = state.units[unitId];
     if (!unit) return "";
+    const rollReviewElimination = battle.rollReviewEliminations?.[unitId];
+    const displayUnit = rollReviewElimination
+      ? { ...unit, step: rollReviewElimination.step }
+      : unit;
     const active = unitId === battle.activeUnit;
     const rollAnimating = diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement);
     const hitTarget = !rollAnimating && (battle.pendingHits?.targetIds || []).includes(unitId);
@@ -4447,12 +4464,12 @@ document.addEventListener("DOMContentLoaded", () => {
       (battle.phase === "retreat" && unit.owner === battle.retreating)
     ) && unit.location === battle.area && currentStrength(unit) > 0;
     const selectable = hitTarget || phaseSelectable;
-    const inFort = (battle.fort || []).includes(unitId);
+    const inFort = zone === "fort" || (battle.fort || []).includes(unitId);
     const fired = (battle.fired || []).includes(unitId);
     const rollDice = battleUnitRollDice(unitId, battle, unit);
     const halfHit = battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
-    const status = rollAnimating && awaitingRoll ? "Rolling dice" : hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const status = rollReviewElimination ? "Eliminated" : rollAnimating && awaitingRoll ? "Rolling dice" : hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -4463,10 +4480,10 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${manualRollReview ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${manualRollReview ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}${rollReviewElimination ? " is-roll-eliminated" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
-          <div class="battle-unit-counter" title="${unit.name}: current strength ${currentStrength(unit)}">
-            ${unitCounterMarkup(unit)}
+          <div class="battle-unit-counter" title="${rollReviewElimination ? `${unit.name}: eliminated by this fire result` : `${unit.name}: current strength ${currentStrength(unit)}`}">
+            ${unitCounterMarkup(displayUnit)}
           </div>
           <div class="battle-unit-info">
             <span class="battle-unit-status"><span>${status}</span></span>

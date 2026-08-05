@@ -114,6 +114,7 @@ module GameRules
         "defender" => defender,
         "activeUnit" => nil,
         "awaitingRollAcknowledgement" => nil,
+        "rollReviewEliminations" => {},
         "acted" => [],
         "fired" => [],
         "actionResults" => [],
@@ -579,6 +580,7 @@ module GameRules
       end
 
       battle.delete("awaitingRollAcknowledgement")
+      battle.delete("rollReviewEliminations")
     end
 
     def bot_act!
@@ -718,8 +720,16 @@ module GameRules
         battle["halfHits"][target.fetch("id")] = battle["halfHits"][target.fetch("id")].to_i - 2
       end
 
-      target["step"] = target.fetch("step", 0).to_i + 1
+      previous_step = target.fetch("step", 0).to_i
+      target["step"] = previous_step + 1
       pending["appliedHits"] = pending.fetch("appliedHits", 0).to_i + 1
+      if current_strength(target).zero? && awaiting_roll_acknowledgement?
+        battle["rollReviewEliminations"] ||= {}
+        battle["rollReviewEliminations"][target.fetch("id")] = {
+          "step" => previous_step,
+          "zone" => battle["fort"].include?(target.fetch("id")) ? "fort" : "field"
+        }
+      end
       eliminate_dead(battle_area.key)
       update_pending_fire_result!
     end
