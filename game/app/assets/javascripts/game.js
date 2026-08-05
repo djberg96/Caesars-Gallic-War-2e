@@ -1653,7 +1653,7 @@ document.addEventListener("DOMContentLoaded", () => {
         kind: "card",
         kicker: "Barbarian Reveals",
         title: revealedCard || "Unknown Card",
-        message: card ? `AP ${card.ap} card drawn from the Barbarian deck.` : "A card is drawn from the Barbarian deck.",
+        message: "",
         details: []
       },
       {
@@ -1755,6 +1755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     els.botActionReviewKicker.textContent = stage.kicker;
     els.botActionReviewTitle.textContent = stage.title;
     els.botActionReviewMessage.textContent = stage.message;
+    els.botActionReviewDialog.classList.toggle("is-card-stage", stage.kind === "card");
     els.botActionReviewDetails.replaceChildren(...stage.details.map((detail) => {
       const item = document.createElement("li");
       item.textContent = detail;

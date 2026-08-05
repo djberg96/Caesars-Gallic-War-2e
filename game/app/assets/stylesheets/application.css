@@ -2478,6 +2478,20 @@ dialog {
   box-shadow: 0 18px 52px rgba(0, 0, 0, 0.72);
 }
 
+.bot-action-review-dialog.is-card-stage {
+  width: min(500px, 92vw);
+}
+
+.bot-action-review-dialog.is-card-stage .bot-action-review-layout {
+  grid-template-columns: minmax(120px, 155px) minmax(0, 1fr);
+  gap: 0.8rem;
+}
+
+.bot-action-review-dialog.is-card-stage .dialog-actions {
+  justify-content: center;
+  margin-top: 1rem;
+}
+
 .bot-action-review-dialog::backdrop {
   background: rgba(5, 7, 5, 0.2);
 }
@@ -2508,6 +2522,10 @@ dialog {
   margin: 0.45rem 0 0;
   color: var(--text);
   line-height: 1.42;
+}
+
+.bot-action-review-copy > p:empty {
+  display: none;
 }
 
 .bot-action-review-details {
