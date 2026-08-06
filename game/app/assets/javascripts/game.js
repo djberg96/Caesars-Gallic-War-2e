@@ -77,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     historicalReinforcementsToggle: document.querySelector("#historical-reinforcements-toggle"),
     animatedDice: document.querySelector("#animated-dice"),
     movementSounds: document.querySelector("#movement-sounds"),
+    movementArrows: document.querySelector("#movement-arrows"),
     optionalRulesStatus: document.querySelector("#optional-rules-status"),
     optionalRulesLabel: document.querySelector("#optional-rules-label"),
     objectiveTitle: document.querySelector("#objective-title"),
@@ -157,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let mapZoom = storedMapZoom();
   let animatedDice = storedAnimatedDice();
   let movementSounds = storedMovementSounds();
+  let movementArrows = storedMovementArrows();
 
   function storedMapZoom() {
     try {
@@ -178,6 +180,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function storedMovementSounds() {
     try {
       const stored = window.localStorage.getItem("cgw-movement-sounds");
+      return stored === null ? true : stored === "true";
+    } catch (_error) {
+      return true;
+    }
+  }
+
+  function storedMovementArrows() {
+    try {
+      const stored = window.localStorage.getItem("cgw-movement-arrows");
       return stored === null ? true : stored === "true";
     } catch (_error) {
       return true;
@@ -317,6 +328,16 @@ document.addEventListener("DOMContentLoaded", () => {
       // The option still works for this session when browser storage is unavailable.
     }
     render();
+  }
+
+  function changeMovementArrows(enabled) {
+    movementArrows = Boolean(enabled);
+    try {
+      window.localStorage.setItem("cgw-movement-arrows", String(movementArrows));
+    } catch (_error) {
+      // The option still works for this session when browser storage is unavailable.
+    }
+    renderMovementArrows();
   }
 
   async function changeOptionalRule(option, enabled) {
@@ -2632,6 +2653,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (els.movementSounds) {
       els.movementSounds.checked = movementSounds;
     }
+    if (els.movementArrows) {
+      els.movementArrows.checked = movementArrows;
+    }
     if (els.optionalRulesStatus && els.optionalRulesLabel) {
       const enabledOptions = [];
       if (objectivesEnabled) enabledOptions.push("Historical Objectives");
@@ -2871,6 +2895,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMovementArrows() {
     if (!els.movementArrowLayer) return;
     els.movementArrowLayer.innerHTML = "";
+    if (!movementArrows) return;
     const reviewingBotMovement = currentBotActionReviewStage()?.kind === "movement";
     if ((!state.movement && !reviewingBotMovement) || piecesHidden) return;
 
@@ -5381,6 +5406,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
   els.animatedDice?.addEventListener("change", (event) => changeAnimatedDice(event.target.checked));
   els.movementSounds?.addEventListener("change", (event) => changeMovementSounds(event.target.checked));
+  els.movementArrows?.addEventListener("change", (event) => changeMovementArrows(event.target.checked));
   document.addEventListener("click", primeGameAudio, { passive: true });
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
