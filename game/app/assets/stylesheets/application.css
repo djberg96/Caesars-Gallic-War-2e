@@ -504,6 +504,36 @@ h3 {
   fill: #652d2c;
 }
 
+.retreat-path-arrow {
+  opacity: 0.9;
+}
+
+.retreat-path-arrow-outline,
+.retreat-path-arrow-line {
+  fill: none;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+}
+
+.retreat-path-arrow-outline {
+  stroke: #6b5310;
+  stroke-width: 0.62;
+}
+
+.retreat-path-arrow-line {
+  stroke: #f0c94d;
+  stroke-width: 0.36;
+  filter: drop-shadow(0 0.12px 0.15px rgba(0, 0, 0, 0.58));
+}
+
+.retreat-arrowhead-outline {
+  fill: #6b5310;
+}
+
+.retreat-arrowhead-fill {
+  fill: #f0c94d;
+}
+
 .track-marker-layer {
   z-index: 30;
 }

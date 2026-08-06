@@ -2965,7 +2965,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMovementArrows() {
     if (!els.movementArrowLayer) return;
     els.movementArrowLayer.innerHTML = "";
+    if (retreatArrowMode()) {
+      renderRetreatArrows();
+      return;
+    }
     if (!movementArrows) return;
+    if (state.battle?.phase === "regroup") return;
     const reviewingBotMovement = currentBotActionReviewStage()?.kind === "movement";
     if ((!state.movement && !reviewingBotMovement) || piecesHidden) return;
 
@@ -3009,6 +3014,91 @@ document.addEventListener("DOMContentLoaded", () => {
       group.append(outline, line, accent, originOutline, origin);
       els.movementArrowLayer.append(group);
     });
+  }
+
+  function retreatArrowMode() {
+    return retreatingOnMap() || voluntaryRetreatTargeting();
+  }
+
+  function retreatArrowRoutes() {
+    const battle = state.battle;
+    if (!battle || !retreatArrowMode()) return [];
+
+    let units;
+    if (voluntaryRetreatTargeting()) {
+      units = [state.units[voluntaryRetreatSelection.unitId]].filter(Boolean);
+    } else {
+      const selected = state.units[state.selectedUnit];
+      units = canForcedRetreatUnit(selected) ? [selected] : forcedRetreatUnits(battle);
+    }
+
+    const routes = new Map();
+    units.forEach((unit) => {
+      legalVoluntaryRetreatTargets(battle, unit).forEach((target) => {
+        const route = routes.get(target) || { from: battle.area, to: target, unitNames: [] };
+        route.unitNames.push(unit.name);
+        routes.set(target, route);
+      });
+    });
+    return [...routes.values()];
+  }
+
+  function renderRetreatArrows() {
+    const routes = retreatArrowRoutes();
+    if (!routes.length) return;
+
+    const definitions = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    appendRetreatArrowMarker(definitions, { outline: true });
+    appendRetreatArrowMarker(definitions);
+    els.movementArrowLayer.append(definitions);
+
+    routes.forEach((route) => {
+      const border = battleEntryBorderPoint(route.from, route.to);
+      const start = entryArrowPoint(areas[route.from], border, 0.38);
+      const end = entryArrowPoint(border, areas[route.to], 0.34);
+      const description = `${route.unitNames.join(", ")} may retreat from ${areaName(route.from)} to ${areaName(route.to)}.`;
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.classList.add("retreat-path-arrow");
+      group.setAttribute("role", "img");
+      group.setAttribute("aria-label", description);
+
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = description;
+      group.append(title);
+
+      const outline = simpleArrowPath(start, end, "retreat-path-arrow-outline");
+      const line = simpleArrowPath(start, end, "retreat-path-arrow-line");
+      outline.setAttribute("marker-end", "url(#retreat-arrowhead-outline)");
+      line.setAttribute("marker-end", "url(#retreat-arrowhead)");
+      group.append(outline, line);
+      els.movementArrowLayer.append(group);
+    });
+  }
+
+  function simpleArrowPath(start, end, className) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M ${start.x.toFixed(3)} ${start.y.toFixed(3)} L ${end.x.toFixed(3)} ${end.y.toFixed(3)}`);
+    path.classList.add(className);
+    return path;
+  }
+
+  function appendRetreatArrowMarker(definitions, { outline = false } = {}) {
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    marker.id = outline ? "retreat-arrowhead-outline" : "retreat-arrowhead";
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("preserveAspectRatio", "none");
+    marker.setAttribute("refX", "8.4");
+    marker.setAttribute("refY", "5");
+    marker.setAttribute("markerUnits", "userSpaceOnUse");
+    marker.setAttribute("markerWidth", outline ? "1.72" : "1.48");
+    marker.setAttribute("markerHeight", outline ? "2.15" : "1.85");
+    marker.setAttribute("orient", "auto-start-reverse");
+
+    const arrowhead = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    arrowhead.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    arrowhead.classList.add(outline ? "retreat-arrowhead-outline" : "retreat-arrowhead-fill");
+    marker.append(arrowhead);
+    definitions.append(marker);
   }
 
   function spaceMovementArrowOrigins(preparedRoutes) {
