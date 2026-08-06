@@ -387,8 +387,12 @@ h3 {
 .movement-entry-arrow-line,
 .movement-entry-arrow-accent {
   fill: none;
-  stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.movement-entry-arrow-outline,
+.movement-entry-arrow-line {
+  stroke-linecap: butt;
 }
 
 .movement-entry-arrow-outline {
@@ -406,6 +410,7 @@ h3 {
   stroke: var(--movement-arrow-highlight);
   stroke-width: 0.1;
   stroke-dasharray: 0.58 0.44;
+  stroke-linecap: round;
   opacity: 0;
 }
 

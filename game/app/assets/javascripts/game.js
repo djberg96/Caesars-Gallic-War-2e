@@ -2958,7 +2958,7 @@ document.addEventListener("DOMContentLoaded", () => {
     marker.id = `movement-arrowhead${outlineLabel}-${owner}`;
     marker.setAttribute("viewBox", "0 0 10 10");
     marker.setAttribute("preserveAspectRatio", "none");
-    marker.setAttribute("refX", "9.25");
+    marker.setAttribute("refX", "8.35");
     marker.setAttribute("refY", "5");
     marker.setAttribute("markerUnits", "userSpaceOnUse");
     marker.setAttribute("markerWidth", outline ? "2.28" : "2.05");
