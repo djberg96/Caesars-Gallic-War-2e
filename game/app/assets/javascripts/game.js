@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainForceTargetPanel: document.querySelector("#main-force-target-panel"),
     mainForceTargetTitle: document.querySelector("#main-force-target-title"),
     mainForceTargetInstructions: document.querySelector("#main-force-target-instructions"),
+    mainForceTargetOptions: document.querySelector("#main-force-target-options"),
     cancelMainForceTarget: document.querySelector("#cancel-main-force-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
@@ -215,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
     els.boardCanvas.style.width = `${baseWidth}px`;
     els.boardCanvas.style.height = `${baseHeight}px`;
     els.boardCanvas.style.transform = `scale(${mapZoom})`;
+    positionMainForceTargetPanel();
     if (!center) {
       els.board.scrollLeft = Math.max(0, els.boardStage.offsetLeft + (els.boardStage.offsetWidth / 2) - (els.board.clientWidth / 2));
       els.board.scrollTop = 0;
@@ -222,6 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.requestAnimationFrame(() => {
+      positionMainForceTargetPanel();
       els.board.scrollLeft = els.boardStage.offsetLeft + (center.x * els.boardStage.offsetWidth) - (els.board.clientWidth / 2);
       els.board.scrollTop = els.boardStage.offsetTop + (center.y * els.boardStage.offsetHeight) - (els.board.clientHeight / 2);
     });
@@ -2601,15 +2604,82 @@ document.addEventListener("DOMContentLoaded", () => {
     els.mainForceTargetPanel.hidden = !targeting;
     if (!targeting) return;
 
-    els.mainForceTargetTitle.textContent = `Main Force · ${areaName(mainForceSelection.areaId)}`;
+    els.mainForceTargetTitle.textContent = `Attack on ${areaName(mainForceSelection.areaId)}`;
+    els.mainForceTargetInstructions.textContent = "Choose a highlighted origin or one of its outlined units.";
     const groups = mainForceSelection.origins.map((origin) => {
       const names = areaUnits(mainForceSelection.areaId)
         .filter((unit) => mainForceEligible(unit) && movementEntry(unit, mainForceSelection.areaId) === origin)
-        .map((unit) => unit.name)
-        .join(", ");
-      return `${areaName(origin)} (${names})`;
+        .map((unit) => unit.name);
+      return { origin, names };
     });
-    els.mainForceTargetInstructions.textContent = `Choose ${groups.join(" or ")}.`;
+
+    els.mainForceTargetOptions.innerHTML = "";
+    groups.forEach(({ origin, names }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      const originName = document.createElement("strong");
+      const unitNames = document.createElement("span");
+      originName.textContent = areaName(origin);
+      unitNames.textContent = names.join(", ");
+      button.append(originName, unitNames);
+      button.addEventListener("click", () => chooseMainForceOrigin(origin));
+      els.mainForceTargetOptions.append(button);
+    });
+
+    positionMainForceTargetPanel();
+  }
+
+  function positionMainForceTargetPanel() {
+    const panel = els.mainForceTargetPanel;
+    const stage = els.boardStage;
+    if (!panel || !stage || !mainForceTargeting()) return;
+
+    const origins = mainForceSelection.origins.map((areaId) => areas[areaId]).filter(Boolean);
+    const target = areas[mainForceSelection.areaId];
+    if (!origins.length || !target) return;
+
+    const stageWidth = stage.offsetWidth;
+    const stageHeight = stage.offsetHeight;
+    const points = origins.map((area) => ({
+      x: (area.x / 100) * stageWidth,
+      y: (area.y / 100) * stageHeight
+    }));
+    const targetPoint = {
+      x: (target.x / 100) * stageWidth,
+      y: (target.y / 100) * stageHeight
+    };
+    const center = {
+      x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+      y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+    };
+    const bounds = {
+      left: Math.min(...points.map((point) => point.x)),
+      right: Math.max(...points.map((point) => point.x)),
+      top: Math.min(...points.map((point) => point.y)),
+      bottom: Math.max(...points.map((point) => point.y))
+    };
+    const width = panel.offsetWidth;
+    const height = panel.offsetHeight;
+    const gap = 22;
+    const inset = 10;
+    const candidates = {
+      left: { left: bounds.left - width - gap, top: center.y - (height / 2) },
+      right: { left: bounds.right + gap, top: center.y - (height / 2) },
+      above: { left: center.x - (width / 2), top: bounds.top - height - gap },
+      below: { left: center.x - (width / 2), top: bounds.bottom + gap }
+    };
+    const horizontalAttack = Math.abs(targetPoint.x - center.x) > Math.abs(targetPoint.y - center.y);
+    const preferredSide = horizontalAttack
+      ? (targetPoint.x >= center.x ? "left" : "right")
+      : (center.x >= stageWidth / 2 ? "left" : "right");
+    const order = [preferredSide, preferredSide === "left" ? "right" : "left", "above", "below"];
+    const fits = ({ left, top }) => (
+      left >= inset && top >= inset && left + width <= stageWidth - inset && top + height <= stageHeight - inset
+    );
+    const chosen = candidates[order.find((side) => fits(candidates[side]))] || candidates[preferredSide];
+
+    panel.style.left = `${Math.max(inset, Math.min(chosen.left, stageWidth - width - inset))}px`;
+    panel.style.top = `${Math.max(inset, Math.min(chosen.top, stageHeight - height - inset))}px`;
   }
 
   function renderStatus() {

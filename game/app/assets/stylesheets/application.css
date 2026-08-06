@@ -258,8 +258,7 @@ h3 {
 }
 
 .revolt-target-panel,
-.retreat-target-panel,
-.main-force-target-panel {
+.retreat-target-panel {
   display: flex;
   flex: 1 1 32rem;
   align-items: center;
@@ -277,8 +276,7 @@ h3 {
 }
 
 .revolt-target-copy,
-.retreat-target-copy,
-.main-force-target-copy {
+.retreat-target-copy {
   display: flex;
   min-width: 0;
   align-items: baseline;
@@ -288,8 +286,7 @@ h3 {
 }
 
 .revolt-target-copy strong,
-.retreat-target-copy strong,
-.main-force-target-copy strong {
+.retreat-target-copy strong {
   flex: 0 0 auto;
   color: var(--accent);
   font-size: 0.74rem;
@@ -307,8 +304,66 @@ h3 {
 }
 
 #cancel-main-force-target {
-  flex: 0 0 auto;
+  justify-self: end;
   border-color: rgba(217, 180, 95, 0.72);
+}
+
+.main-force-target-panel {
+  position: absolute;
+  z-index: 85;
+  display: grid;
+  width: min(310px, calc(100vw - 2rem));
+  gap: 0.45rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(217, 180, 95, 0.72);
+  border-radius: 10px;
+  background: rgba(26, 30, 25, 0.96);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+  color: var(--text);
+  pointer-events: auto;
+}
+
+.main-force-target-kicker {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#main-force-target-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+}
+
+#main-force-target-instructions {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.main-force-target-options {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.main-force-target-options button {
+  display: grid;
+  justify-items: start;
+  gap: 0.08rem;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+}
+
+.main-force-target-options button strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.main-force-target-options button span {
+  color: var(--muted);
+  font-size: 0.68rem;
 }
 
 .optional-rule-toggle:has(input:checked) {

@@ -86,13 +86,6 @@
         </div>
         <button id="cancel-retreat-target" type="button">Back to Battle</button>
       </div>
-      <div id="main-force-target-panel" class="main-force-target-panel" role="status" aria-live="polite" hidden>
-        <div class="main-force-target-copy">
-          <strong id="main-force-target-title">Choose Main Force</strong>
-          <span id="main-force-target-instructions">Choose a highlighted entry area or outlined unit.</span>
-        </div>
-        <button id="cancel-main-force-target" type="button">Cancel</button>
-      </div>
     </div>
 
     <form id="winter-quarters-form" class="winter-quarters-panel" hidden>
@@ -121,6 +114,13 @@
           <div id="track-marker-layer" class="track-marker-layer" aria-label="Game record markers"></div>
           <div id="piece-layer" class="piece-layer"></div>
           <div id="neutral-activation-layer" class="neutral-activation-layer" aria-label="Neutral tribe activation cards"></div>
+        </div>
+        <div id="main-force-target-panel" class="main-force-target-panel" role="dialog" aria-modal="false" aria-labelledby="main-force-target-title" aria-describedby="main-force-target-instructions" hidden>
+          <span class="main-force-target-kicker">Choose Main Force</span>
+          <strong id="main-force-target-title">Attack on Helvetii</strong>
+          <span id="main-force-target-instructions">Choose a highlighted origin area or outlined unit.</span>
+          <div id="main-force-target-options" class="main-force-target-options" aria-label="Eligible main forces"></div>
+          <button id="cancel-main-force-target" type="button">Cancel</button>
         </div>
       </div>
     </div>

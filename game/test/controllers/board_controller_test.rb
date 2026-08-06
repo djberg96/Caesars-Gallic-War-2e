@@ -74,9 +74,11 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#retreat-target-instructions", text: "Choose a highlighted destination on the map."
       assert_select "#cancel-retreat-target", text: "Back to Battle"
     end
-    assert_select ".board-toolbar #main-force-target-panel[hidden]" do
-      assert_select "#main-force-target-title", text: "Choose Main Force"
-      assert_select "#main-force-target-instructions", text: "Choose a highlighted entry area or outlined unit."
+    assert_select ".board-stage > #main-force-target-panel[hidden]" do
+      assert_select ".main-force-target-kicker", text: "Choose Main Force"
+      assert_select "#main-force-target-title", text: "Attack on Helvetii"
+      assert_select "#main-force-target-instructions", text: "Choose a highlighted origin area or outlined unit."
+      assert_select "#main-force-target-options"
       assert_select "#cancel-main-force-target", text: "Cancel"
     end
     assert_select "#board > #board-stage > #board-canvas" do
