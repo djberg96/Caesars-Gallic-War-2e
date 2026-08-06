@@ -255,6 +255,7 @@ module GameRules
       end
 
       if plan["force"]
+        moved["force"] = true
         moved["steps"] = 2
         moved["stopped"] = true
         @state["supply"] = supply - 1
@@ -262,6 +263,7 @@ module GameRules
       end
 
       moved["steps"] = moved["steps"].to_i + 1
+      moved["force"] = true if moved["steps"] >= 2 && !moved["naval"]
       if retreat_movement?
         moved["stopped"] = true
         return

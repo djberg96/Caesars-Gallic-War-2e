@@ -973,6 +973,7 @@ document.addEventListener("DOMContentLoaded", () => {
     moved.entry = steps[steps.length - 1]?.from || from;
 
     if (plan.force) {
+      moved.force = true;
       moved.steps = 2;
       moved.stopped = true;
       state.supply -= 1;
@@ -980,6 +981,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     moved.steps += 1;
+    if (moved.steps >= 2 && !moved.naval) moved.force = true;
     if (retreatMovement()) {
       moved.stopped = true;
       return;
@@ -1282,11 +1284,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Turn ${state.turn + 1}${year ? ` (${year})` : ""}`;
   }
 
+  function setHandTrayTurnLocked(locked) {
+    if (!els.handTray) return;
+    els.handTray.classList.toggle("is-turn-locked", locked);
+    els.handTray.toggleAttribute("inert", locked);
+    els.handTray.setAttribute("aria-disabled", String(locked));
+  }
+
   function showTurnAnnouncement({ immediate = false } = {}) {
     if (!state?.turnAnnouncementPending || state.gameOver || !state.gameSessionId || !els.turnDialog) {
       if (turnAnnouncementTimer) window.clearTimeout(turnAnnouncementTimer);
       turnAnnouncementTimer = null;
       turnAnnouncementBlocker = null;
+      setHandTrayTurnLocked(false);
       return;
     }
     if (els.turnDialog.open) return;
@@ -1320,6 +1330,7 @@ document.addEventListener("DOMContentLoaded", () => {
       els.turnDialogVp.textContent = state.vp;
       els.turnDialogSupply.textContent = state.supply;
     }
+    setHandTrayTurnLocked(true);
     els.turnDialog.show();
   }
 
@@ -2868,44 +2879,97 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const definitions = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     ["roman", "barbarian"].forEach((owner) => {
-      const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-      marker.id = `movement-arrowhead-${owner}`;
-      marker.setAttribute("viewBox", "0 0 10 10");
-      marker.setAttribute("refX", "8.4");
-      marker.setAttribute("refY", "5");
-      marker.setAttribute("markerWidth", "4");
-      marker.setAttribute("markerHeight", "4");
-      marker.setAttribute("orient", "auto-start-reverse");
-      const arrowhead = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      arrowhead.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
-      arrowhead.classList.add(`movement-arrowhead-${owner}`);
-      marker.append(arrowhead);
-      definitions.append(marker);
+      appendMovementArrowMarker(definitions, owner, { outline: true });
+      appendMovementArrowMarker(definitions, owner);
     });
     els.movementArrowLayer.append(definitions);
 
-    routes.forEach((route) => {
+    const preparedRoutes = routes.map((route) => ({ route, points: entryArrowRoutePoints(route) }));
+    spaceMovementArrowOrigins(preparedRoutes);
+
+    preparedRoutes.forEach(({ route, points }) => {
       const from = areas[route.from];
       const to = areas[route.to];
-      const border = battleEntryBorderPoint(route.from, route.to);
-      const start = entryArrowPoint(from, border, 0.28);
-      const end = entryArrowPoint(border, to, 0.52);
+      const hooked = entryArrowShouldHook(route, points);
+      const start = points[0];
       const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
       const unitLabel = `${route.count} ${playerName(route.owner)} unit${route.count === 1 ? "" : "s"}`;
       group.classList.add("movement-entry-arrow", `owner-${route.owner}`);
+      if (route.forceMarch) group.classList.add("is-force-march");
+      const routeDescription = `${unitLabel} entered ${areaName(route.to)} from ${areaName(route.from)}${route.forceMarch ? " by forced march" : ""}.`;
       group.setAttribute("role", "img");
-      group.setAttribute("aria-label", `${unitLabel} entered ${areaName(route.to)} from ${areaName(route.from)}.`);
+      group.setAttribute("aria-label", routeDescription);
 
       const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-      title.textContent = `${unitLabel} entered ${areaName(route.to)} from ${areaName(route.from)}.`;
+      title.textContent = routeDescription;
       group.append(title);
 
-      const outline = entryArrowPath(start, border, end, "movement-entry-arrow-outline");
-      const line = entryArrowPath(start, border, end, "movement-entry-arrow-line");
+      const outline = entryArrowPath(points, "movement-entry-arrow-outline", { hooked });
+      const line = entryArrowPath(points, "movement-entry-arrow-line", { hooked });
+      const accent = entryArrowPath(points, "movement-entry-arrow-accent", { hooked });
+      outline.setAttribute("marker-end", `url(#movement-arrowhead-outline-${route.owner})`);
       line.setAttribute("marker-end", `url(#movement-arrowhead-${route.owner})`);
-      group.append(outline, line);
+      const originOutline = entryArrowOrigin(start, "movement-entry-arrow-origin-outline", 1.04);
+      const origin = entryArrowOrigin(start, "movement-entry-arrow-origin", 0.82);
+      group.append(outline, line, accent, originOutline, origin);
       els.movementArrowLayer.append(group);
     });
+  }
+
+  function spaceMovementArrowOrigins(preparedRoutes) {
+    const groups = new Map();
+    preparedRoutes.forEach((prepared) => {
+      if (!groups.has(prepared.route.from)) groups.set(prepared.route.from, []);
+      groups.get(prepared.route.from).push(prepared);
+    });
+
+    groups.forEach((group) => {
+      if (group.length < 2) return;
+      const center = group.reduce((point, prepared) => ({
+        x: point.x + (prepared.points[0].x / group.length),
+        y: point.y + (prepared.points[0].y / group.length)
+      }), { x: 0, y: 0 });
+      const direction = group.reduce((vector, prepared) => {
+        const next = prepared.points[1] || prepared.points.at(-1);
+        const dx = next.x - prepared.points[0].x;
+        const dy = (next.y - prepared.points[0].y) * mapAspectRatio;
+        const length = Math.hypot(dx, dy) || 1;
+        return { x: vector.x + (dx / length), y: vector.y + (dy / length) };
+      }, { x: 0, y: 0 });
+      const directionLength = Math.hypot(direction.x, direction.y) || 1;
+      const perpendicular = {
+        x: -(direction.y / directionLength),
+        y: (direction.x / directionLength) / mapAspectRatio
+      };
+
+      group.forEach((prepared, index) => {
+        const offset = (index - ((group.length - 1) / 2)) * 2.4;
+        prepared.points[0] = {
+          x: center.x + (perpendicular.x * offset),
+          y: center.y + (perpendicular.y * offset)
+        };
+      });
+    });
+  }
+
+  function appendMovementArrowMarker(definitions, owner, { outline = false } = {}) {
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    const outlineLabel = outline ? "-outline" : "";
+    marker.id = `movement-arrowhead${outlineLabel}-${owner}`;
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("preserveAspectRatio", "none");
+    marker.setAttribute("refX", "9.25");
+    marker.setAttribute("refY", "5");
+    marker.setAttribute("markerUnits", "userSpaceOnUse");
+    marker.setAttribute("markerWidth", outline ? "2.28" : "2.05");
+    marker.setAttribute("markerHeight", outline ? "3.1" : "2.8");
+    marker.setAttribute("orient", "auto-start-reverse");
+
+    const arrowhead = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    arrowhead.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    arrowhead.classList.add(`movement-arrowhead-${outline ? "outline" : "fill"}-${owner}`);
+    marker.append(arrowhead);
+    definitions.append(marker);
   }
 
   function battleEntryRoutes() {
@@ -2921,13 +2985,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       unitIds.forEach((unitId) => {
         const unit = state.units[unitId];
-        if (!unit || !state.movement?.units?.[unitId]) return;
-        const origin = currentBattle?.entries?.[unitId] || movementEntry(unit, areaId);
-        if (!origin || origin === areaId || !areas[origin]?.links?.includes(areaId)) return;
+        const moved = state.movement?.units?.[unitId];
+        if (!unit || !moved) return;
+        const entry = currentBattle?.entries?.[unitId] || movementEntry(unit, areaId);
+        const forceMarch = movementUsedForceMarch(moved);
+        const path = forceMarch ? movementAreaPath(moved, areaId) : [entry, areaId];
+        const origin = path[0];
+        if (!origin || origin === areaId || path.some((areaKey) => !areas[areaKey])) return;
+        if (path.slice(0, -1).some((areaKey, index) => !areas[areaKey]?.links?.includes(path[index + 1]))) return;
 
-        const key = `${unit.owner}:${origin}->${areaId}`;
-        const route = routes.get(key) || { owner: unit.owner, from: origin, to: areaId, count: 0 };
+        const key = `${unit.owner}:${path.join("->")}`;
+        const route = routes.get(key) || { owner: unit.owner, from: origin, to: areaId, path, count: 0, forceMarch: false };
         route.count += 1;
+        route.forceMarch ||= forceMarch;
         routes.set(key, route);
       });
     });
@@ -2942,25 +3012,112 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function entryArrowPath(start, border, end, className) {
-    const tangent = {
-      x: (end.x - start.x) * 0.14,
-      y: (end.y - start.y) * 0.14
-    };
-    const firstControl = entryArrowPoint(start, border, 0.48);
-    const lastControl = entryArrowPoint(end, border, 0.48);
+  function movementUsedForceMarch(moved) {
+    return Boolean(moved?.force || (!moved?.naval && Number(moved?.steps) >= 2 && (moved?.path || []).length >= 2));
+  }
+
+  function movementAreaPath(moved, destination) {
+    const steps = moved?.path || [];
+    const path = [moved?.origin || steps[0]?.from].filter(Boolean);
+    steps.forEach((step) => {
+      if (step?.to && path.at(-1) !== step.to) path.push(step.to);
+    });
+    if (path.at(-1) !== destination) path.push(destination);
+    return path;
+  }
+
+  function entryArrowRoutePoints(route) {
+    const areaPath = route.path?.length > 1 ? route.path : [route.from, route.to];
+    const firstBorder = battleEntryBorderPoint(areaPath[0], areaPath[1]);
+    const points = [entryArrowPoint(areas[areaPath[0]], firstBorder, 0.08)];
+
+    areaPath.slice(0, -1).forEach((areaKey, index) => {
+      const nextAreaKey = areaPath[index + 1];
+      points.push(battleEntryBorderPoint(areaKey, nextAreaKey));
+      if (index < areaPath.length - 2) points.push(areas[nextAreaKey]);
+    });
+
+    const finalBorder = points.at(-1);
+    points.push(entryArrowPoint(finalBorder, areas[route.to], 0.38));
+    return points;
+  }
+
+  function entryArrowShouldHook(route, points) {
+    if (route.forceMarch || route.path?.length > 2) return false;
+    const start = points[0];
+    const end = points.at(-1);
+    const horizontalDistance = Math.abs(end.x - start.x);
+    const verticalDistance = Math.abs(end.y - start.y);
+    return horizontalDistance >= 4 && verticalDistance >= 8 && verticalDistance > horizontalDistance * 0.8;
+  }
+
+  function entryArrowPath(points, className, { hooked = false } = {}) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", [
-      `M ${start.x.toFixed(3)} ${start.y.toFixed(3)}`,
-      `C ${firstControl.x.toFixed(3)} ${firstControl.y.toFixed(3)}`,
-      `${(border.x - tangent.x).toFixed(3)} ${(border.y - tangent.y).toFixed(3)}`,
-      `${border.x.toFixed(3)} ${border.y.toFixed(3)}`,
-      `C ${(border.x + tangent.x).toFixed(3)} ${(border.y + tangent.y).toFixed(3)}`,
-      `${lastControl.x.toFixed(3)} ${lastControl.y.toFixed(3)}`,
-      `${end.x.toFixed(3)} ${end.y.toFixed(3)}`
-    ].join(" "));
+    if (hooked) {
+      path.setAttribute("d", hookedEntryArrowPath(points[0], points.at(-1)));
+      path.classList.add(className);
+      return path;
+    }
+
+    const commands = [`M ${points[0].x.toFixed(3)} ${points[0].y.toFixed(3)}`];
+    points.slice(0, -1).forEach((point, index) => {
+      const previous = points[Math.max(0, index - 1)];
+      const next = points[index + 1];
+      const afterNext = points[Math.min(points.length - 1, index + 2)];
+      const firstControl = {
+        x: point.x + ((next.x - previous.x) / 6),
+        y: point.y + ((next.y - previous.y) / 6)
+      };
+      const secondControl = {
+        x: next.x - ((afterNext.x - point.x) / 6),
+        y: next.y - ((afterNext.y - point.y) / 6)
+      };
+      commands.push(`C ${firstControl.x.toFixed(3)} ${firstControl.y.toFixed(3)} ${secondControl.x.toFixed(3)} ${secondControl.y.toFixed(3)} ${next.x.toFixed(3)} ${next.y.toFixed(3)}`);
+    });
+    path.setAttribute("d", commands.join(" "));
     path.classList.add(className);
     return path;
+  }
+
+  function hookedEntryArrowPath(start, end) {
+    const horizontalDirection = Math.sign(end.x - start.x) || 1;
+    const verticalDirection = Math.sign(end.y - start.y) || -1;
+    const horizontalDistance = Math.abs(end.x - start.x);
+    const verticalDistance = Math.abs(end.y - start.y);
+    const finalApproach = Math.min(5, verticalDistance * 0.34);
+    const curveLateral = Math.min(6.5, horizontalDistance * 0.65);
+    const curveRise = Math.min(2.6, horizontalDistance * 0.28);
+    const verticalJoin = {
+      x: end.x,
+      y: end.y - (verticalDirection * finalApproach)
+    };
+    const curveControl = {
+      x: end.x,
+      y: verticalJoin.y - (verticalDirection * Math.min(2.4, finalApproach * 0.5))
+    };
+    const diagonalEnd = {
+      x: curveControl.x - (horizontalDirection * curveLateral),
+      y: curveControl.y - (verticalDirection * curveRise * mapAspectRatio)
+    };
+    return [
+      `M ${start.x.toFixed(3)} ${start.y.toFixed(3)}`,
+      `L ${diagonalEnd.x.toFixed(3)} ${diagonalEnd.y.toFixed(3)}`,
+      `Q ${curveControl.x.toFixed(3)} ${curveControl.y.toFixed(3)} ${verticalJoin.x.toFixed(3)} ${verticalJoin.y.toFixed(3)}`,
+      `L ${end.x.toFixed(3)} ${end.y.toFixed(3)}`
+    ].join(" ");
+  }
+
+  function entryArrowOrigin(point, className, radius) {
+    const mapAspectRatio = (els.boardImage?.naturalWidth && els.boardImage?.naturalHeight)
+      ? els.boardImage.naturalWidth / els.boardImage.naturalHeight
+      : 1;
+    const origin = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    origin.setAttribute("cx", point.x.toFixed(3));
+    origin.setAttribute("cy", point.y.toFixed(3));
+    origin.setAttribute("rx", radius.toFixed(3));
+    origin.setAttribute("ry", (radius * mapAspectRatio).toFixed(3));
+    origin.classList.add(className);
+    return origin;
   }
 
   function areaPairKey(left, right) {
@@ -5202,6 +5359,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#reveal-cards").addEventListener("click", () => revealCards());
   els.resultDialog?.addEventListener("close", showNextResultDialog);
   els.turnDialog?.addEventListener("cancel", (event) => event.preventDefault());
+  els.turnDialog?.addEventListener("close", () => setHandTrayTurnLocked(false));
   els.acknowledgeTurn?.addEventListener("click", acknowledgeTurnAnnouncement);
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);

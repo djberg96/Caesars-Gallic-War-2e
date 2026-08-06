@@ -158,6 +158,7 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal 14, result["supply"]
     assert_equal 2, result.dig("movement", "units", "legion_vii", "steps")
     assert result.dig("movement", "units", "legion_vii", "stopped")
+    assert result.dig("movement", "units", "legion_vii", "force")
   end
 
   test "allows a roman legion to continue from its activated origin area" do
@@ -186,6 +187,7 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal 14, result["supply"]
     assert_equal 2, result.dig("movement", "units", "legion_vii", "steps")
     assert result.dig("movement", "units", "legion_vii", "stopped")
+    assert result.dig("movement", "units", "legion_vii", "force")
     assert_equal 1, result.dig("movement", "crossings", "transalpine_gaul->allobroges")
     assert_equal 1, result.dig("movement", "crossings", "allobroges->sequani")
     assert_equal "allobroges", result.dig("movement", "units", "legion_vii", "entry")

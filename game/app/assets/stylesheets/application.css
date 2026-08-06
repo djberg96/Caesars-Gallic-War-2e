@@ -372,43 +372,76 @@ h3 {
 }
 
 .movement-entry-arrow {
-  opacity: 0.95;
+  --movement-arrow-fill: #dc6258;
+  --movement-arrow-edge: #652d2c;
+  --movement-arrow-highlight: #fff1dc;
+  opacity: 0.72;
+}
+
+.movement-arrow-layer {
+  z-index: 78;
+  overflow: visible;
 }
 
 .movement-entry-arrow-outline,
-.movement-entry-arrow-line {
+.movement-entry-arrow-line,
+.movement-entry-arrow-accent {
   fill: none;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .movement-entry-arrow-outline {
-  stroke: rgba(15, 16, 13, 0.82);
-  stroke-width: 0.9;
+  stroke: var(--movement-arrow-edge);
+  stroke-width: 1.08;
 }
 
 .movement-entry-arrow-line {
-  stroke-width: 0.48;
-  filter: drop-shadow(0 0.15px 0.2px rgba(0, 0, 0, 0.75));
+  stroke: var(--movement-arrow-fill);
+  stroke-width: 0.72;
+  filter: drop-shadow(0 0.16px 0.2px rgba(0, 0, 0, 0.68));
 }
 
-.movement-entry-arrow.owner-roman .movement-entry-arrow-line {
-  stroke: #ed735b;
+.movement-entry-arrow-accent {
+  stroke: var(--movement-arrow-highlight);
+  stroke-width: 0.1;
+  stroke-dasharray: 0.58 0.44;
+  opacity: 0;
 }
 
-.movement-entry-arrow.owner-barbarian .movement-entry-arrow-line {
-  stroke: #79b875;
+.movement-entry-arrow.is-force-march {
+  opacity: 0.86;
 }
 
-.movement-arrowhead-roman {
-  fill: #ed735b;
-  stroke: rgba(15, 16, 13, 0.82);
-  stroke-width: 0.9;
+.movement-entry-arrow.is-force-march .movement-entry-arrow-accent {
+  stroke-width: 0.2;
+  stroke-dasharray: 1.05 0.34;
+  opacity: 1;
 }
 
-.movement-arrowhead-barbarian {
-  fill: #79b875;
-  stroke: rgba(15, 16, 13, 0.82);
-  stroke-width: 0.9;
+.movement-entry-arrow-origin-outline {
+  fill: var(--movement-arrow-edge);
+}
+
+.movement-entry-arrow-origin {
+  fill: var(--movement-arrow-fill);
+  filter: drop-shadow(0 0.16px 0.2px rgba(0, 0, 0, 0.68));
+}
+
+.movement-arrowhead-fill-roman {
+  fill: #dc6258;
+}
+
+.movement-arrowhead-outline-roman {
+  fill: #652d2c;
+}
+
+.movement-arrowhead-fill-barbarian {
+  fill: #dc6258;
+}
+
+.movement-arrowhead-outline-barbarian {
+  fill: #652d2c;
 }
 
 .track-marker-layer {
@@ -1408,6 +1441,11 @@ h3 {
 
 .hand-tray.is-hidden {
   grid-template-rows: auto 0;
+}
+
+.hand-tray.is-turn-locked {
+  pointer-events: none;
+  filter: saturate(0.45) brightness(0.62);
 }
 
 .hand-tray-header {
