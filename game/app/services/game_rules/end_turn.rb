@@ -130,6 +130,7 @@ module GameRules
     end
 
     def begin_roman_reinforcements!
+      deploy_off_map_legions!
       returned = return_eliminated_roman_legions!
       log(returned.empty? ? "Eliminated Roman Legions: none return this year." : "Eliminated Roman Legions Return: #{returned.join(", ")} return at full strength in the Roman Off-Map area.")
       if historical_reinforcements?
@@ -150,6 +151,20 @@ module GameRules
         "reinforcementLimit" => reinforcement_limit
       )
       persist!
+    end
+
+    def deploy_off_map_legions!
+      deployed = units.values.filter_map do |unit|
+        next unless unit["type"] == "roman" && unit["owner"] == "roman"
+        next unless unit["location"] == "roman_off_map"
+
+        unit["location"] = "transalpine_gaul"
+        unit.fetch("name")
+      end
+      return if deployed.empty?
+
+      verb = deployed.one? ? "moves" : "move"
+      log("Roman Reinforcement Deployment: #{deployed.sort.join(", ")} #{verb} freely from the Roman Off-Map area to Transalpine Gaul.")
     end
 
     def complete_end_turn!

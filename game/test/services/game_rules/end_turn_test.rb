@@ -290,6 +290,32 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_operator log.index("Roman Supply Production"), :<, log.index("Roman Reinforcements")
   end
 
+  test "moves existing off-map legions to Transalpine Gaul before new reinforcements are built" do
+    state = base_state
+    state["romanForcePool"] = ["legion_i"]
+    state["units"]["legion_x"] = unit("legion_x", "roman", "roman", "roman_off_map", "transalpine_gaul")
+      .merge("strengths" => [4, 3, 2, 1])
+    state["units"]["legion_i"] = unit("legion_i", "roman", "roman", "offboard", "roman_off_map")
+      .merge("strengths" => [4, 3, 2, 1])
+    session = GameSession.create!(data: state)
+
+    wintering = GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    supply_production = GameRules::EndTurn.new(session: session, state: wintering, wintering_unit_ids: []).end_turn!
+    reinforcements = acknowledge_supply(session, supply_production)
+
+    assert_equal "romanReinforcements", reinforcements.dig("endTurn", "phase")
+    assert_equal "transalpine_gaul", reinforcements.dig("units", "legion_x", "location")
+    assert_match "Legion X moves freely from the Roman Off-Map area to Transalpine Gaul", reinforcements["log"].join(" ")
+
+    result = GameRules::EndTurn.new(
+      session: session,
+      state: reinforcements,
+      reinforcement_builds: { "legion_i" => 3 }
+    ).end_turn!
+
+    assert_equal "roman_off_map", result.dig("units", "legion_i", "location")
+  end
+
   test "limits a field legion to one replacement step" do
     state = base_state
     state["units"]["legion_vii"].merge!("strengths" => [4, 3, 2, 1], "step" => 2)
