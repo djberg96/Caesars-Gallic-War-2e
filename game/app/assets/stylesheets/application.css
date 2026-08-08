@@ -1109,16 +1109,16 @@ h3 {
 .unit-counter-strength {
   position: absolute;
   z-index: 4;
-  bottom: -0.66rem;
+  bottom: -0.56rem;
   left: 50%;
-  width: 1.45rem;
-  min-width: 1.45rem;
-  height: 1.45rem;
+  width: 1.02rem;
+  min-width: 1.02rem;
+  height: 1.18rem;
   display: grid;
   place-items: center;
   padding: 0;
   border: 1px solid #e8d596;
-  border-radius: 999px;
+  border-radius: 3px;
   background: linear-gradient(145deg, #3a3524, #151610 68%);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 241, 181, 0.1);
   color: #fff0b5;
@@ -1129,10 +1129,12 @@ h3 {
 
 .unit-counter-strength b {
   display: block;
-  font-family: Georgia, serif;
-  font-size: 0.88rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 850;
   line-height: 1;
-  transform: translateY(-0.03em);
+  transform: translateY(-0.035em);
 }
 
 .unit-counter-stats {
@@ -2231,17 +2233,18 @@ h3 {
 .battle-unit-counter .unit-counter-strength {
   top: auto;
   right: auto;
-  bottom: -0.78rem;
+  bottom: -0.68rem;
   left: 50%;
-  min-width: 1.75rem;
-  width: 1.75rem;
-  height: 1.75rem;
+  min-width: 1.25rem;
+  width: 1.25rem;
+  height: 1.42rem;
   display: grid;
   transform: translateX(-50%);
 }
 
 .battle-unit-counter .unit-counter-strength b {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  transform: translateY(-0.03em);
 }
 
 .battle-unit-counter .roman-counter-name {
@@ -3150,14 +3153,15 @@ dialog {
 }
 
 .unit-history-counter .unit-counter-strength {
-  bottom: -0.58rem;
-  width: 2.2rem;
-  min-width: 2.2rem;
-  height: 2.2rem;
+  bottom: -0.76rem;
+  width: 1.42rem;
+  min-width: 1.42rem;
+  height: 1.62rem;
 }
 
 .unit-history-counter .unit-counter-strength b {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
+  transform: translateY(-0.03em);
 }
 
 .unit-history-copy h2 {
