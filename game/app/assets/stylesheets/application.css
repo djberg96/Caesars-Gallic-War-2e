@@ -3130,13 +3130,34 @@ dialog {
 }
 
 .unit-history-counter .unit-counter-stat {
-  font-size: 1.15rem;
+  bottom: 0.28rem;
+  width: 1.55rem;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 5px;
+}
+
+.unit-history-counter .unit-counter-initiative {
+  left: 0.3rem;
+}
+
+.unit-history-counter .unit-counter-battle-rating {
+  right: 0.3rem;
+}
+
+.unit-history-counter .unit-counter-stat b {
+  font-size: 1rem;
 }
 
 .unit-history-counter .unit-counter-strength {
-  width: 2.9rem;
-  height: 2.9rem;
-  font-size: 1.5rem;
+  bottom: -0.58rem;
+  width: 2.2rem;
+  min-width: 2.2rem;
+  height: 2.2rem;
+}
+
+.unit-history-counter .unit-counter-strength b {
+  font-size: 1.15rem;
 }
 
 .unit-history-copy h2 {
