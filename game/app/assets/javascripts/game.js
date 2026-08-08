@@ -120,9 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
     battleTransitionTitle: document.querySelector("#battle-transition-title"),
     battleTransitionMessage: document.querySelector("#battle-transition-message"),
     continueNextBattle: document.querySelector("#continue-next-battle"),
-    botMovementReview: document.querySelector("#bot-movement-review"),
-    botMovementReviewRoutes: document.querySelector("#bot-movement-review-routes"),
-    continueBotMovementReview: document.querySelector("#continue-bot-movement-review"),
     revoltTargetPanel: document.querySelector("#revolt-target-panel"),
     revoltTargetTitle: document.querySelector("#revolt-target-title"),
     revoltTargetInstructions: document.querySelector("#revolt-target-instructions"),
@@ -137,6 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelMainForceTarget: document.querySelector("#cancel-main-force-target")
   };
   const mapZoomLevels = [0.5, 0.75, 1, 1.25, 1.5];
+  const mapPanDirections = {
+    KeyW: [0, -1],
+    KeyA: [-1, 0],
+    KeyS: [0, 1],
+    KeyD: [1, 0]
+  };
   const botRollToastDuration = 2150;
   const mapAspectRatio = 2080 / 1664;
   const hitMapSize = { width: 1664, height: 2080 };
@@ -166,6 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let mainForceSelection = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
+  let mapPanFrame = null;
+  let mapPanTimestamp = null;
+  const mapPanKeys = new Set();
   let mapZoom = storedMapZoom();
   let animatedDice = storedAnimatedDice();
   let movementSounds = storedMovementSounds();
@@ -258,6 +264,56 @@ document.addEventListener("DOMContentLoaded", () => {
     els.mapZoomButtons.forEach((button) => {
       button.setAttribute("aria-pressed", String(Number(button.dataset.mapZoom) === mapZoom));
     });
+  }
+
+  function mapPanDirection(code) {
+    return mapPanDirections[code];
+  }
+
+  function mapPanBlocked(target = document.activeElement) {
+    if (!els.board || document.querySelector("dialog[open]")) return true;
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+  }
+
+  function startMapPan() {
+    if (mapPanFrame) return;
+    mapPanTimestamp = null;
+    mapPanFrame = window.requestAnimationFrame(stepMapPan);
+  }
+
+  function stepMapPan(timestamp) {
+    mapPanFrame = null;
+    if (!mapPanKeys.size || mapPanBlocked()) {
+      stopMapPan();
+      return;
+    }
+
+    const elapsed = mapPanTimestamp === null
+      ? 0
+      : Math.min(0.05, (timestamp - mapPanTimestamp) / 1000);
+    mapPanTimestamp = timestamp;
+
+    let horizontal = 0;
+    let vertical = 0;
+    mapPanKeys.forEach((code) => {
+      const [x, y] = mapPanDirection(code);
+      horizontal += x;
+      vertical += y;
+    });
+
+    const magnitude = Math.hypot(horizontal, vertical) || 1;
+    const pixelsPerSecond = 680;
+    els.board.scrollLeft += (horizontal / magnitude) * pixelsPerSecond * elapsed;
+    els.board.scrollTop += (vertical / magnitude) * pixelsPerSecond * elapsed;
+    mapPanFrame = window.requestAnimationFrame(stepMapPan);
+  }
+
+  function stopMapPan() {
+    if (mapPanFrame) window.cancelAnimationFrame(mapPanFrame);
+    mapPanFrame = null;
+    mapPanTimestamp = null;
+    mapPanKeys.clear();
   }
 
   async function newGame() {
@@ -506,9 +562,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return mark ? `<span class="barbarian-counter-mark${mark.length > 1 ? " is-wide" : ""}" aria-label="${label}">${mark}</span>` : "";
   }
 
-  function unitCounterMarkup(unit, { faceVisible = true, showStats = true, showStrength = true } = {}) {
+  function unitCounterMarkup(unit, { faceVisible = true, showStats = true, showStrength = true, halfHitOverride } = {}) {
     const strength = currentStrength(unit);
-    const halfHit = state.battle?.halfHits?.[unit.id];
+    const halfHit = halfHitOverride === undefined ? state.battle?.halfHits?.[unit.id] : halfHitOverride;
     const digitalRomanFace = faceVisible && unit.type === "roman";
     const digitalBarbarianFace = faceVisible && unit.type !== "roman";
     const caesarCounter = digitalRomanFace && unit.id === "legion_x";
@@ -1814,18 +1870,20 @@ document.addEventListener("DOMContentLoaded", () => {
   function showBotActionReview() {
     const stage = currentBotActionReviewStage();
     if (!stage || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
-    if (stage.kind === "movement") {
+    const movementStage = stage.kind === "movement";
+    if (movementStage) {
       if (!botActionReview.movementFocused) {
         botActionReview.movementFocused = true;
         focusBoardArea(botActionReview.movementRoutes.at(-1)?.to);
       }
-      return;
     }
     if (document.querySelector("dialog[open]")) return;
 
     const image = botActionReview.card ? cardImage(botActionReview.card) : null;
-    els.botActionReviewCard.hidden = !image;
-    if (image) {
+    const showCard = Boolean(image && !movementStage);
+    els.botActionReviewDialog.classList.toggle("is-movement-review", movementStage);
+    els.botActionReviewCard.hidden = !showCard;
+    if (showCard) {
       els.botActionReviewCard.src = image;
       els.botActionReviewCard.alt = `${botActionReview.card.title} card`;
     }
@@ -1840,31 +1898,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const finalStage = botActionReview.stageIndex >= botActionReview.stages.length - 1;
     const nextStage = botActionReview.stages[botActionReview.stageIndex + 1];
-    els.advanceBotActionReview.textContent = nextStage?.kind === "movement"
-      ? "Show Movement"
-      : finalStage && botActionReview.battlePending
-        ? "Continue to Battle"
-        : finalStage
-          ? "OK"
-          : "Continue";
+    els.advanceBotActionReview.textContent = movementStage
+      ? (botActionReview.battlePending ? "Continue to Battle" : "Finish Review")
+      : nextStage?.kind === "movement"
+        ? "Show Movement"
+        : finalStage && botActionReview.battlePending
+          ? "Continue to Battle"
+          : finalStage
+            ? "OK"
+            : "Continue";
     els.botActionReviewDialog.showModal();
 
-  }
-
-  function renderBotMovementReview() {
-    if (!els.botMovementReview) return;
-
-    const stage = currentBotActionReviewStage();
-    const visible = stage?.kind === "movement";
-    els.botMovementReview.hidden = !visible;
-    if (!visible) return;
-
-    els.botMovementReviewRoutes.textContent = stage.details
-      .map((detail) => detail.replace(/^Barbarian moves /, "").replace(/\.$/, ""))
-      .join(" · ");
-    els.continueBotMovementReview.textContent = botActionReview.battlePending
-      ? "Continue to Battle"
-      : "Finish Review";
   }
 
   function advanceBotActionReview() {
@@ -2213,7 +2257,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ));
   }
 
-  function prepareDiceRollAnimation(battle, unitId) {
+  function prepareDiceRollAnimation(battle, unitId, beforeRoll) {
     const result = battleFireResult(battle, unitId);
     if (!result?.rolls?.length || solitaireBotRoll(battle, unitId)) {
       resetDiceRollAnimation();
@@ -2226,6 +2270,8 @@ document.addEventListener("DOMContentLoaded", () => {
       unitId,
       rolling: true,
       displayRolls: result.rolls.map(() => randomDieFace()),
+      beforeUnits: beforeRoll?.units || {},
+      beforeHalfHits: beforeRoll?.halfHits || {},
       interval: null,
       settleTimer: null,
       soundTick: 0
@@ -2242,6 +2288,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function randomDieFace() {
     return Math.floor(Math.random() * 6) + 1;
+  }
+
+  function battleRollVisualSnapshot() {
+    return {
+      units: Object.fromEntries(Object.entries(state.units || {}).map(([id, unit]) => [id, {
+        step: unit.step,
+        location: unit.location
+      }])),
+      halfHits: { ...(state.battle?.halfHits || {}) }
+    };
   }
 
   function startDiceRollAnimation() {
@@ -2385,6 +2441,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const playedCard = currentActionCard();
     const wasRegrouping = state.regrouping;
     const wasRetreating = state.retreating;
+    const beforeRoll = action === "fire" && animatedDice ? battleRollVisualSnapshot() : null;
     if (action === "fire" && animatedDice) primeGameAudio();
     try {
       await ensureGameSession();
@@ -2398,7 +2455,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.gameSessionId = result.game_session_id;
       normalizeLoadedState();
       if (action === "fire" && animatedDice && state.battle) {
-        prepareDiceRollAnimation(state.battle, unitId);
+        prepareDiceRollAnimation(state.battle, unitId, beforeRoll);
       } else if (action === "acknowledge_roll") {
         resetDiceRollAnimation();
       }
@@ -2597,7 +2654,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderLog();
     renderModeControls();
     renderActionButtons();
-    renderBotMovementReview();
     renderRevoltTargeting();
     renderVoluntaryRetreatTargeting();
     renderMainForceTargeting();
@@ -4541,7 +4597,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="battle-unit-list">${fortIds.length ? cards(fortIds, "fort") : "<span class=\"empty-zone\">Unoccupied</span>"}</div>
       </div>
     ` : "";
-    const liveCount = [...fieldIds, ...reserveIds, ...fortIds].filter((id) => currentStrength(state.units[id]) > 0).length;
+    const rollAnimating = diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement);
+    const liveCount = [...fieldIds, ...reserveIds, ...fortIds].filter((id) => {
+      const unit = state.units[id];
+      const beforeRollUnit = rollAnimating ? diceRollAnimation?.beforeUnits?.[id] : null;
+      return currentStrength(beforeRollUnit ? { ...unit, ...beforeRollUnit } : unit) > 0;
+    }).length;
 
     return `
       <section class="battle-army owner-${player}">
@@ -4849,12 +4910,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function battleUnitCard(unitId, battle, selected = false, zone = "field") {
     const unit = state.units[unitId];
     if (!unit) return "";
-    const rollReviewElimination = battle.rollReviewEliminations?.[unitId];
-    const displayUnit = rollReviewElimination
-      ? { ...unit, step: rollReviewElimination.step }
-      : unit;
-    const active = unitId === battle.activeUnit;
     const rollAnimating = diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement);
+    const beforeRollUnit = rollAnimating ? diceRollAnimation?.beforeUnits?.[unitId] : null;
+    const rollReviewElimination = battle.rollReviewEliminations?.[unitId];
+    const reviewingElimination = Boolean(rollReviewElimination && !rollAnimating);
+    const displayUnit = beforeRollUnit
+      ? { ...unit, ...beforeRollUnit }
+      : (rollReviewElimination ? { ...unit, step: rollReviewElimination.step } : unit);
+    const active = unitId === battle.activeUnit;
     const hitTarget = !rollAnimating && (battle.pendingHits?.targetIds || []).includes(unitId);
     const awaitingRoll = battle.awaitingRollAcknowledgement === unitId;
     const manualRollReview = awaitingRoll && !solitaireBotRoll(battle, unitId);
@@ -4867,9 +4930,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const inFort = zone === "fort" || (battle.fort || []).includes(unitId);
     const fired = (battle.fired || []).includes(unitId);
     const rollDice = battleUnitRollDice(unitId, battle, unit);
-    const halfHit = battle.halfHits?.[unitId];
+    const halfHit = rollAnimating ? diceRollAnimation?.beforeHalfHits?.[unitId] : battle.halfHits?.[unitId];
     const halfHitSource = inFort ? "Fort defense" : battle.area === "helvetii" && unit.owner === battle.defender ? "Alps defense" : "Half hit";
-    const status = rollReviewElimination ? "Eliminated" : rollAnimating && awaitingRoll ? "Rolling dice" : hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
+    const status = reviewingElimination ? "Eliminated" : rollAnimating && awaitingRoll ? "Rolling dice" : hitTarget ? "Choose for hit" : manualRollReview ? "Roll result" : awaitingRoll ? "Fired" : active ? "Acting now" : fired ? "Fired" : zone === "reserve" ? "Reserve" : zone === "fort" ? "In fort" : "Ready";
     const retreatTargets = canAct && !inFort ? legalVoluntaryRetreatTargets(battle, unit) : [];
     const actions = canAct ? `
       <div class="battle-unit-actions">
@@ -4880,10 +4943,10 @@ document.addEventListener("DOMContentLoaded", () => {
     ` : "";
 
     return `
-      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${manualRollReview ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}${rollReviewElimination ? " is-roll-eliminated" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
+      <article class="battle-unit-card owner-${unit.owner}${active || selected ? " is-active" : ""}${canAct ? " can-act" : ""}${manualRollReview ? " is-awaiting-roll" : ""}${selectable ? " is-selectable" : ""}${hitTarget ? " is-hit-target" : ""}${fired ? " is-fired" : ""}${reviewingElimination ? " is-roll-eliminated" : ""}" data-battle-unit="${unitId}"${selectable ? " role=\"button\" tabindex=\"0\"" : ""}>
         <div class="battle-unit-body">
-          <div class="battle-unit-counter" title="${rollReviewElimination ? `${unit.name}: eliminated by this fire result` : `${unit.name}: current strength ${currentStrength(unit)}`}">
-            ${unitCounterMarkup(displayUnit)}
+          <div class="battle-unit-counter" title="${reviewingElimination ? `${unit.name}: eliminated by this fire result` : `${unit.name}: current strength ${currentStrength(displayUnit)}`}">
+            ${unitCounterMarkup(displayUnit, { halfHitOverride: halfHit })}
           </div>
           <div class="battle-unit-info">
             <span class="battle-unit-status"><span>${status}</span></span>
@@ -5020,7 +5083,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function battleActionHistory(battle) {
-    const actions = (battle.actionResults || []).slice(-4);
+    const rollingUnitId = diceAnimationRollingFor(battle, battle.awaitingRollAcknowledgement)
+      ? battle.awaitingRollAcknowledgement
+      : null;
+    const actions = (battle.actionResults || []).filter((action) => !(
+      rollingUnitId &&
+      action.type === "fire" &&
+      action.unitId === rollingUnitId &&
+      Number(action.round || battle.round) === Number(battle.round)
+    )).slice(-4);
     if (!actions.length) return "";
     let lastRound = null;
     const lines = actions.flatMap((action) => {
@@ -5617,7 +5688,6 @@ document.addEventListener("DOMContentLoaded", () => {
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
   els.battleTransitionDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleTransitionForm?.addEventListener("submit", continueToNextBattle);
-  els.continueBotMovementReview?.addEventListener("click", advanceBotActionReview);
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
   els.cancelRetreatTarget?.addEventListener("click", cancelVoluntaryRetreatTargeting);
   els.cancelMainForceTarget?.addEventListener("click", () => mainForceSelection?.settle(false));
@@ -5670,6 +5740,17 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   });
   document.addEventListener("keydown", (event) => {
+    if (!mapPanDirection(event.code) || event.metaKey || event.ctrlKey || event.altKey || mapPanBlocked(event.target)) return;
+    event.preventDefault();
+    mapPanKeys.add(event.code);
+    startMapPan();
+  });
+  document.addEventListener("keyup", (event) => {
+    if (!mapPanDirection(event.code)) return;
+    mapPanKeys.delete(event.code);
+    if (!mapPanKeys.size) stopMapPan();
+  });
+  document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeGameMenu();
     closeModeMenu();
@@ -5690,6 +5771,10 @@ document.addEventListener("DOMContentLoaded", () => {
       zoomedCardId = null;
       render();
     }
+  });
+  window.addEventListener("blur", stopMapPan);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopMapPan();
   });
   document.addEventListener("click", (event) => {
     if (els.gameMenu?.open && !els.gameMenu.contains(event.target)) closeGameMenu();

@@ -463,6 +463,8 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_equal "barbarian", result.dig("units", "dumnorix", "owner")
     assert_equal "allobroges", result.dig("units", "dumnorix", "home")
     assert_not result["massiveRevoltPlayed"]
+    assert_equal ["event_4_massive_revolt"], result["discard"].map { |discarded| discarded.fetch("id") }
+    assert_empty Array(result["removedCards"])
     assert_includes result["log"], "Turn 1: Massive Revolt is treated as a Major Revolt."
     assert_match(/Dumnorix enters at Allobroges/, result["log"].join(" "))
     assert_match(/Bot revolt areas: Allobroges, Boii/, result["log"].join(" "))
@@ -487,6 +489,9 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert result["massiveRevoltPlayed"]
     assert_equal "allobroges", result.dig("units", "vercingetorix", "location")
+    assert_empty result["discard"]
+    assert_equal ["event_4_massive_revolt"], result["removedCards"].map { |card| card.fetch("id") }
+    assert_equal "removed", session.reload.game_session_cards.find_by!(card: Card.find_by!(key: "event_4_massive_revolt")).location
     assert_no_match(/treated as a Major Revolt/, result["log"].join(" "))
   end
 

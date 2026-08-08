@@ -47,6 +47,7 @@ class GameSession < ApplicationRecord
     sync_card_list(data.dig("hands", "barbarian"), "barbarian_hand")
     sync_card_list(data["botDeck"], "bot_deck")
     sync_card_list(data["discard"], "discard")
+    sync_card_list(data["removedCards"], "removed")
     sync_committed_card(data.dig("committed", "roman"), "committed_roman")
     sync_committed_card(data.dig("committed", "barbarian"), "committed_barbarian")
   end

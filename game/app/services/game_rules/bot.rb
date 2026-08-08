@@ -28,8 +28,7 @@ module GameRules
         "cardId" => card.fetch("id"),
         "kind" => action
       }
-      @state["discard"] ||= []
-      @state["discard"] << card
+      GameRules::CardLifecycle.finish_play!(@state, card)
       persist!
     end
 
@@ -247,11 +246,11 @@ module GameRules
       end
 
       if effective_title == "Massive Revolt"
+        @state["massiveRevoltPlayed"] = true
         vercingetorix = units["vercingetorix"]
         if vercingetorix
           vercingetorix["location"] = targets.first
           vercingetorix["owner"] = "barbarian"
-          @state["massiveRevoltPlayed"] = true
           log("Vercingetorix enters at #{area_name(targets.first)}.")
         end
       end

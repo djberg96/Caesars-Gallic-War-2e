@@ -213,50 +213,6 @@ h3 {
   display: none;
 }
 
-.bot-movement-review {
-  display: flex;
-  flex: 1 1 30rem;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  min-width: min(100%, 24rem);
-  margin-left: auto;
-  padding-left: 0.35rem;
-}
-
-.bot-movement-review[hidden] {
-  display: none;
-}
-
-.bot-movement-review-copy {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 0.45rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.bot-movement-review-copy strong {
-  flex: 0 0 auto;
-  color: var(--accent);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-#bot-movement-review-routes {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#continue-bot-movement-review {
-  flex: 0 0 auto;
-  border-color: rgba(217, 180, 95, 0.72);
-  color: var(--accent);
-}
-
 .revolt-target-panel,
 .retreat-target-panel {
   display: flex;
@@ -2627,6 +2583,25 @@ dialog {
   background: rgba(5, 7, 5, 0.2);
 }
 
+.bot-action-review-dialog.is-movement-review {
+  inset: auto 410px 1rem 1rem;
+  width: min(500px, calc(100vw - 440px));
+  max-height: min(420px, 70vh);
+  margin: 0;
+}
+
+.bot-action-review-dialog.is-movement-review::backdrop {
+  background: rgba(5, 7, 5, 0.08);
+}
+
+.bot-action-review-dialog.is-movement-review .bot-action-review-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bot-action-review-dialog.is-movement-review .dialog-actions {
+  justify-content: flex-end;
+}
+
 .bot-action-review-layout {
   display: grid;
   grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
@@ -2680,6 +2655,11 @@ dialog {
 }
 
 @media (max-width: 560px) {
+  .bot-action-review-dialog.is-movement-review {
+    inset: auto 0.75rem 0.75rem;
+    width: auto;
+  }
+
   .bot-action-review-layout {
     grid-template-columns: 1fr;
   }

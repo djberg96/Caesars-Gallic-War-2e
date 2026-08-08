@@ -8,7 +8,9 @@ module GameRules
     end
 
     def deal!
-      deck = Card.includes(:area).order(:id).map(&:game_data).map(&:stringify_keys).shuffle
+      all_cards = Card.includes(:area).order(:id).map(&:game_data).map(&:stringify_keys)
+      GameRules::CardLifecycle.reconcile_removed_cards!(@state, all_cards)
+      deck = GameRules::CardLifecycle.available_cards(@state, all_cards).shuffle
       @state["hands"] ||= {}
       @state["hands"]["roman"] = deck.shift(HAND_SIZE)
 

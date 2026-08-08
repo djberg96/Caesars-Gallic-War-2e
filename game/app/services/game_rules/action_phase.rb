@@ -187,11 +187,11 @@ module GameRules
         end
       end
       if effective_title == "Massive Revolt" && active_player == "barbarian"
+        @state["massiveRevoltPlayed"] = true
         vercingetorix = units["vercingetorix"]
         if vercingetorix
           vercingetorix["location"] = area.key
           vercingetorix["owner"] = "barbarian"
-          @state["massiveRevoltPlayed"] = true
         end
       end
 

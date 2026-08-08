@@ -64,10 +64,6 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "[data-map-zoom='1.5']", text: "150%"
     end
     assert_select ".board-toolbar input#map-zoom[type='hidden'][value='1']"
-    assert_select ".board-toolbar #bot-movement-review[hidden]" do
-      assert_select "#bot-movement-review-routes"
-      assert_select "#continue-bot-movement-review", text: "Continue to Battle"
-    end
     assert_select ".board-toolbar #revolt-target-panel[hidden]" do
       assert_select "#revolt-target-title", text: "Revolt"
       assert_select "#revolt-target-instructions"
@@ -102,7 +98,7 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#turn-dialog-supply", text: "15"
     end
     assert_select "#turn-dialog #acknowledge-turn", text: "OK"
-    assert_select "#bot-action-review-dialog" do
+    assert_select "#bot-action-review-dialog[aria-labelledby='bot-action-review-title']" do
       assert_select "#bot-action-review-card"
       assert_select "#bot-action-review-title"
       assert_select "#bot-action-review-details"

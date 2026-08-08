@@ -69,13 +69,6 @@
           </label>
         </div>
       </details>
-      <div id="bot-movement-review" class="bot-movement-review" role="status" aria-live="polite" hidden>
-        <div class="bot-movement-review-copy">
-          <strong>Barbarian Movement</strong>
-          <span id="bot-movement-review-routes"></span>
-        </div>
-        <button id="continue-bot-movement-review" type="button">Continue to Battle</button>
-      </div>
       <div id="revolt-target-panel" class="revolt-target-panel" role="status" aria-live="polite" hidden>
         <div class="revolt-target-copy">
           <strong id="revolt-target-title">Revolt</strong>
@@ -253,7 +246,7 @@
   </form>
 </dialog>
 
-<dialog id="bot-action-review-dialog" class="bot-action-review-dialog">
+<dialog id="bot-action-review-dialog" class="bot-action-review-dialog" aria-labelledby="bot-action-review-title">
   <div class="bot-action-review-layout">
     <img id="bot-action-review-card" class="bot-action-review-card" alt="">
     <section class="bot-action-review-copy">

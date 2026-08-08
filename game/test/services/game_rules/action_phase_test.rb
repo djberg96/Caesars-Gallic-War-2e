@@ -500,6 +500,11 @@ class GameRules::ActionPhaseTest < ActiveSupport::TestCase
     assert_equal "barbarian", result.dig("units", "vercingetorix", "owner")
     assert result["massiveRevoltPlayed"]
     assert_match "Massive Revolt resolved", result["log"].first
+
+    discarded = GameRules::CardPhase.new(session: session, state: result).discard!(player: "barbarian")
+
+    assert_empty discarded["discard"]
+    assert_equal ["event_4_massive_revolt"], discarded["removedCards"].map { |removed| removed.fetch("id") }
   end
 
   test "treats barbarian massive revolt as minor on turn one outside solitaire" do

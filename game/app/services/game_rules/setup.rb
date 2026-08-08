@@ -40,6 +40,7 @@ module GameRules
         "yearlyObjectiveProgress" => {},
         "yearlyObjectiveHistory" => [],
         "botDeck" => [],
+        "removedCards" => [],
         "botNeutralActivations" => 0,
         "neutralActivationCards" => { "roman" => [], "barbarian" => [] },
         "romanForcePool" => %w[legion_i legion_xiii legion_xiv legion_xv],

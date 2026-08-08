@@ -44,8 +44,7 @@ module GameRules
       raise InvalidAction, "No card is ready to discard." unless played
 
       remove_from_hand(played.fetch("id"))
-      @state["discard"] ||= []
-      @state["discard"] << played
+      GameRules::CardLifecycle.finish_play!(@state, played)
       @state["movement"] = nil
       @state["battle"] = nil
       @state["currentAction"] = nil
