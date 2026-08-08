@@ -1685,16 +1685,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const movementRoutes = movementMessages.map(botMovementRoute).filter(Boolean);
     const stages = [
       {
-        kind: "card",
-        kicker: "Barbarian Reveals",
-        title: revealedCard || "Unknown Card",
-        message: "",
-        details: []
-      },
-      {
         kind: "action",
         kicker: "Barbarian Action",
-        title: `Played for ${actionLabel}`,
+        title: actionLabel,
         message: `${revealedCard || "The card"} is resolved as ${indefiniteArticle(actionLabel)} ${actionLabel.toLowerCase()}.`,
         details: actionMessages
       }
@@ -1790,7 +1783,6 @@ document.addEventListener("DOMContentLoaded", () => {
     els.botActionReviewKicker.textContent = stage.kicker;
     els.botActionReviewTitle.textContent = stage.title;
     els.botActionReviewMessage.textContent = stage.message;
-    els.botActionReviewDialog.classList.toggle("is-card-stage", stage.kind === "card");
     els.botActionReviewDetails.replaceChildren(...stage.details.map((detail) => {
       const item = document.createElement("li");
       item.textContent = detail;
@@ -3873,7 +3865,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (mainForceTarget) {
           piece.title = `Choose ${unit.name}'s group from ${areaName(movementEntry(unit, mainForceSelection.areaId))} as the main force.`;
         } else {
-          piece.title = faceVisible ? `${unit.name} ${unit.owner} strength ${currentStrength(unit)}` : hiddenLabel;
+          piece.title = faceVisible ? `${unit.name}, strength ${currentStrength(unit)}` : hiddenLabel;
         }
         piece.innerHTML = unitCounterMarkup(unit, {
           faceVisible,
