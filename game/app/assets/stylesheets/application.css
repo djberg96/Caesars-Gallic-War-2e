@@ -871,16 +871,16 @@ h3 {
 .roman-counter-name {
   position: absolute;
   z-index: 2;
-  top: 0.16rem;
-  right: 0.08rem;
-  left: 0.08rem;
+  top: 0.1rem;
+  right: 0.1rem;
+  left: 0.1rem;
   overflow: hidden;
   color: #fff5df;
   font-family: Georgia, serif;
-  font-size: clamp(0.43rem, 0.7vw, 0.58rem);
+  font-size: clamp(0.41rem, 0.66vw, 0.54rem);
   font-weight: 700;
   letter-spacing: -0.025em;
-  line-height: 1;
+  line-height: 1.18;
   text-align: center;
   text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(64, 0, 0, 0.9);
@@ -1010,16 +1010,16 @@ h3 {
 .barbarian-counter-name {
   position: absolute;
   z-index: 2;
-  top: 0.16rem;
-  right: 0.08rem;
-  left: 0.08rem;
+  top: 0.1rem;
+  right: 0.1rem;
+  left: 0.1rem;
   overflow: hidden;
   color: #202d1d;
   font-family: Georgia, serif;
-  font-size: clamp(0.43rem, 0.7vw, 0.58rem);
+  font-size: clamp(0.41rem, 0.66vw, 0.54rem);
   font-weight: 800;
   letter-spacing: -0.025em;
-  line-height: 1;
+  line-height: 1.18;
   text-align: center;
   text-overflow: ellipsis;
   text-shadow: 0 1px rgba(255, 248, 211, 0.68);
@@ -1027,11 +1027,11 @@ h3 {
 }
 
 .barbarian-counter-name.is-long {
-  font-size: clamp(0.38rem, 0.62vw, 0.51rem);
+  font-size: clamp(0.37rem, 0.59vw, 0.49rem);
 }
 
 .barbarian-counter-name.is-very-long {
-  font-size: clamp(0.34rem, 0.55vw, 0.45rem);
+  font-size: clamp(0.33rem, 0.52vw, 0.43rem);
 }
 
 .barbarian-counter-device {
@@ -3129,7 +3129,30 @@ dialog {
 
 .unit-history-counter .roman-counter-name,
 .unit-history-counter .barbarian-counter-name {
-  font-size: 1rem;
+  top: 0.24rem;
+  right: 0.3rem;
+  left: 0.3rem;
+  font-size: 1.14rem;
+  line-height: 1.2;
+}
+
+.unit-history-counter .roman-counter-shield {
+  top: 23%;
+  height: 63%;
+}
+
+.unit-history-counter .roman-counter-face.is-caesar .roman-counter-shield {
+  top: 29%;
+  height: 57%;
+}
+
+.unit-history-counter .roman-grass-crown {
+  top: 23%;
+}
+
+.unit-history-counter .barbarian-counter-device {
+  top: 22%;
+  height: 63%;
 }
 
 .unit-history-counter .unit-counter-stat {
