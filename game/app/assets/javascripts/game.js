@@ -110,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     acknowledgeTurn: document.querySelector("#acknowledge-turn"),
     botActionReviewDialog: document.querySelector("#bot-action-review-dialog"),
     botActionReviewCard: document.querySelector("#bot-action-review-card"),
+    botActionReviewDragHandle: document.querySelector("#bot-action-review-drag-handle"),
     botActionReviewKicker: document.querySelector("#bot-action-review-kicker"),
     botActionReviewTitle: document.querySelector("#bot-action-review-title"),
     botActionReviewMessage: document.querySelector("#bot-action-review-message"),
@@ -158,6 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let zoomedCardId = null;
   let resultDialogQueue = [];
   let botActionReview = null;
+  let botActionReviewDrag = null;
   let botRollReview = null;
   let diceRollAnimation = null;
   let gameAudioContext = null;
@@ -1770,11 +1772,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function beginBotActionReview(previousLog, nextLog) {
+    resetBotActionReviewDialogPosition();
     const previousHead = previousLog[0];
     const firstOldIndex = previousHead ? nextLog.indexOf(previousHead) : -1;
     const entries = firstOldIndex >= 0 ? nextLog.slice(0, firstOldIndex) : nextLog.slice(0, 5);
     const revealedCard = entries.find((entry) => entry.startsWith("Bot reveals "))?.replace(/^Bot reveals /, "").replace(/\.$/, "");
-    const card = [...(state.discard || [])].reverse().find((candidate) => candidate.title === revealedCard);
+    const card = [...(state.discard || []), ...(state.removedCards || [])]
+      .reverse()
+      .find((candidate) => candidate.title === revealedCard);
     const actionEntries = entries
       .filter((entry) => !entry.startsWith("Bot reveals "))
       .reverse()
@@ -1788,6 +1793,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const actionLabel = botActionReviewLabel(card, actionEntries);
     const movementRoutes = movementMessages.map(botMovementRoute).filter(Boolean);
+    const revoltMovementTitle = botRevoltMovementTitle(card);
     const stages = [
       {
         kind: "action",
@@ -1800,8 +1806,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (movementMessages.length) {
       stages.push({
         kind: "movement",
-        kicker: "Barbarian Movement",
-        title: "Units Move",
+        kicker: revoltMovementTitle ? "" : "Barbarian Movement",
+        title: revoltMovementTitle || "Units Move",
         message: "The Barbarian units have moved on the map.",
         details: movementMessages
       });
@@ -1813,8 +1819,15 @@ document.addEventListener("DOMContentLoaded", () => {
       stageIndex: 0,
       movementRoutes,
       battlePending: Boolean(state.battle),
-      movementFocused: false
+      movementFocused: false,
+      movementPositioned: false
     };
+  }
+
+  function botRevoltMovementTitle(card) {
+    if (card?.title === "Massive Revolt") return state.turn === 0 ? "Major Revolt" : "Massive Revolt";
+    if (card?.title === "Major Revolt") return "Major Revolt";
+    return null;
   }
 
   function botActionReviewLabel(card, messages) {
@@ -1888,6 +1901,7 @@ document.addEventListener("DOMContentLoaded", () => {
       els.botActionReviewCard.alt = `${botActionReview.card.title} card`;
     }
     els.botActionReviewKicker.textContent = stage.kicker;
+    els.botActionReviewKicker.hidden = !stage.kicker;
     els.botActionReviewTitle.textContent = stage.title;
     els.botActionReviewMessage.textContent = stage.message;
     els.botActionReviewDetails.replaceChildren(...stage.details.map((detail) => {
@@ -1908,7 +1922,93 @@ document.addEventListener("DOMContentLoaded", () => {
             ? "OK"
             : "Continue";
     els.botActionReviewDialog.showModal();
+    if (movementStage && !botActionReview.movementPositioned) {
+      botActionReview.movementPositioned = true;
+      window.requestAnimationFrame(positionBotActionReviewDialog);
+    }
+  }
 
+  function resetBotActionReviewDialogPosition() {
+    const dialog = els.botActionReviewDialog;
+    if (!dialog) return;
+    dialog.style.removeProperty("inset");
+    dialog.style.removeProperty("left");
+    dialog.style.removeProperty("top");
+    dialog.style.removeProperty("right");
+    dialog.style.removeProperty("bottom");
+    dialog.style.removeProperty("margin");
+  }
+
+  function botMovementViewportPoint() {
+    const routeAreas = (botActionReview?.movementRoutes || [])
+      .flatMap((route) => [areas[route.from], areas[route.to]])
+      .filter(Boolean);
+    if (!routeAreas.length || !els.boardStage) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
+
+    const stageRect = els.boardStage.getBoundingClientRect();
+    return {
+      x: routeAreas.reduce((sum, area) => sum + stageRect.left + ((area.x / 100) * stageRect.width), 0) / routeAreas.length,
+      y: routeAreas.reduce((sum, area) => sum + stageRect.top + ((area.y / 100) * stageRect.height), 0) / routeAreas.length
+    };
+  }
+
+  function positionBotActionReviewDialog() {
+    const dialog = els.botActionReviewDialog;
+    if (!dialog?.open || !dialog.classList.contains("is-movement-review")) return;
+
+    const dialogRect = dialog.getBoundingClientRect();
+    const movementPoint = botMovementViewportPoint();
+    const edgeGap = 16;
+    const left = movementPoint.x >= window.innerWidth / 2
+      ? edgeGap
+      : window.innerWidth - dialogRect.width - edgeGap;
+    const top = Math.min(
+      Math.max(edgeGap, movementPoint.y - (dialogRect.height / 2)),
+      Math.max(edgeGap, window.innerHeight - dialogRect.height - edgeGap)
+    );
+    setBotActionReviewDialogPosition(left, top);
+  }
+
+  function setBotActionReviewDialogPosition(left, top) {
+    const dialog = els.botActionReviewDialog;
+    if (!dialog) return;
+    const edgeGap = 8;
+    const maxLeft = Math.max(edgeGap, window.innerWidth - dialog.offsetWidth - edgeGap);
+    const maxTop = Math.max(edgeGap, window.innerHeight - dialog.offsetHeight - edgeGap);
+    dialog.style.inset = "auto";
+    dialog.style.margin = "0";
+    dialog.style.left = `${Math.min(Math.max(edgeGap, left), maxLeft)}px`;
+    dialog.style.top = `${Math.min(Math.max(edgeGap, top), maxTop)}px`;
+  }
+
+  function beginBotActionReviewDrag(event) {
+    const dialog = els.botActionReviewDialog;
+    if (event.button !== 0 || !dialog?.classList.contains("is-movement-review")) return;
+    const rect = dialog.getBoundingClientRect();
+    botActionReviewDrag = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dialog.classList.add("is-dragging");
+    event.preventDefault();
+  }
+
+  function moveBotActionReviewDialog(event) {
+    if (!botActionReviewDrag || event.pointerId !== botActionReviewDrag.pointerId) return;
+    setBotActionReviewDialogPosition(
+      event.clientX - botActionReviewDrag.offsetX,
+      event.clientY - botActionReviewDrag.offsetY
+    );
+  }
+
+  function endBotActionReviewDrag(event) {
+    if (!botActionReviewDrag || event.pointerId !== botActionReviewDrag.pointerId) return;
+    botActionReviewDrag = null;
+    els.botActionReviewDialog?.classList.remove("is-dragging");
   }
 
   function advanceBotActionReview() {
@@ -1922,6 +2022,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     botActionReview = null;
+    resetBotActionReviewDialogPosition();
     render();
   }
 
@@ -3875,6 +3976,55 @@ document.addEventListener("DOMContentLoaded", () => {
     return activatedAreas[activatedAreas.length - 1] || null;
   }
 
+  function movementArrival(unit) {
+    if (!state.movement || retreatMovement() || battleMapMode()) return null;
+    const moved = state.movement.units?.[unit.id];
+    return Number(moved?.steps) > 0 ? moved : null;
+  }
+
+  function compactGroupMetrics(count) {
+    const columns = Math.min(4, count);
+    const rows = Math.ceil(count / columns);
+    return {
+      columns,
+      rows,
+      width: Math.max(58, columns * 16 + 38),
+      height: Math.max(58, rows * 20 + 38)
+    };
+  }
+
+  function compactGroupOffsets(units, centerX = 0, centerY = 0) {
+    const metrics = compactGroupMetrics(units.length);
+    return new Map(units.map((unit, index) => {
+      const row = Math.floor(index / metrics.columns);
+      const column = index % metrics.columns;
+      const columnsInRow = Math.min(metrics.columns, units.length - row * metrics.columns);
+      return [unit.id, {
+        x: centerX + ((column - (columnsInRow - 1) / 2) * 16),
+        y: centerY + ((row - (metrics.rows - 1) / 2) * 20)
+      }];
+    }));
+  }
+
+  function arrivalLaneDirection(area, arrivals) {
+    const origins = arrivals
+      .map((unit) => {
+        const moved = movementArrival(unit);
+        const originId = moved?.entry || moved?.path?.at(-1)?.from || moved?.origin;
+        return areas[originId];
+      })
+      .filter(Boolean);
+    if (!origins.length) return { axis: "horizontal", before: false };
+
+    const originX = origins.reduce((sum, origin) => sum + origin.x, 0) / origins.length;
+    const originY = origins.reduce((sum, origin) => sum + origin.y, 0) / origins.length;
+    const deltaX = originX - area.x;
+    const deltaY = originY - area.y;
+    return Math.abs(deltaX) >= Math.abs(deltaY)
+      ? { axis: "horizontal", before: deltaX < 0 }
+      : { axis: "vertical", before: deltaY < 0 };
+  }
+
   function renderPieces() {
     els.pieceLayer.innerHTML = "";
     splayedPieceStack = null;
@@ -3891,20 +4041,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
     Object.entries(byArea).forEach(([areaId, units]) => {
       const area = areas[areaId];
-      const canSplay = units.length > 1 && (
-        units.every(unitFaceVisibleToActivePlayer) ||
-        (revoltTargeting() && units.some(revoltTargetEligible)) ||
-        (mainForceTargeting() && units.some(mainForceEligible))
+      const residents = units.filter((unit) => !movementArrival(unit));
+      const arrivals = units.filter((unit) => movementArrival(unit));
+      const displayUnits = [...residents, ...arrivals];
+      const hasArrivalLane = residents.length > 0 && arrivals.length > 0;
+      const residentMetrics = compactGroupMetrics(residents.length || displayUnits.length);
+      const arrivalMetrics = compactGroupMetrics(arrivals.length || displayUnits.length);
+      const laneGap = 4;
+      const laneDirection = arrivalLaneDirection(area, arrivals);
+      const horizontalLanes = hasArrivalLane && laneDirection.axis === "horizontal";
+      const verticalLanes = hasArrivalLane && laneDirection.axis === "vertical";
+      const compactWidth = horizontalLanes
+        ? residentMetrics.width + laneGap + arrivalMetrics.width
+        : Math.max(residentMetrics.width, arrivalMetrics.width);
+      const compactHeight = verticalLanes
+        ? residentMetrics.height + laneGap + arrivalMetrics.height
+        : Math.max(residentMetrics.height, arrivalMetrics.height);
+      const firstHorizontalCenter = (-compactWidth / 2) + ((laneDirection.before ? arrivalMetrics : residentMetrics).width / 2);
+      const secondHorizontalCenter = (compactWidth / 2) - ((laneDirection.before ? residentMetrics : arrivalMetrics).width / 2);
+      const firstVerticalCenter = (-compactHeight / 2) + ((laneDirection.before ? arrivalMetrics : residentMetrics).height / 2);
+      const secondVerticalCenter = (compactHeight / 2) - ((laneDirection.before ? residentMetrics : arrivalMetrics).height / 2);
+      const residentCenterX = horizontalLanes ? (laneDirection.before ? secondHorizontalCenter : firstHorizontalCenter) : 0;
+      const arrivalCenterX = horizontalLanes ? (laneDirection.before ? firstHorizontalCenter : secondHorizontalCenter) : 0;
+      const residentCenterY = verticalLanes ? (laneDirection.before ? secondVerticalCenter : firstVerticalCenter) : 0;
+      const arrivalCenterY = verticalLanes ? (laneDirection.before ? firstVerticalCenter : secondVerticalCenter) : 0;
+      const compactOffsets = hasArrivalLane
+        ? new Map([
+            ...compactGroupOffsets(residents, residentCenterX, residentCenterY),
+            ...compactGroupOffsets(arrivals, arrivalCenterX, arrivalCenterY)
+          ])
+        : compactGroupOffsets(displayUnits);
+      const canSplay = displayUnits.length > 1 && (
+        displayUnits.every(unitFaceVisibleToActivePlayer) ||
+        (revoltTargeting() && displayUnits.some(revoltTargetEligible)) ||
+        (mainForceTargeting() && displayUnits.some(mainForceEligible))
       );
-      const columns = Math.min(4, units.length);
-      const rows = Math.ceil(units.length / columns);
+      const columns = Math.min(4, displayUnits.length);
+      const rows = Math.ceil(displayUnits.length / columns);
       const stack = document.createElement("div");
       const mainForceBattleStack = mainForceSelection?.areaId === areaId;
-      stack.className = `piece-stack${units.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${mainForceBattleStack ? " is-main-force-battle-stack" : ""}${units.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
+      stack.className = `piece-stack${displayUnits.length > 1 ? " has-multiple" : ""}${canSplay ? " can-splay" : ""}${arrivals.length ? " has-movement-arrivals" : ""}${mainForceBattleStack ? " is-main-force-battle-stack" : ""}${displayUnits.some((unit) => state.selectedUnit === unit.id) ? " has-selected" : ""}`;
       stack.style.left = `${area.x}%`;
       stack.style.top = `${area.y}%`;
-      stack.style.setProperty("--compact-width", `${Math.max(58, columns * 16 + 38)}px`);
-      stack.style.setProperty("--compact-height", `${Math.max(58, rows * 20 + 38)}px`);
+      stack.style.setProperty("--compact-width", `${compactWidth}px`);
+      stack.style.setProperty("--compact-height", `${compactHeight}px`);
       stack.style.setProperty("--splay-width", `${Math.max(78, columns * 68 + 44)}px`);
       stack.style.setProperty("--splay-height", `${Math.max(78, rows * 68 + 44)}px`);
       const keepStackSplayed = () => {
@@ -3937,16 +4117,18 @@ document.addEventListener("DOMContentLoaded", () => {
         moveSelectedTo(areaId);
       });
 
-      units.forEach((unit, index) => {
+      displayUnits.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const column = index % columns;
-        const columnsInRow = Math.min(columns, units.length - row * columns);
-        const compactX = (column - (columnsInRow - 1) / 2) * 16;
-        const compactY = (row - (rows - 1) / 2) * 20;
+        const columnsInRow = Math.min(columns, displayUnits.length - row * columns);
+        const compactOffset = compactOffsets.get(unit.id);
+        const compactX = compactOffset.x;
+        const compactY = compactOffset.y;
         const splayX = (column - (columnsInRow - 1) / 2) * 68;
         const splayY = (row - (rows - 1) / 2) * 68;
         const piece = document.createElement("button");
         piece.className = `piece owner-${unit.owner}`;
+        const arrival = movementArrival(unit);
         const winterEligible = winterQuartersEligible(unit.id);
         const revoltEligible = revoltTargetEligible(unit);
         const mainForceTarget = mainForceEligible(unit);
@@ -3959,6 +4141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.classList.toggle("is-winter-eligible", winterEligible);
         piece.classList.toggle("is-wintering", winterEligible && winteringUnitIds().includes(unit.id));
         piece.classList.toggle("is-winter-ineligible", winterQuartersActive() && !winterEligible);
+        piece.classList.toggle("is-movement-arrival", Boolean(arrival));
         piece.classList.toggle("is-hidden", !faceVisible);
         if (!faceVisible) {
           piece.classList.add(`hidden-region-${hiddenBlockRegion(unit)}`);
@@ -3980,7 +4163,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (mainForceTarget) {
           piece.title = `Choose ${unit.name}'s group from ${areaName(movementEntry(unit, mainForceSelection.areaId))} as the main force.`;
         } else {
-          piece.title = faceVisible ? `${unit.name}, strength ${currentStrength(unit)}. Double-click for history.` : hiddenLabel;
+          const movementNote = arrival
+            ? ` Moved here this action${movementUsedForceMarch(arrival) ? " by forced march" : ""}.`
+            : "";
+          piece.title = faceVisible ? `${unit.name}, strength ${currentStrength(unit)}.${movementNote} Double-click for history.` : hiddenLabel;
         }
         piece.innerHTML = unitCounterMarkup(unit, {
           faceVisible,
@@ -5686,6 +5872,10 @@ document.addEventListener("DOMContentLoaded", () => {
   els.acknowledgeTurn?.addEventListener("click", acknowledgeTurnAnnouncement);
   els.botActionReviewDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.advanceBotActionReview?.addEventListener("click", advanceBotActionReview);
+  els.botActionReviewDragHandle?.addEventListener("pointerdown", beginBotActionReviewDrag);
+  els.botActionReviewDragHandle?.addEventListener("pointermove", moveBotActionReviewDialog);
+  els.botActionReviewDragHandle?.addEventListener("pointerup", endBotActionReviewDrag);
+  els.botActionReviewDragHandle?.addEventListener("pointercancel", endBotActionReviewDrag);
   els.battleTransitionDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleTransitionForm?.addEventListener("submit", continueToNextBattle);
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));

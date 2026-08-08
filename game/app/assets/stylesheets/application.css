@@ -736,6 +736,10 @@ h3 {
   z-index: 55;
 }
 
+.piece-stack.has-movement-arrivals {
+  z-index: 42;
+}
+
 .piece-stack.can-splay.is-splayed {
   z-index: 70;
   width: var(--splay-width);
@@ -763,6 +767,10 @@ h3 {
 
 .piece-stack.can-splay.is-splayed .piece {
   transform: translate(calc(-50% + var(--splay-x)), calc(-50% + var(--splay-y)));
+}
+
+.piece.is-movement-arrival {
+  filter: drop-shadow(0 0 0.28rem rgba(100, 208, 235, 0.92));
 }
 
 .unit-counter-art {
@@ -2584,10 +2592,11 @@ dialog {
 }
 
 .bot-action-review-dialog.is-movement-review {
-  inset: auto 410px 1rem 1rem;
-  width: min(500px, calc(100vw - 440px));
+  position: fixed;
+  inset: 0;
+  width: min(500px, calc(100vw - 2rem));
   max-height: min(420px, 70vh);
-  margin: 0;
+  margin: auto;
 }
 
 .bot-action-review-dialog.is-movement-review::backdrop {
@@ -2600,6 +2609,49 @@ dialog {
 
 .bot-action-review-dialog.is-movement-review .dialog-actions {
   justify-content: flex-end;
+}
+
+.bot-action-review-card[hidden] {
+  display: none;
+}
+
+.bot-action-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bot-action-review-dialog.is-movement-review .bot-action-review-heading {
+  margin: -0.35rem -0.35rem 0;
+  padding: 0.35rem;
+  border-radius: 5px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.bot-action-review-dialog.is-movement-review.is-dragging .bot-action-review-heading {
+  cursor: grabbing;
+  background: rgba(217, 180, 95, 0.08);
+}
+
+.bot-action-review-drag-cue {
+  display: none;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  padding: 0.2rem 0.38rem;
+  border: 1px solid rgba(217, 180, 95, 0.28);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bot-action-review-dialog.is-movement-review .bot-action-review-drag-cue {
+  display: inline-flex;
 }
 
 .bot-action-review-layout {
@@ -2656,8 +2708,7 @@ dialog {
 
 @media (max-width: 560px) {
   .bot-action-review-dialog.is-movement-review {
-    inset: auto 0.75rem 0.75rem;
-    width: auto;
+    width: min(500px, calc(100vw - 1.5rem));
   }
 
   .bot-action-review-layout {
