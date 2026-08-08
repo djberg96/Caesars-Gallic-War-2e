@@ -85,8 +85,16 @@ module GameRules
       return false if attackers.empty?
 
       adjacent = area.outgoing_borders.map(&:to_area).reject(&:sea?)
-      targets = targets_with_enemy_count(adjacent, 1)
-      targets = targets_with_enemy_count(adjacent, 2) if targets.empty? && attackers.length >= 2
+      if lone_strength_one_force?(attackers)
+        targets = adjacent.select { |target| pending_barbarian_attack?(target.key) }
+        if targets.empty?
+          log("#{attackers.first.fetch("name")} remains in #{area.name}: a lone strength-1 Barbarian unit does not attack.")
+          return false
+        end
+      else
+        targets = targets_with_enemy_count(adjacent, 1)
+        targets = targets_with_enemy_count(adjacent, 2) if targets.empty? && attackers.length >= 2
+      end
       target = targets.find { |candidate| roman_occupied_area?(candidate.key) } || targets.first
       return false unless target
 
@@ -97,6 +105,15 @@ module GameRules
       entry = queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
       resolve_bot_battle!(target.key, entry) if resolve_battle
       true
+    end
+
+    def lone_strength_one_force?(attackers)
+      attackers.one? && current_strength(attackers.first) == 1
+    end
+
+    def pending_barbarian_attack?(area_id)
+      entry = @state.dig("pendingBattleEntries", area_id)
+      entry&.fetch("attacker", nil) == "barbarian" && contested_area?(area_id)
     end
 
     def bot_move_from_germania(area, resolve_battle: true)

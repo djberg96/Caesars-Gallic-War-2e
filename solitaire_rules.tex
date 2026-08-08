@@ -68,6 +68,8 @@ Whenever the solitaire rules mention the term "adjacent", treat any area with a 
   \begin{enumerate}[leftmargin=0in]
     \item \label{solitaire:tribal} If the card revealed shows a Barbarian tribal area that is already controlled by the bot, then that area is activated for movement. All bot controlled units in that area will attack an adjacent Roman controlled or neutral target area that contains only one block, whether Roman or Barbarian.
 
+    \textbf{Exception:} A lone Barbarian unit at strength 1 will not enter an enemy-occupied area. It may join another attacking force; otherwise, it remains in place.
+
     If there is more than one area that contains one block, then select one randomly. Roman controlled areas should be prioritized over neutral areas.
 
     If there are no adjacent areas with only one block then skip to \ref{solitaire:attack_two}

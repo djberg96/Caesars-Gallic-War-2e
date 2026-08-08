@@ -95,6 +95,43 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_no_match "Barbarian activates Allobroges", result["log"].join(" ")
   end
 
+  test "a lone strength one Barbarian unit does not initiate an attack" do
+    state = bot_state(bot_deck: [])
+    state["units"] = {
+      "sequani" => barbarian_unit("sequani", "Sequani", "sequani", "barbarian", [4, 3, 2, 1], fire: 2).merge("step" => 3),
+      "nantuates" => barbarian_unit("nantuates", "Nantuates", "helvetii", "roman", [2, 1], fire: 2)
+    }
+    session = GameSession.create!(data: state)
+    bot = GameRules::Bot.new(session: session, state: session.data)
+
+    assert_not bot.send(:bot_move_from, "sequani", resolve_battle: false)
+    result = bot.send(:persist!)
+
+    assert_equal "sequani", result.dig("units", "sequani", "location")
+    assert_nil result["battle"]
+    assert_match "a lone strength-1 Barbarian unit does not attack", result["log"].join(" ")
+  end
+
+  test "a lone strength one Barbarian unit may join an existing attack" do
+    state = bot_state(bot_deck: [])
+    state["units"] = {
+      "allobroges" => barbarian_unit("allobroges", "Allobroges", "allobroges", "barbarian", [2, 1], fire: 1),
+      "sequani" => barbarian_unit("sequani", "Sequani", "sequani", "barbarian", [4, 3, 2, 1], fire: 2).merge("step" => 3),
+      "nantuates" => barbarian_unit("nantuates", "Nantuates", "helvetii", "roman", [2, 1], fire: 2)
+    }
+    session = GameSession.create!(data: state)
+    bot = GameRules::Bot.new(session: session, state: session.data)
+
+    assert bot.send(:bot_move_from, "allobroges", resolve_battle: false)
+    assert bot.send(:bot_move_from, "sequani", resolve_battle: false)
+    result = bot.send(:persist!)
+
+    assert_equal "helvetii", result.dig("units", "allobroges", "location")
+    assert_equal "helvetii", result.dig("units", "sequani", "location")
+    assert_equal "allobroges", result.dig("pendingBattleEntries", "helvetii", "mainOrigin")
+    assert_equal "sequani", result.dig("pendingBattleEntries", "helvetii", "entries", "sequani")
+  end
+
   test "Germania attacks two areas with two eligible units per area" do
     state = bot_state(bot_deck: [card_hash("germania")])
     state["units"] = {
