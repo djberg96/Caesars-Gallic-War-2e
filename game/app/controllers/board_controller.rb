@@ -38,7 +38,7 @@ class BoardController < ApplicationController
       GameData::UnitTypeSeeder.seed! if UnitType.none?
 
       UnitType.order(:key).to_h do |unit_type|
-        [unit_type.key, unit_type.game_data(helpers)]
+        [unit_type.key, unit_type.game_data(helpers).merge(history: GameData::UnitHistories.fetch(unit_type))]
       end
     end
   end

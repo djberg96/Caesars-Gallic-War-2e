@@ -114,6 +114,16 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#continue-next-battle", text: "Continue to Battle"
     end
     assert_select "#battle-dialog #battle-zones + #battle-details"
+    assert_select "dialog#unit-history-dialog.unit-history-dialog[aria-labelledby='unit-history-title']" do
+      assert_select "#unit-history-counter"
+      assert_select "#unit-history-kicker", text: "Unit History"
+      assert_select "#unit-history-title"
+      assert_select "#unit-history-text"
+      assert_select "#unit-history-home"
+      assert_select "#unit-history-initiative"
+      assert_select "#unit-history-battle-rating"
+      assert_select "button[type='submit']", text: "Close"
+    end
     assert_select "dialog#winter-quarters-dialog", count: 0
     assert_select "form#winter-quarters-form.winter-quarters-panel[hidden]" do
       assert_select "#winter-quarters-summary"
@@ -132,5 +142,6 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_select "#hotseat-controls[hidden]"
     assert_select "#bot-card", count: 0
     assert_includes response.body, "Legion X"
+    assert_includes response.body, "Caesar's celebrated Legio X Equestris"
   end
 end

@@ -47,6 +47,14 @@ document.addEventListener("DOMContentLoaded", () => {
     resultDialog: document.querySelector("#result-dialog"),
     resultTitle: document.querySelector("#result-title"),
     resultMessage: document.querySelector("#result-message"),
+    unitHistoryDialog: document.querySelector("#unit-history-dialog"),
+    unitHistoryCounter: document.querySelector("#unit-history-counter"),
+    unitHistoryKicker: document.querySelector("#unit-history-kicker"),
+    unitHistoryTitle: document.querySelector("#unit-history-title"),
+    unitHistoryText: document.querySelector("#unit-history-text"),
+    unitHistoryHome: document.querySelector("#unit-history-home"),
+    unitHistoryInitiative: document.querySelector("#unit-history-initiative"),
+    unitHistoryBattleRating: document.querySelector("#unit-history-battle-rating"),
     mainForceDialog: document.querySelector("#main-force-dialog"),
     mainForceTitle: document.querySelector("#main-force-title"),
     mainForceMessage: document.querySelector("#main-force-message"),
@@ -542,6 +550,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function areaUnits(areaId) {
     return Object.values(state.units).filter((unit) => unit.location === areaId);
+  }
+
+  function unitHistoryKind(unit) {
+    if (unit.type === "roman") return "Roman Legion";
+    if (unit.type === "leader") return "Gallic Leader";
+    if (unit.id === "ariovistus") return "German King";
+    if (unit.type === "german") return "Germanic People";
+    return "Gallic Tribe";
+  }
+
+  function unitHistoryHome(unit) {
+    if (areas[unit.home]) return areaName(unit.home);
+    if (unit.type === "leader") return "Determined when the leader enters play";
+    if (unit.home === "offboard") return "Enters through an event";
+    return unit.home ? unit.home.replaceAll("_", " ") : "Not recorded";
+  }
+
+  function showUnitHistory(unitId) {
+    const unit = state.units?.[unitId];
+    if (!unit || !unitFaceVisibleToActivePlayer(unit) || !els.unitHistoryDialog) return;
+
+    const reference = gameData.units?.[unitId] || {};
+    els.unitHistoryKicker.textContent = unitHistoryKind(unit);
+    els.unitHistoryTitle.textContent = unit.name;
+    els.unitHistoryText.textContent = reference.history || `${unit.name} is represented in Caesar's Gallic War.`;
+    els.unitHistoryCounter.innerHTML = unitCounterMarkup(unit);
+    els.unitHistoryHome.textContent = unitHistoryHome(unit);
+    els.unitHistoryInitiative.textContent = unit.initiative;
+    els.unitHistoryBattleRating.textContent = unit.fire;
+
+    if (els.unitHistoryDialog.open) els.unitHistoryDialog.close();
+    els.unitHistoryDialog.showModal();
   }
 
   function unitFaceVisibleToActivePlayer(unit) {
@@ -3884,7 +3924,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (mainForceTarget) {
           piece.title = `Choose ${unit.name}'s group from ${areaName(movementEntry(unit, mainForceSelection.areaId))} as the main force.`;
         } else {
-          piece.title = faceVisible ? `${unit.name}, strength ${currentStrength(unit)}` : hiddenLabel;
+          piece.title = faceVisible ? `${unit.name}, strength ${currentStrength(unit)}. Double-click for history.` : hiddenLabel;
         }
         piece.innerHTML = unitCounterMarkup(unit, {
           faceVisible,
@@ -3902,6 +3942,13 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           selectUnit(unit.id);
         });
+        if (faceVisible && !winterQuartersActive() && !revoltTargeting() && !voluntaryRetreatTargeting() && !mainForceTargeting()) {
+          piece.addEventListener("dblclick", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            showUnitHistory(unit.id);
+          });
+        }
         if (!winterQuartersActive() && !revoltTargeting() && !voluntaryRetreatTargeting() && !mainForceTargeting()) {
           piece.addEventListener("pointerdown", (event) => beginPieceDrag(event, unit.id));
         }

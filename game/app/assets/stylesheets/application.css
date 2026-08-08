@@ -3089,6 +3089,114 @@ dialog {
   white-space: pre-line;
 }
 
+.unit-history-dialog {
+  width: min(660px, 92vw);
+  padding: 1.15rem;
+  border-color: rgba(217, 180, 95, 0.72);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(217, 180, 95, 0.12), transparent 34%),
+    var(--panel);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.72);
+}
+
+.unit-history-dialog::backdrop {
+  background: rgba(7, 9, 7, 0.74);
+  backdrop-filter: blur(2px);
+}
+
+.unit-history-layout {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 1.35rem;
+}
+
+.unit-history-counter {
+  position: relative;
+  width: 150px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 9px;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.48));
+}
+
+.unit-history-counter .unit-counter-art {
+  border-radius: 9px;
+}
+
+.unit-history-counter .roman-counter-name,
+.unit-history-counter .barbarian-counter-name {
+  font-size: 1rem;
+}
+
+.unit-history-counter .unit-counter-stat {
+  font-size: 1.15rem;
+}
+
+.unit-history-counter .unit-counter-strength {
+  width: 2.9rem;
+  height: 2.9rem;
+  font-size: 1.5rem;
+}
+
+.unit-history-copy h2 {
+  margin: 0.18rem 0 0.55rem;
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.unit-history-copy > p {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.unit-history-facts {
+  display: grid;
+  grid-template-columns: 1.45fr 0.8fr 0.9fr;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+}
+
+.unit-history-facts div {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(217, 180, 95, 0.3);
+  border-radius: 6px;
+  background: rgba(217, 180, 95, 0.055);
+}
+
+.unit-history-facts dt {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.unit-history-facts dd {
+  margin: 0.18rem 0 0;
+  color: var(--text);
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+@media (max-width: 560px) {
+  .unit-history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .unit-history-counter {
+    width: 125px;
+  }
+
+  .unit-history-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
 .action-report {
   display: grid;
   gap: 0.45rem;

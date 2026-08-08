@@ -39,4 +39,12 @@ class StaticGameDataTest < ActiveSupport::TestCase
     assert_equal "event", massive_revolt.kind
     assert_nil massive_revolt.area
   end
+
+  test "provides a history for every unit type" do
+    assert_equal UnitType.order(:key).pluck(:key), GameData::UnitHistories::HISTORIES.keys.sort
+
+    UnitType.find_each do |unit_type|
+      assert_predicate GameData::UnitHistories.fetch(unit_type), :present?, "Missing history for #{unit_type.key}"
+    end
+  end
 end
