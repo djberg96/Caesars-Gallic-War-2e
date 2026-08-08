@@ -9,11 +9,12 @@ module GameRules
       @view_context = view_context
     end
 
-    def state(mode: "hotseat", yearly_objectives: false, historical_reinforcements: false)
+    def state(mode: "hotseat", yearly_objectives: false, historical_reinforcements: false, post_game_report: false)
       mode = mode.presence || "hotseat"
       deck = shuffled_deck
       yearly_objectives = ActiveModel::Type::Boolean.new.cast(yearly_objectives)
       historical_reinforcements = ActiveModel::Type::Boolean.new.cast(historical_reinforcements)
+      post_game_report = ActiveModel::Type::Boolean.new.cast(post_game_report)
 
       state = {
         "turn" => 0,
@@ -31,8 +32,11 @@ module GameRules
         "mode" => mode,
         "options" => {
           "yearlyObjectives" => yearly_objectives,
-          "historicalReinforcements" => historical_reinforcements
+          "historicalReinforcements" => historical_reinforcements,
+          "postGameReport" => post_game_report
         },
+        "campaignLog" => [],
+        "campaignSnapshots" => [],
         "yearlyObjectiveProgress" => {},
         "yearlyObjectiveHistory" => [],
         "botDeck" => [],
@@ -56,7 +60,9 @@ module GameRules
       state["log"] << "New game set up. Variable tribes were randomly selected."
       state["log"] << "Yearly Objectives optional rule enabled." if yearly_objectives
       state["log"] << "Historical Reinforcements optional rule enabled." if historical_reinforcements
+      state["log"] << "Post-game Session Report option enabled." if post_game_report
       state["log"] << deal_message(mode)
+      state["log"].each { |message| GameRules::PostGameReport.record!(state, message) }
       state
     end
 

@@ -27,6 +27,7 @@
 /storage/*.sqlite3
 /storage/*.sqlite3-*
 /storage/*.sqlite3_*
+/storage/session_reports/
 
 # Ignore key files for decrypting credentials and more.
 /config/*.key

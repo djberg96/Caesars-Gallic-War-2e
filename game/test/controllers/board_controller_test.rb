@@ -37,6 +37,9 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#historical-reinforcements-toggle", text: "Historical Reinforcements" do
         assert_select "input#historical-reinforcements[type='checkbox']"
       end
+      assert_select "#post-game-report-toggle", text: "Post-game Session Report" do
+        assert_select "input#post-game-report[type='checkbox']"
+      end
       assert_select "#animated-dice-toggle", text: /Animated Dice/ do
         assert_select "input#animated-dice[type='checkbox']"
       end

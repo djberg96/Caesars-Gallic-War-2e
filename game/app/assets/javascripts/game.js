@@ -75,6 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
     yearlyObjectivesPanel: document.querySelector("#yearly-objectives-panel"),
     historicalReinforcements: document.querySelector("#historical-reinforcements"),
     historicalReinforcementsToggle: document.querySelector("#historical-reinforcements-toggle"),
+    postGameReport: document.querySelector("#post-game-report"),
+    postGameReportToggle: document.querySelector("#post-game-report-toggle"),
     animatedDice: document.querySelector("#animated-dice"),
     movementSounds: document.querySelector("#movement-sounds"),
     movementArrows: document.querySelector("#movement-arrows"),
@@ -254,11 +256,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const mode = document.querySelector("#play-mode")?.value || "hotseat";
     const yearlyObjectives = Boolean(els.yearlyObjectives?.checked);
     const historicalReinforcements = Boolean(els.historicalReinforcements?.checked);
+    const postGameReport = Boolean(els.postGameReport?.checked);
     try {
       const result = await postJson("/game_sessions", {
         mode,
         yearly_objectives: yearlyObjectives,
-        historical_reinforcements: historicalReinforcements
+        historical_reinforcements: historicalReinforcements,
+        post_game_report: postGameReport
       });
       state = result.state;
       state.gameSessionId = result.game_session_id;
@@ -312,6 +316,10 @@ document.addEventListener("DOMContentLoaded", () => {
     await changeOptionalRule("historicalReinforcements", enabled);
   }
 
+  async function changePostGameReport(enabled) {
+    await changeOptionalRule("postGameReport", enabled);
+  }
+
   function changeAnimatedDice(enabled) {
     animatedDice = Boolean(enabled);
     try {
@@ -359,7 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await ensureGameSession();
       const result = await postJson(`/game_sessions/${state.gameSessionId}/update_options`, {
         yearly_objectives: Boolean(state.options.yearlyObjectives),
-        historical_reinforcements: Boolean(state.options.historicalReinforcements)
+        historical_reinforcements: Boolean(state.options.historicalReinforcements),
+        post_game_report: Boolean(state.options.postGameReport)
       });
       state.options = result.options;
     } catch (error) {
@@ -2683,6 +2692,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#vp-label").textContent = state.vp;
     const objectivesEnabled = Boolean(state.options?.yearlyObjectives);
     const historicalReinforcementsEnabled = Boolean(state.options?.historicalReinforcements);
+    const postGameReportEnabled = Boolean(state.options?.postGameReport);
     const setupLocked = optionalRulesLocked();
     els.playMode.value = state.mode;
     els.playModeButtons.forEach((button) => {
@@ -2709,6 +2719,14 @@ document.addEventListener("DOMContentLoaded", () => {
         setupLocked ? "Historical Reinforcements are fixed after the first card is played" : "Use the historical Roman reinforcement schedule printed on the turn track"
       );
     }
+    if (els.postGameReport) {
+      els.postGameReport.checked = postGameReportEnabled;
+      els.postGameReport.disabled = setupLocked;
+      els.postGameReportToggle?.setAttribute(
+        "title",
+        setupLocked ? "Post-game report generation is fixed after the first card is played" : "Write a narrative HTML session report after a complete eight-turn campaign"
+      );
+    }
     if (els.animatedDice) {
       els.animatedDice.checked = animatedDice;
     }
@@ -2722,6 +2740,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const enabledOptions = [];
       if (objectivesEnabled) enabledOptions.push("Historical Objectives");
       if (historicalReinforcementsEnabled) enabledOptions.push("Historical Reinforcements");
+      if (postGameReportEnabled) enabledOptions.push("Post-game Report");
       els.optionalRulesStatus.hidden = enabledOptions.length === 0;
       els.optionalRulesLabel.textContent = enabledOptions.join(" · ");
     }
@@ -5065,9 +5084,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function showCampaignResult() {
     if (!state.gameOver) return;
 
+    const report = state.gameOver.postGameReport;
+    const reportNotice = report?.path
+      ? `\n\nA post-game session report was written to:\n${report.path}`
+      : report?.error
+        ? `\n\nThe post-game session report could not be written: ${report.error}`
+        : "";
     showResultDialog(
       state.gameOver.result,
-      `The campaign has ended with ${state.gameOver.vp} Roman victory points.`
+      `The campaign has ended with ${state.gameOver.vp} Roman victory points.${reportNotice}`
     );
   }
 
@@ -5346,6 +5371,9 @@ document.addEventListener("DOMContentLoaded", () => {
     state.options ||= {};
     state.options.yearlyObjectives ||= false;
     state.options.historicalReinforcements ||= false;
+    state.options.postGameReport ||= false;
+    state.campaignLog ||= [];
+    state.campaignSnapshots ||= [];
     state.yearlyObjectiveProgress ||= {};
     state.yearlyObjectiveHistory ||= [];
     state.dragArea = null;
@@ -5556,6 +5584,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }));
   els.yearlyObjectives?.addEventListener("change", (event) => changeYearlyObjectives(event.target.checked));
   els.historicalReinforcements?.addEventListener("change", (event) => changeHistoricalReinforcements(event.target.checked));
+  els.postGameReport?.addEventListener("change", (event) => changePostGameReport(event.target.checked));
   els.animatedDice?.addEventListener("change", (event) => changeAnimatedDice(event.target.checked));
   els.movementSounds?.addEventListener("change", (event) => changeMovementSounds(event.target.checked));
   els.movementArrows?.addEventListener("change", (event) => changeMovementArrows(event.target.checked));

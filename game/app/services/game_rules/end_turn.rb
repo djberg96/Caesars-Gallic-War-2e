@@ -178,6 +178,7 @@ module GameRules
       @state["endTurn"] = nil
       objective_summary = objectives ? " Yearly Objectives: #{objectives.fetch("vp").positive? ? "+" : ""}#{objectives.fetch("vp")} VP." : ""
       log("End turn complete. Roman scores #{controlled_tribes} tribal VP.#{objective_summary}")
+      GameRules::PostGameReport.capture_year!(@state, controlled_tribes: controlled_tribes)
 
       return complete_campaign! if campaign_finished
 
@@ -212,7 +213,17 @@ module GameRules
       @state["currentAction"] = nil
       @state["botDeck"] = []
       log("Campaign complete: #{result} with #{vp} Roman VP.")
+      generate_post_game_report!
       persist!
+    end
+
+    def generate_post_game_report!
+      return unless GameRules::PostGameReport.enabled?(@state)
+
+      @state.fetch("gameOver")["postGameReport"] = GameRules::PostGameReport.generate!(session: @session, state: @state)
+    rescue StandardError => error
+      @state.fetch("gameOver")["postGameReport"] = { "error" => error.message }
+      log("Post-game session report could not be written: #{error.message}")
     end
 
     def end_turn_in_progress?
@@ -725,6 +736,7 @@ module GameRules
       @state["log"] ||= []
       @state["log"].unshift(message)
       @state["log"] = @state["log"].first(80)
+      GameRules::PostGameReport.record!(@state, message)
     end
   end
 end

@@ -107,6 +107,40 @@ class GameRules::EndTurnTest < ActiveSupport::TestCase
     assert_equal "The campaign is already complete.", error.message
   end
 
+  test "captures 51 BC and attaches a generated report only after the full campaign" do
+    state = base_state
+    state["turn"] = 7
+    state["vp"] = 89
+    state["mode"] = "solitaire"
+    state["options"] = { "postGameReport" => true }
+    state["campaignLog"] = []
+    state["campaignSnapshots"] = []
+    state["hands"] = { "roman" => [], "barbarian" => [] }
+    state["botDeck"] = []
+    state["units"]["legion_vii"]["location"] = "transalpine_gaul"
+    session = GameSession.create!(data: state)
+    metadata = {
+      "path" => "/tmp/caesars-gallic-war-session-#{session.id}.html",
+      "relativePath" => "storage/session_reports/report.html",
+      "generatedAt" => Time.current.iso8601
+    }
+
+    report_singleton = GameRules::PostGameReport.singleton_class
+    original_generate = report_singleton.instance_method(:generate!)
+    report_singleton.define_method(:generate!) { |**_arguments| metadata }
+    result = begin
+      GameRules::EndTurn.new(session: session, state: session.data, harvest_roll: 3).end_turn!
+    ensure
+      report_singleton.define_method(:generate!, original_generate)
+    end
+
+    assert_equal "Game Over", result["phase"]
+    assert_equal metadata, result.dig("gameOver", "postGameReport")
+    assert_equal "51 BC", result.dig("campaignSnapshots", 0, "year")
+    assert_equal 90, result.dig("campaignSnapshots", 0, "vp")
+    assert_includes result["campaignLog"].map { |entry| entry["message"] }, "Campaign complete: Minor Roman Victory with 90 Roman VP."
+  end
+
   test "deals the 51 BC hand after completing 52 BC" do
     state = base_state
     state["turn"] = 6

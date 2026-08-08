@@ -78,17 +78,21 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "enables optional rules when creating a new game" do
     post game_sessions_url(host: "localhost"),
-         params: { mode: "solitaire", yearly_objectives: true, historical_reinforcements: true },
+         params: { mode: "solitaire", yearly_objectives: true, historical_reinforcements: true, post_game_report: true },
          as: :json
 
     assert_response :success
     body = JSON.parse(response.body)
     assert body.dig("state", "options", "yearlyObjectives")
     assert body.dig("state", "options", "historicalReinforcements")
+    assert body.dig("state", "options", "postGameReport")
+    assert_empty body.dig("state", "campaignLog").reject { |entry| entry["message"].present? }
+    assert_empty body.dig("state", "campaignSnapshots")
     assert_empty body.dig("state", "yearlyObjectiveProgress")
     assert_empty body.dig("state", "yearlyObjectiveHistory")
     assert_match "Yearly Objectives optional rule enabled", body.dig("state", "log").join(" ")
     assert_match "Historical Reinforcements optional rule enabled", body.dig("state", "log").join(" ")
+    assert_match "Post-game Session Report option enabled", body.dig("state", "log").join(" ")
   end
 
   test "moves through the session API" do
@@ -836,7 +840,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   test "updates optional rules before the first card is played" do
     state = base_state.merge(
       turn: 0,
-      options: { yearlyObjectives: false, historicalReinforcements: false },
+      options: { yearlyObjectives: false, historicalReinforcements: false, postGameReport: false },
       movement: nil,
       currentAction: nil,
       battle: nil,
@@ -848,42 +852,49 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     session = GameSession.create!(data: state)
 
     post update_options_game_session_url(session, host: "localhost"),
-         params: { yearly_objectives: true, historical_reinforcements: true },
+         params: { yearly_objectives: true, historical_reinforcements: true, post_game_report: true },
          as: :json
 
     assert_response :success
     assert JSON.parse(response.body).dig("options", "yearlyObjectives")
     assert JSON.parse(response.body).dig("options", "historicalReinforcements")
+    assert JSON.parse(response.body).dig("options", "postGameReport")
     assert session.reload.data.dig("options", "yearlyObjectives")
     assert session.reload.data.dig("options", "historicalReinforcements")
+    assert session.reload.data.dig("options", "postGameReport")
   end
 
   test "rejects yearly objective changes after a card is played" do
     state = base_state.merge(
-      options: { yearlyObjectives: true, historicalReinforcements: true },
+      options: { yearlyObjectives: true, historicalReinforcements: true, postGameReport: true },
       discard: [card_hash("helvetii")]
     )
     session = GameSession.create!(data: state)
 
     post update_options_game_session_url(session, host: "localhost"),
-         params: { yearly_objectives: false, historical_reinforcements: false },
+         params: { yearly_objectives: false, historical_reinforcements: false, post_game_report: false },
          as: :json
 
     assert_response :unprocessable_entity
     assert_match "cannot be changed", JSON.parse(response.body).fetch("error")
     assert session.reload.data.dig("options", "yearlyObjectives")
     assert session.reload.data.dig("options", "historicalReinforcements")
+    assert session.reload.data.dig("options", "postGameReport")
   end
 
   test "preserves the locked yearly objective setting during later actions" do
     state = base_state.merge(
-      options: { yearlyObjectives: true, historicalReinforcements: true },
+      options: { yearlyObjectives: true, historicalReinforcements: true, postGameReport: true },
+      campaignLog: [{ turn: 0, year: "58 BC", message: "Persisted report entry." }],
+      campaignSnapshots: [],
       discard: [card_hash("helvetii")]
     )
     session = GameSession.create!(data: state)
     submitted = session.data.deep_dup
     submitted["options"]["yearlyObjectives"] = false
     submitted["options"]["historicalReinforcements"] = false
+    submitted["options"]["postGameReport"] = false
+    submitted["campaignLog"] = []
 
     post move_game_session_url(session, host: "localhost"),
          params: { state: submitted, unit_id: "legion_vii", target: "helvetii" },
@@ -892,8 +903,11 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert JSON.parse(response.body).dig("state", "options", "yearlyObjectives")
     assert JSON.parse(response.body).dig("state", "options", "historicalReinforcements")
+    assert JSON.parse(response.body).dig("state", "options", "postGameReport")
+    assert_includes JSON.parse(response.body).dig("state", "campaignLog").map { |entry| entry["message"] }, "Persisted report entry."
     assert session.reload.data.dig("options", "yearlyObjectives")
     assert session.reload.data.dig("options", "historicalReinforcements")
+    assert session.reload.data.dig("options", "postGameReport")
   end
 
   test "repairs legacy games that incorrectly returned Nantuates offboard" do

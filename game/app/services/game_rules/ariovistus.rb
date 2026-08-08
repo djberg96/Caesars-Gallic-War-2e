@@ -46,6 +46,7 @@ module GameRules
       @state["log"] ||= []
       @state["log"].unshift(message)
       @state["log"] = @state["log"].first(80)
+      GameRules::PostGameReport.record!(@state, message)
     end
   end
 end

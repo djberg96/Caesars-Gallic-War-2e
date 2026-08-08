@@ -173,6 +173,7 @@ class GameSessionsController < ApplicationController
     state["options"] ||= {}
     state["options"]["yearlyObjectives"] = ActiveModel::Type::Boolean.new.cast(params[:yearly_objectives])
     state["options"]["historicalReinforcements"] = ActiveModel::Type::Boolean.new.cast(params[:historical_reinforcements])
+    state["options"]["postGameReport"] = ActiveModel::Type::Boolean.new.cast(params[:post_game_report])
     session.update!(data: state)
 
     render json: { game_session_id: session.id, options: state.fetch("options") }
@@ -195,7 +196,8 @@ class GameSessionsController < ApplicationController
     GameRules::Setup.new(view_context: helpers).state(
       mode: params[:mode],
       yearly_objectives: params[:yearly_objectives],
-      historical_reinforcements: params[:historical_reinforcements]
+      historical_reinforcements: params[:historical_reinforcements],
+      post_game_report: params[:post_game_report]
     )
   end
 
@@ -212,6 +214,11 @@ class GameSessionsController < ApplicationController
     submitted["options"] ||= {}
     submitted["options"]["yearlyObjectives"] = session.data.dig("options", "yearlyObjectives") || false
     submitted["options"]["historicalReinforcements"] = session.data.dig("options", "historicalReinforcements") || false
+    submitted["options"]["postGameReport"] = session.data.dig("options", "postGameReport") || false
+    if submitted.dig("options", "postGameReport")
+      submitted["campaignLog"] = Array(session.data["campaignLog"]).deep_dup
+      submitted["campaignSnapshots"] = Array(session.data["campaignSnapshots"]).deep_dup
+    end
     submitted
   end
 
