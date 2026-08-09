@@ -129,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     retreatTargetInstructions: document.querySelector("#retreat-target-instructions"),
     cancelRetreatTarget: document.querySelector("#cancel-retreat-target"),
     mainForceTargetPanel: document.querySelector("#main-force-target-panel"),
+    mainForceTargetDragHandle: document.querySelector("#main-force-target-drag-handle"),
     mainForceTargetTitle: document.querySelector("#main-force-target-title"),
     mainForceTargetInstructions: document.querySelector("#main-force-target-instructions"),
     mainForceTargetOptions: document.querySelector("#main-force-target-options"),
@@ -169,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let revoltTargetSelection = null;
   let voluntaryRetreatSelection = null;
   let mainForceSelection = null;
+  let mainForceTargetDrag = null;
   let splayedPieceStack = null;
   let boardResizeObserver = null;
   let mapPanFrame = null;
@@ -2281,6 +2283,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const settle = (value) => {
         if (settled) return;
         settled = true;
+        mainForceTargetDrag = null;
+        els.mainForceTargetPanel?.classList.remove("is-dragging");
         mainForceSelection = null;
         piecesHidden = previousPiecesHidden;
         state.selectedUnit = null;
@@ -2289,7 +2293,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resolve(value);
       };
 
-      mainForceSelection = { areaId, origins, settle };
+      mainForceSelection = { areaId, origins, settle, panelPosition: null };
       piecesHidden = false;
       state.selectedUnit = null;
       state.selectedArea = areaId;
@@ -2838,6 +2842,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const stageWidth = stage.offsetWidth;
     const stageHeight = stage.offsetHeight;
+    if (mainForceSelection.panelPosition) {
+      setMainForceTargetPanelPosition(
+        mainForceSelection.panelPosition.left,
+        mainForceSelection.panelPosition.top
+      );
+      return;
+    }
     const points = origins.map((area) => ({
       x: (area.x / 100) * stageWidth,
       y: (area.y / 100) * stageHeight
@@ -2876,8 +2887,52 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const chosen = candidates[order.find((side) => fits(candidates[side]))] || candidates[preferredSide];
 
-    panel.style.left = `${Math.max(inset, Math.min(chosen.left, stageWidth - width - inset))}px`;
-    panel.style.top = `${Math.max(inset, Math.min(chosen.top, stageHeight - height - inset))}px`;
+    setMainForceTargetPanelPosition(chosen.left, chosen.top);
+  }
+
+  function setMainForceTargetPanelPosition(left, top, { remember = false } = {}) {
+    const panel = els.mainForceTargetPanel;
+    const stage = els.boardStage;
+    if (!panel || !stage) return;
+
+    const inset = 10;
+    const clampedLeft = Math.max(inset, Math.min(left, stage.offsetWidth - panel.offsetWidth - inset));
+    const clampedTop = Math.max(inset, Math.min(top, stage.offsetHeight - panel.offsetHeight - inset));
+    panel.style.left = `${clampedLeft}px`;
+    panel.style.top = `${clampedTop}px`;
+    if (remember && mainForceSelection) {
+      mainForceSelection.panelPosition = { left: clampedLeft, top: clampedTop };
+    }
+  }
+
+  function beginMainForceTargetDrag(event) {
+    const panel = els.mainForceTargetPanel;
+    if (event.button !== 0 || !panel || !mainForceTargeting()) return;
+    mainForceTargetDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: panel.offsetLeft,
+      startTop: panel.offsetTop
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    panel.classList.add("is-dragging");
+    event.preventDefault();
+  }
+
+  function moveMainForceTargetPanel(event) {
+    if (!mainForceTargetDrag || event.pointerId !== mainForceTargetDrag.pointerId) return;
+    setMainForceTargetPanelPosition(
+      mainForceTargetDrag.startLeft + event.clientX - mainForceTargetDrag.startX,
+      mainForceTargetDrag.startTop + event.clientY - mainForceTargetDrag.startY,
+      { remember: true }
+    );
+  }
+
+  function endMainForceTargetDrag(event) {
+    if (!mainForceTargetDrag || event.pointerId !== mainForceTargetDrag.pointerId) return;
+    mainForceTargetDrag = null;
+    els.mainForceTargetPanel?.classList.remove("is-dragging");
   }
 
   function renderStatus() {
@@ -5881,6 +5936,10 @@ document.addEventListener("DOMContentLoaded", () => {
   els.cancelRevoltTarget?.addEventListener("click", () => revoltTargetSelection?.settle(false));
   els.cancelRetreatTarget?.addEventListener("click", cancelVoluntaryRetreatTargeting);
   els.cancelMainForceTarget?.addEventListener("click", () => mainForceSelection?.settle(false));
+  els.mainForceTargetDragHandle?.addEventListener("pointerdown", beginMainForceTargetDrag);
+  els.mainForceTargetDragHandle?.addEventListener("pointermove", moveMainForceTargetPanel);
+  els.mainForceTargetDragHandle?.addEventListener("pointerup", endMainForceTargetDrag);
+  els.mainForceTargetDragHandle?.addEventListener("pointercancel", endMainForceTargetDrag);
   els.romanAdministrationDialog?.addEventListener("cancel", (event) => event.preventDefault());
   els.battleDialog?.addEventListener("cancel", (event) => {
     if (state?.battle) event.preventDefault();
