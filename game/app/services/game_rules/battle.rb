@@ -261,7 +261,7 @@ module GameRules
       battle["round"] = battle["round"].to_i + 1
       battle["acted"] = []
       battle["fired"] = []
-      discard_non_siege_half_hits!
+      discard_invalid_half_hits!
       log("Battle in #{battle_area.name} continues to round #{battle["round"]}.")
       announce_entering_reserves! if battle["round"].to_i == 2
     end
@@ -764,8 +764,15 @@ module GameRules
         (battle_area.key == "helvetii" && target["owner"] == battle["defender"])
     end
 
-    def discard_non_siege_half_hits!
-      battle["halfHits"].select! { |unit_id, _hits| battle["fort"].include?(unit_id) }
+    def discard_invalid_half_hits!
+      battle["halfHits"].select! do |unit_id, hits|
+        target = units[unit_id]
+        hits.to_i.positive? &&
+          target.present? &&
+          target["location"] == battle_area.key &&
+          current_strength(target).positive? &&
+          double_defense?(target)
+      end
     end
 
     def pending_hit_assignment?

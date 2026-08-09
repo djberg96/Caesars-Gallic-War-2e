@@ -210,6 +210,39 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_equal 0, result.dig("battle", "lastAction", "appliedHits")
   end
 
+  test "Alps half hits are retained between battle rounds" do
+    state = battle_state
+    state["units"].each_value { |unit| unit["location"] = "helvetii" }
+    state["units"]["allobroges"].merge!("strengths" => [2, 1, 0], "fire" => 0)
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).resolve!(area_id: "helvetii")
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+    result = acknowledge_roll(session, result)
+
+    assert_equal 1, result.dig("battle", "halfHits", "allobroges")
+
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "pass",
+      unit_id: "allobroges"
+    )
+
+    assert_equal 2, result.dig("battle", "round")
+    assert_equal 1, result.dig("battle", "halfHits", "allobroges")
+
+    result = GameRules::Battle.new(session: session, state: result, rolls: [1]).act!(
+      action: "fire",
+      unit_id: "legion_vii"
+    )
+
+    assert_equal 1, result.dig("units", "allobroges", "step")
+    assert_equal 0, result.dig("battle", "halfHits", "allobroges")
+    assert_equal 1, result.dig("battle", "lastAction", "appliedHits")
+  end
+
   test "field defenders take hits before units inside a fort" do
     state = battle_state
     state["units"]["allobroges"]["strengths"] = [2, 1, 0]
