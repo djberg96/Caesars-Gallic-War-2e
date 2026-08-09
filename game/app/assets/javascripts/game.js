@@ -3692,10 +3692,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const inPlay = leader && ![null, undefined, "offboard", "eliminated"].includes(leader.location);
       if (!inPlay || !area || !image) return;
 
+      const position = leaderHomeMarkerPosition(area);
+
       const marker = document.createElement("div");
       marker.className = `leader-home-marker is-${unitId}`;
-      marker.style.left = `${area.x}%`;
-      marker.style.top = `${area.y}%`;
+      marker.style.left = `${position.x}%`;
+      marker.style.top = `${position.y}%`;
       marker.title = `${leader.name} home area: ${area.name}`;
       marker.setAttribute("role", "img");
       marker.setAttribute("aria-label", marker.title);
@@ -3706,6 +3708,45 @@ document.addEventListener("DOMContentLoaded", () => {
       marker.append(markerImage);
       els.leaderHomeMarkerLayer.append(marker);
     });
+  }
+
+  function leaderHomeMarkerPosition(area) {
+    const fallback = { x: area.x, y: area.y };
+    const territories = areaHitMap?.territories;
+    if (!territories) return fallback;
+
+    const territoryIndex = territories.ids.indexOf(area.id);
+    if (territoryIndex < 0) return fallback;
+
+    let best = null;
+    for (let offsetY = -8; offsetY <= 8; offsetY += 0.5) {
+      for (let offsetX = -10; offsetX <= 10; offsetX += 0.5) {
+        const mapDistance = Math.hypot(offsetX, offsetY * (areaHitMap.height / areaHitMap.width));
+        if (mapDistance < 5.5 || mapDistance > 8.5) continue;
+
+        const candidate = { x: area.x + offsetX, y: area.y + offsetY };
+        if (!leaderHomeMarkerFitsTerritory(candidate, territoryIndex)) continue;
+
+        const directionPenalty = (offsetY <= 0 ? 0.3 : 0) + (offsetX <= 0 ? 0.18 : 0);
+        const score = Math.abs(mapDistance - 6.5) + directionPenalty;
+        if (!best || score < best.score) best = { ...candidate, score };
+      }
+    }
+
+    return best || fallback;
+  }
+
+  function leaderHomeMarkerFitsTerritory(point, territoryIndex) {
+    const halfWidth = 2.35;
+    const halfHeight = 1.9;
+    const samples = [-1, -0.5, 0, 0.5, 1];
+
+    return samples.every((xFactor) => samples.every((yFactor) => {
+      const x = Math.round(((point.x + (halfWidth * xFactor)) / 100) * (areaHitMap.width - 1));
+      const y = Math.round(((point.y + (halfHeight * yFactor)) / 100) * (areaHitMap.height - 1));
+      const index = hitIndex(x, y);
+      return index !== null && areaHitMap.territories.labels[index] === territoryIndex;
+    }));
   }
 
   function trackMarkerFan(index, count) {
@@ -3867,6 +3908,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state) {
       renderAreas();
       renderMovementArrows();
+      renderLeaderHomeMarkers();
     }
   }
 
