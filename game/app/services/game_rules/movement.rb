@@ -49,8 +49,12 @@ module GameRules
       return nil if off_map_departure? && @target != "transalpine_gaul"
 
       direct_border = border(@from, @target)
-      if direct_border && border_has_capacity?(@from, @target, direct_border)
-        return { "force" => false, "steps" => [[@from, @target, direct_border]] }
+      if direct_border
+        if border_has_capacity?(@from, @target, direct_border)
+          return { "force" => false, "steps" => [[@from, @target, direct_border]] }
+        end
+
+        return nil
       end
       return nil if retreat_movement?
       return naval_route if naval_route

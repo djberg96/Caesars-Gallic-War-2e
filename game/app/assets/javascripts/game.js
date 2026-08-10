@@ -806,13 +806,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (unit.location === "roman_off_map" && target !== "transalpine_gaul") return null;
 
     const directBorder = borderType(unit.location, target);
-    if (directBorder && borderHasCapacity(unit.location, target, directBorder)) {
-      return {
-        force: false,
-        via: null,
-        border: directBorder,
-        steps: [{ from: unit.location, to: target, border: directBorder }]
-      };
+    if (directBorder) {
+      if (borderHasCapacity(unit.location, target, directBorder)) {
+        return {
+          force: false,
+          via: null,
+          border: directBorder,
+          steps: [{ from: unit.location, to: target, border: directBorder }]
+        };
+      }
+
+      return null;
     }
     if (retreatMovement()) return null;
 
