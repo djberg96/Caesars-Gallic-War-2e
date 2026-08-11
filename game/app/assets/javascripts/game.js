@@ -33,6 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
     hotseatControls: document.querySelector("#hotseat-controls"),
     romanHand: document.querySelector("#roman-hand"),
     barbarianHand: document.querySelector("#barbarian-hand"),
+    discardZone: document.querySelector("#discard-zone"),
+    discardTitle: document.querySelector("#discard-title"),
+    discardPile: document.querySelector("#discard-pile"),
     handTray: document.querySelector("#hand-tray"),
     handTrayTitle: document.querySelector("#hand-tray-title"),
     toggleHand: document.querySelector("#toggle-hand"),
@@ -4478,12 +4481,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const hotseat = state.mode === "hotseat";
     els.handTray.classList.toggle("is-hotseat", hotseat);
     [["roman", els.romanHand], ["barbarian", els.barbarianHand]].forEach(([player, container]) => {
-      const activeHand = !hotseat || player === state.active;
+      const activeHand = hotseat ? player === state.active : player === "roman";
       container.closest(".hand-zone").hidden = !activeHand;
       if (activeHand) renderHand(player, container);
       else container.replaceChildren();
     });
+    renderDiscardPile();
     renderCardZoom();
+  }
+
+  function renderDiscardPile() {
+    if (!els.discardZone || !els.discardPile || !els.discardTitle) return;
+
+    const cards = state.discard || [];
+    els.discardZone.hidden = false;
+    els.discardTitle.textContent = `Discard Pile · ${cards.length}`;
+    els.discardPile.replaceChildren();
+    els.discardPile.setAttribute("aria-label", cards.length === 1 ? "Discard pile, 1 card" : `Discard pile, ${cards.length} cards`);
+
+    if (cards.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "discard-pile-empty";
+      empty.textContent = "No cards discarded";
+      els.discardPile.append(empty);
+      return;
+    }
+
+    const lastIndex = cards.length - 1;
+    const spread = lastIndex > 0 ? Math.min(82, Math.max(46, 620 / lastIndex)) : 0;
+    cards.forEach((card, index) => {
+      const discarded = document.createElement("div");
+      const image = cardImage(card);
+      const depth = lastIndex - index;
+      const stackOffset = Math.min(depth, 5) * 3;
+      discarded.className = "discard-card";
+      discarded.setAttribute("role", "img");
+      discarded.setAttribute("aria-label", `${card.title}, ${card.ap} action point${card.ap === 1 ? "" : "s"}`);
+      discarded.style.right = `${stackOffset}px`;
+      discarded.style.bottom = `${Math.min(depth, 5) * 2}px`;
+      discarded.style.zIndex = `${index + 1}`;
+      discarded.style.setProperty("--discard-expanded-x", `${-depth * spread}px`);
+      discarded.style.setProperty("--discard-expanded-rotation", `${(index - lastIndex / 2) * 1.25}deg`);
+      discarded.innerHTML = image
+        ? `<img src="${image}" alt="${card.title} card">`
+        : `<span class="card-title-fallback"><strong>${card.title}</strong><small>${card.ap} ${card.type}</small></span>`;
+      els.discardPile.append(discarded);
+    });
   }
 
   function renderHand(player, container) {
@@ -4519,15 +4562,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       container.append(button);
     });
-    if (player === "barbarian" && state.mode !== "hotseat") {
-      const marker = document.createElement("button");
-      marker.className = "card is-hidden";
-      marker.disabled = true;
-      marker.style.setProperty("--tilt", "0deg");
-      marker.style.setProperty("--lift", "0px");
-      marker.innerHTML = state.mode === "ai" ? "<span>AI controlled</span>" : `<span>Bot deck: ${state.botDeck.length}</span>`;
-      container.append(marker);
-    }
   }
 
   function zoomedCard() {

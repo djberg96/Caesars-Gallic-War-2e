@@ -17,6 +17,10 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_match %r{Blocks/Markers/Dumnorix_Home_Area-[a-f0-9]+\.svg}, response.body
     assert_match %r{Blocks/Markers/Turn-[a-f0-9]+\.svg}, response.body
     assert_select "#track-marker-layer"
+    assert_select "#discard-zone" do
+      assert_select "#discard-title", text: "Discard Pile"
+      assert_select "#discard-pile[aria-label='Discard pile']"
+    end
     assert_select ".side-panel h2", text: "Action", count: 0
     assert_select "#toggle-side-panel[aria-expanded='true']"
     assert_select ".board-toolbar #resolve-battles"
