@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     barbarianHand: document.querySelector("#barbarian-hand"),
     discardZone: document.querySelector("#discard-zone"),
     discardTitle: document.querySelector("#discard-title"),
+    discardCount: document.querySelector("#discard-count"),
     discardPile: document.querySelector("#discard-pile"),
     handTray: document.querySelector("#hand-tray"),
     handTrayTitle: document.querySelector("#hand-tray-title"),
@@ -4491,11 +4492,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderDiscardPile() {
-    if (!els.discardZone || !els.discardPile || !els.discardTitle) return;
+    if (!els.discardZone || !els.discardPile || !els.discardCount) return;
 
     const cards = state.discard || [];
     els.discardZone.hidden = false;
-    els.discardTitle.textContent = `Discard Pile · ${cards.length}`;
+    els.discardCount.textContent = String(cards.length);
     els.discardPile.replaceChildren();
     els.discardPile.setAttribute("aria-label", cards.length === 1 ? "Discard pile, 1 card" : `Discard pile, ${cards.length} cards`);
 

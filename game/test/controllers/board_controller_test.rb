@@ -18,7 +18,8 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_match %r{Blocks/Markers/Turn-[a-f0-9]+\.svg}, response.body
     assert_select "#track-marker-layer"
     assert_select "#discard-zone" do
-      assert_select "#discard-title", text: "Discard Pile"
+      assert_select "#discard-title", text: /Discard Pile/
+      assert_select "#discard-count", text: "0"
       assert_select "#discard-pile[aria-label='Discard pile']"
     end
     assert_select ".side-panel h2", text: "Action", count: 0

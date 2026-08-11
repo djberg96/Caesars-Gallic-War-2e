@@ -1579,6 +1579,32 @@ h3 {
   z-index: 4;
 }
 
+.discard-zone > h3 {
+  position: relative;
+  z-index: 110;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(24, 27, 23, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.discard-count {
+  display: inline-grid;
+  min-width: 1.45rem;
+  min-height: 1.45rem;
+  padding: 0 0.3rem;
+  place-items: center;
+  border: 1px solid rgba(217, 180, 95, 0.68);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  line-height: 1;
+  background: #252922;
+}
+
 .discard-pile {
   position: relative;
   min-height: 205px;
