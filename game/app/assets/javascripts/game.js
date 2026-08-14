@@ -570,6 +570,21 @@ document.addEventListener("DOMContentLoaded", () => {
     return mark ? `<span class="barbarian-counter-mark${mark.length > 1 ? " is-wide" : ""}" aria-label="${label}">${mark}</span>` : "";
   }
 
+  function barbarianControlEmblemMarkup() {
+    return `
+      <span class="barbarian-control-emblem" role="img" aria-label="Barbarian controlled">
+        <svg viewBox="0 0 40 44" aria-hidden="true">
+          <path class="barbarian-control-ribbons" d="M10 29 8 42l9-6 3 7 4-7 8 5-2-12Z"/>
+          <circle class="barbarian-control-rim" cx="20" cy="19" r="17"/>
+          <circle class="barbarian-control-field" cx="20" cy="19" r="13"/>
+          <path class="barbarian-control-spears" d="m12 29 16-20M12 9l16 20"/>
+          <path class="barbarian-control-spearheads" d="m26 7 5-2-1 6ZM10 7 9 11l5-2ZM10 31l1-5 3 3Zm20 0-4-2 3-3Z"/>
+          <circle class="barbarian-control-boss" cx="20" cy="19" r="3.2"/>
+        </svg>
+      </span>
+    `;
+  }
+
   function unitCounterMarkup(unit, { faceVisible = true, showStats = true, showStrength = true, halfHitOverride } = {}) {
     const strength = currentStrength(unit);
     const halfHit = halfHitOverride === undefined ? state.battle?.halfHits?.[unit.id] : halfHitOverride;
@@ -595,6 +610,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </span>
         ` : ""}
       </span>
+      ${!faceVisible && unit.owner === "barbarian" ? barbarianControlEmblemMarkup() : ""}
       ${faceVisible ? `
         ${showStrength ? `
           <span class="unit-counter-strength" aria-label="Current strength ${strength}">
@@ -4257,7 +4273,9 @@ document.addEventListener("DOMContentLoaded", () => {
         piece.style.setProperty("--splay-x", `${splayX}px`);
         piece.style.setProperty("--splay-y", `${splayY}px`);
         piece.style.zIndex = index + 1;
-        const hiddenLabel = unit.owner === "neutral" ? "Neutral block" : "Enemy block";
+        const hiddenLabel = unit.owner === "neutral"
+          ? "Neutral block"
+          : `${playerName(unit.owner)}-controlled block`;
         if (winterEligible) {
           piece.title = winteringUnitIds().includes(unit.id)
             ? `${unit.name} will winter in ${areaName(unit.location)}. Click to send it to Transalpine Gaul.`

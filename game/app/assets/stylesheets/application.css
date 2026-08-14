@@ -1252,16 +1252,56 @@ h3 {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.48), 0 3px 8px rgba(0, 0, 0, 0.38);
 }
 
-.piece.is-hidden-enemy::before {
-  content: "";
+.barbarian-control-emblem {
   position: absolute;
-  z-index: 5;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-top: 0.85rem solid rgba(0, 0, 0, 0.88);
-  border-left: 0.85rem solid transparent;
+  z-index: 7;
+  top: 50%;
+  left: 50%;
+  width: clamp(21px, 1.8vw, 28px);
+  aspect-ratio: 40 / 44;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72));
+  transform: translate(-50%, -50%);
+}
+
+.barbarian-control-emblem svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.barbarian-control-ribbons {
+  fill: #8f3d2f;
+  stroke: #2a1c17;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.barbarian-control-rim {
+  fill: #d9b65c;
+  stroke: #1a241c;
+  stroke-width: 2;
+}
+
+.barbarian-control-field {
+  fill: #315d40;
+  stroke: #f0d17b;
+  stroke-width: 1.4;
+}
+
+.barbarian-control-spears {
+  fill: none;
+  stroke: #f1d784;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.barbarian-control-spearheads,
+.barbarian-control-boss {
+  fill: #f1d784;
+  stroke: #493721;
+  stroke-width: 1;
 }
 
 .piece.is-hidden.hidden-region-celtae {
