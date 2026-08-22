@@ -51,6 +51,9 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
       assert_select "#movement-sounds-toggle", text: "Movement Sounds" do
         assert_select "input#movement-sounds[type='checkbox']"
       end
+      assert_select "#computer-action-zoom-toggle", text: "Computer Action Zoom" do
+        assert_select "input#computer-action-zoom[type='checkbox'][checked]"
+      end
     end
     assert_select "#optional-rules-status[hidden] #optional-rules-label"
     assert_select ".board-toolbar details#mode-menu.toolbar-mode-menu" do

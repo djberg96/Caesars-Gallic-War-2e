@@ -92,6 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     animatedDice: document.querySelector("#animated-dice"),
     movementSounds: document.querySelector("#movement-sounds"),
     movementArrows: document.querySelector("#movement-arrows"),
+    computerActionZoom: document.querySelector("#computer-action-zoom"),
     optionalRulesStatus: document.querySelector("#optional-rules-status"),
     optionalRulesLabel: document.querySelector("#optional-rules-label"),
     objectiveTitle: document.querySelector("#objective-title"),
@@ -185,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let animatedDice = storedAnimatedDice();
   let movementSounds = storedMovementSounds();
   let movementArrows = storedMovementArrows();
+  let computerActionZoom = storedComputerActionZoom();
 
   function storedMapZoom() {
     try {
@@ -215,6 +217,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function storedMovementArrows() {
     try {
       const stored = window.localStorage.getItem("cgw-movement-arrows");
+      return stored === null ? true : stored === "true";
+    } catch (_error) {
+      return true;
+    }
+  }
+
+  function storedComputerActionZoom() {
+    try {
+      const stored = window.localStorage.getItem("cgw-computer-action-zoom");
       return stored === null ? true : stored === "true";
     } catch (_error) {
       return true;
@@ -423,6 +434,15 @@ document.addEventListener("DOMContentLoaded", () => {
       // The option still works for this session when browser storage is unavailable.
     }
     renderMovementArrows();
+  }
+
+  function changeComputerActionZoom(enabled) {
+    computerActionZoom = Boolean(enabled);
+    try {
+      window.localStorage.setItem("cgw-computer-action-zoom", String(computerActionZoom));
+    } catch (_error) {
+      // The option still works for this session when browser storage is unavailable.
+    }
   }
 
   async function changeOptionalRule(option, enabled) {
@@ -1942,7 +1962,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const stage = currentBotActionReviewStage();
     if (!stage || botActionReview.cameraActive || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
     if (document.querySelector("dialog[open]")) return;
-    if (stage.focusAreas?.length && !stage.cameraShown) {
+    if (computerActionZoom && stage.focusAreas?.length && !stage.cameraShown) {
       const review = botActionReview;
       stage.cameraShown = true;
       showBotActionOnMap(review, stage.focusAreas).then(() => {
@@ -3126,6 +3146,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (els.movementArrows) {
       els.movementArrows.checked = movementArrows;
+    }
+    if (els.computerActionZoom) {
+      els.computerActionZoom.checked = computerActionZoom;
     }
     if (els.optionalRulesStatus && els.optionalRulesLabel) {
       const enabledOptions = [];
@@ -6217,6 +6240,7 @@ document.addEventListener("DOMContentLoaded", () => {
   els.animatedDice?.addEventListener("change", (event) => changeAnimatedDice(event.target.checked));
   els.movementSounds?.addEventListener("change", (event) => changeMovementSounds(event.target.checked));
   els.movementArrows?.addEventListener("change", (event) => changeMovementArrows(event.target.checked));
+  els.computerActionZoom?.addEventListener("change", (event) => changeComputerActionZoom(event.target.checked));
   document.addEventListener("click", primeGameAudio, { passive: true });
   document.querySelector("#end-turn").addEventListener("click", endTurn);
   els.finishRegroup?.addEventListener("click", finishBattleMapMode);
