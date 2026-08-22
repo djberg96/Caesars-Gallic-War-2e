@@ -6,6 +6,8 @@ module GameRules
       @roll = roll&.to_i
       @rolls = Array(rolls).map(&:to_i)
       @target = target
+      @action_focus_areas = []
+      @movement_focus_areas = []
     end
 
     def draw!
@@ -26,7 +28,9 @@ module GameRules
       action = resolve_card(card)
       @state["lastBotAction"] = {
         "cardId" => card.fetch("id"),
-        "kind" => action
+        "kind" => action,
+        "actionFocusAreas" => @action_focus_areas.uniq,
+        "movementFocusAreas" => @movement_focus_areas.uniq
       }
       GameRules::CardLifecycle.finish_play!(@state, card)
       persist!
@@ -62,6 +66,7 @@ module GameRules
         log("Bot political action had no valid target.")
         return
       end
+      focus_action(area.key)
 
       roll = d6
       if roll == 1 || roll <= card.fetch("ap").to_i
@@ -101,6 +106,7 @@ module GameRules
       moved = attackers.first(2)
       activate_neutral_defenders!(target, attacker: "barbarian", entering_units: moved)
       moved.each { |unit| unit["location"] = target.key }
+      focus_movement(target.key)
       log("Bot moves #{moved.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
       entry = queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: moved)
       resolve_bot_battle!(target.key, entry) if resolve_battle
@@ -138,6 +144,7 @@ module GameRules
 
         activate_neutral_defenders!(target, attacker: "barbarian", entering_units: group)
         group.each { |unit| unit["location"] = target.key }
+        focus_movement(target.key)
         log("Bot moves #{group.map { |unit| unit.fetch("name") }.join(", ")} from #{area.name} to #{target.name}.")
         queue_battle_entry!(target.key, attacker: "barbarian", origin: area.key, units: group)
         moved = true
@@ -326,6 +333,7 @@ module GameRules
     end
 
     def neutral_activation!(area_id)
+      focus_action(area_id)
       activated_units = area_units(area_id).select { |unit| unit["owner"] == "neutral" }
       activated_units.each do |unit|
         unit["owner"] = "barbarian"
@@ -337,6 +345,7 @@ module GameRules
     end
 
     def activate_area!(area_id, owner)
+      focus_action(area_id)
       revolt_units(area_id).each do |unit|
         unit["owner"] = owner
         unit["location"] = unit.fetch("home")
@@ -402,6 +411,14 @@ module GameRules
       @session.update!(data: @state)
       @session.sync_from_data!
       @state
+    end
+
+    def focus_action(area_id)
+      @action_focus_areas << area_id if area_id.present?
+    end
+
+    def focus_movement(area_id)
+      @movement_focus_areas << area_id if area_id.present?
     end
 
     def log(message)

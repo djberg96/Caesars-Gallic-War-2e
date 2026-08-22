@@ -18,6 +18,8 @@ class GameRules::BotTest < ActiveSupport::TestCase
     assert_empty result["botDeck"]
     assert_equal ["allobroges"], result["discard"].map { |card| card.fetch("id") }
     assert_equal ["allobroges"], result.dig("neutralActivationCards", "barbarian").map { |card| card.fetch("id") }
+    assert_equal ["allobroges"], result.dig("lastBotAction", "actionFocusAreas")
+    assert_empty result.dig("lastBotAction", "movementFocusAreas")
     assert_includes result["log"], "Allobroges becomes a Barbarian ally."
     assert_equal "barbarian", session.reload.game_units.joins(:unit_type).find_by!(unit_type: { key: "allobroges" }).owner
   end
@@ -47,6 +49,8 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert_equal "barbarian", result.dig("units", "allobroges", "owner")
     assert result["diceRolledThisTurn"]
+    assert_equal ["allobroges"], result.dig("lastBotAction", "actionFocusAreas")
+    assert_empty result.dig("lastBotAction", "movementFocusAreas")
     assert_match "political action succeeds", result["log"].join(" ")
   end
 
@@ -149,6 +153,7 @@ class GameRules::BotTest < ActiveSupport::TestCase
     german_locations = %w[ariovistus german_marcomanni german_tencteri german_usipetes]
       .map { |id| result.dig("units", id, "location") }
     assert_equal ["leuci", "leuci", "mediomatrici", "mediomatrici"].sort, german_locations.sort
+    assert_equal ["leuci", "mediomatrici"], result.dig("lastBotAction", "movementFocusAreas").sort
     assert_equal 1, result.fetch("pendingBattleEntries").length
     assert result["battle"].present?
     assert_equal "barbarian", result.dig("battle", "attacker")
@@ -204,8 +209,10 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert_equal(
       { "cardId" => "event_1_minor_revolt", "kind" => "event" },
-      result["lastBotAction"]
+      result["lastBotAction"].slice("cardId", "kind")
     )
+    assert_equal ["allobroges"], result.dig("lastBotAction", "actionFocusAreas")
+    assert_empty result.dig("lastBotAction", "movementFocusAreas")
     assert_equal "barbarian", result.dig("units", "allobroges", "owner")
     assert_empty result["botDeck"]
     assert_equal ["event_1_minor_revolt"], result["discard"].map { |card| card.fetch("id") }
@@ -260,8 +267,10 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert_equal(
       { "cardId" => "event_0_baggage_train", "kind" => "movement" },
-      result["lastBotAction"]
+      result["lastBotAction"].slice("cardId", "kind")
     )
+    assert_empty result.dig("lastBotAction", "actionFocusAreas")
+    assert_equal ["leuci"], result.dig("lastBotAction", "movementFocusAreas")
     assert_equal ["leuci", "leuci"], %w[ariovistus german_marcomanni].map { |id| result.dig("units", id, "location") }
     assert_equal 15, result["supply"]
   end
@@ -274,8 +283,10 @@ class GameRules::BotTest < ActiveSupport::TestCase
 
     assert_equal(
       { "cardId" => "event_0_baggage_train", "kind" => "event" },
-      result["lastBotAction"]
+      result["lastBotAction"].slice("cardId", "kind")
     )
+    assert_empty result.dig("lastBotAction", "actionFocusAreas")
+    assert_empty result.dig("lastBotAction", "movementFocusAreas")
     assert_equal 13, result["supply"]
   end
 

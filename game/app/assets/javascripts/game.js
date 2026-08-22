@@ -165,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let resultDialogQueue = [];
   let botActionReview = null;
   let botActionReviewDrag = null;
+  let botCameraFocusAreaIds = [];
   let botRollReview = null;
   let diceRollAnimation = null;
   let gameAudioContext = null;
@@ -255,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setMapZoom(value) {
+    if (els.board?.classList.contains("is-computer-focus")) return;
     const requested = Number(value);
     if (!mapZoomLevels.includes(requested) || requested === mapZoom) return;
     mapZoom = requested;
@@ -279,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function mapPanBlocked(target = document.activeElement) {
-    if (!els.board || document.querySelector("dialog[open]")) return true;
+    if (!els.board || els.board.classList.contains("is-computer-focus") || document.querySelector("dialog[open]")) return true;
     if (!(target instanceof Element)) return false;
     return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
   }
@@ -1820,13 +1822,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const actionLabel = botActionReviewLabel(card, actionEntries);
     const movementRoutes = movementMessages.map(botMovementRoute).filter(Boolean);
     const revoltMovementTitle = botRevoltMovementTitle(card);
+    const recordedAction = state.lastBotAction?.cardId === card?.id ? state.lastBotAction : null;
+    const actionFocusAreas = Array.isArray(recordedAction?.actionFocusAreas)
+      ? uniqueAreaIds(recordedAction.actionFocusAreas)
+      : actionLabel === "Movement" ? [] : botFocusAreasFromMessages(actionMessages);
+    const movementFocusAreas = Array.isArray(recordedAction?.movementFocusAreas)
+      ? uniqueAreaIds(recordedAction.movementFocusAreas)
+      : movementRoutes.length
+        ? uniqueAreaIds(movementRoutes.map((route) => route.to))
+        : botFocusAreasFromMessages(movementMessages);
     const stages = [
       {
         kind: "action",
         kicker: "Barbarian Action",
         title: actionLabel,
         message: `${revealedCard || "The card"} is resolved as ${indefiniteArticle(actionLabel)} ${actionLabel.toLowerCase()}.`,
-        details: actionMessages
+        details: actionMessages,
+        focusAreas: actionFocusAreas
       }
     ];
     if (movementMessages.length) {
@@ -1835,7 +1847,8 @@ document.addEventListener("DOMContentLoaded", () => {
         kicker: revoltMovementTitle ? "" : "Barbarian Movement",
         title: revoltMovementTitle || "Units Move",
         message: "The Barbarian units have moved on the map.",
-        details: movementMessages
+        details: movementMessages,
+        focusAreas: movementFocusAreas
       });
     }
 
@@ -1845,7 +1858,6 @@ document.addEventListener("DOMContentLoaded", () => {
       stageIndex: 0,
       movementRoutes,
       battlePending: Boolean(state.battle),
-      movementFocused: false,
       movementPositioned: false
     };
   }
@@ -1902,21 +1914,44 @@ document.addEventListener("DOMContentLoaded", () => {
     return { owner: "barbarian", from, to, count };
   }
 
+  function uniqueAreaIds(areaIds) {
+    return [...new Set(areaIds.filter((areaId) => areas[areaId] && !areas[areaId].sea))];
+  }
+
+  function botFocusAreasFromMessages(messages) {
+    const candidates = Object.keys(areas)
+      .filter((areaId) => !areas[areaId].sea)
+      .sort((left, right) => areaName(right).length - areaName(left).length);
+    const matches = [];
+
+    messages.forEach((message) => {
+      const normalizedMessage = message.toLowerCase();
+      candidates.forEach((areaId) => {
+        if (normalizedMessage.includes(areaName(areaId).toLowerCase())) matches.push(areaId);
+      });
+    });
+
+    return uniqueAreaIds(matches);
+  }
+
   function currentBotActionReviewStage() {
     return botActionReview?.stages?.[botActionReview.stageIndex] || null;
   }
 
   function showBotActionReview() {
     const stage = currentBotActionReviewStage();
-    if (!stage || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
-    const movementStage = stage.kind === "movement";
-    if (movementStage) {
-      if (!botActionReview.movementFocused) {
-        botActionReview.movementFocused = true;
-        focusBoardArea(botActionReview.movementRoutes.at(-1)?.to);
-      }
-    }
+    if (!stage || botActionReview.cameraActive || !els.botActionReviewDialog || els.botActionReviewDialog.open) return;
     if (document.querySelector("dialog[open]")) return;
+    if (stage.focusAreas?.length && !stage.cameraShown) {
+      const review = botActionReview;
+      stage.cameraShown = true;
+      showBotActionOnMap(review, stage.focusAreas).then(() => {
+        if (botActionReview === review) render();
+      });
+      return;
+    }
+
+    const movementStage = stage.kind === "movement";
 
     const image = botActionReview.card ? cardImage(botActionReview.card) : null;
     const showCard = Boolean(image && !movementStage);
@@ -2038,7 +2073,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function advanceBotActionReview() {
-    if (!botActionReview) return;
+    if (!botActionReview || botActionReview.cameraActive) return;
     if (els.botActionReviewDialog.open) els.botActionReviewDialog.close();
 
     if (botActionReview.stageIndex < botActionReview.stages.length - 1) {
@@ -2052,14 +2087,94 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  function focusBoardArea(areaId) {
+  async function showBotActionOnMap(review, areaIds) {
+    const focusAreas = uniqueAreaIds(areaIds);
+    if (!focusAreas.length || !els.board || !els.boardStage) return;
+
+    const savedView = {
+      zoom: mapZoom,
+      left: els.board.scrollLeft,
+      top: els.board.scrollTop
+    };
+    review.cameraActive = true;
+    els.board.classList.add("is-computer-focus");
+
+    try {
+      for (const focusArea of focusAreas) {
+        botCameraFocusAreaIds = [focusArea];
+        renderAreas();
+        mapZoom = botCameraZoom(savedView.zoom);
+        layoutMapZoom({ preserveCenter: false });
+        await waitForAnimationFrames(2);
+        await waitForMilliseconds(100);
+        focusBoardArea(focusArea, { defer: false });
+        await waitForMilliseconds(340);
+        await waitForMilliseconds(1500);
+
+        botCameraFocusAreaIds = [];
+        renderAreas();
+        mapZoom = savedView.zoom;
+        layoutMapZoom();
+        await waitForAnimationFrames(2);
+        await waitForMilliseconds(340);
+        els.board.scrollLeft = savedView.left;
+        els.board.scrollTop = savedView.top;
+      }
+    } finally {
+      botCameraFocusAreaIds = [];
+      const zoomNeedsRestoring = mapZoom !== savedView.zoom;
+      mapZoom = savedView.zoom;
+      if (zoomNeedsRestoring) layoutMapZoom();
+      renderAreas();
+      renderMapZoomControl();
+      els.board.classList.remove("is-computer-focus");
+      els.board.scrollLeft = savedView.left;
+      els.board.scrollTop = savedView.top;
+      review.cameraActive = false;
+    }
+  }
+
+  function botCameraZoom(savedZoom) {
+    const baseWidth = Math.min(980, Math.max(760, els.board.clientWidth));
+    const viewportScale = els.board.clientWidth / Math.max(1, baseWidth);
+    return Math.min(3, Math.max(1.5, savedZoom + 0.5, viewportScale * 1.6));
+  }
+
+  function waitForAnimationFrames(count = 1) {
+    return new Promise((resolve) => {
+      const nextFrame = (remaining) => {
+        if (remaining <= 0) {
+          resolve();
+          return;
+        }
+        window.requestAnimationFrame(() => nextFrame(remaining - 1));
+      };
+      nextFrame(count);
+    });
+  }
+
+  function waitForMilliseconds(duration) {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  function focusBoardArea(areaId, { smooth = false, defer = true } = {}) {
     const area = areas[areaId];
     if (!area || !els.board || !els.boardStage) return;
+    const point = territoryFocusPoint(areaId) || area;
 
-    window.requestAnimationFrame(() => {
-      els.board.scrollLeft = Math.max(0, els.boardStage.offsetLeft + ((area.x / 100) * els.boardStage.offsetWidth) - (els.board.clientWidth / 2));
-      els.board.scrollTop = Math.max(0, els.boardStage.offsetTop + ((area.y / 100) * els.boardStage.offsetHeight) - (els.board.clientHeight / 2));
-    });
+    const focus = () => {
+      els.board.scrollTo({
+        left: Math.max(0, els.boardStage.offsetLeft + ((point.x / 100) * els.boardStage.offsetWidth) - (els.board.clientWidth / 2)),
+        top: Math.max(0, els.boardStage.offsetTop + ((point.y / 100) * els.boardStage.offsetHeight) - (els.board.clientHeight / 2)),
+        behavior: smooth ? "smooth" : "auto"
+      });
+    };
+    if (defer) window.requestAnimationFrame(focus);
+    else focus();
+  }
+
+  function territoryFocusPoint(areaId) {
+    return areaHitMap?.territories?.focusPoints?.get(areaId) || null;
   }
 
   function botActionReportGroups(messages) {
@@ -3127,6 +3242,7 @@ document.addEventListener("DOMContentLoaded", () => {
         targetingPoliticalAction() && state.active === "roman" && Boolean(romanSpecialTargetBlockReason(area.id, "political action"))
       );
       marker.classList.toggle("is-drag-target", state.dragArea === area.id);
+      marker.classList.toggle("is-computer-focus", botCameraFocusAreaIds.includes(area.id));
       els.areaLayer.append(marker);
     });
   }
@@ -3193,6 +3309,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const targeting = targetingPoliticalAction();
     const blocked = targeting && state.active === "roman" && Boolean(romanSpecialTargetBlockReason(area.id, "political action"));
 
+    if (botCameraFocusAreaIds.includes(area.id)) {
+      return {
+        name: "computer-focus",
+        fill: [255, 211, 91, 74],
+        stripe: [255, 236, 169, 104],
+        edge: [255, 232, 139, 255]
+      };
+    }
     if (state.dragArea === area.id) {
       return { name: "drag", fill: [255, 224, 116, 68], edge: [255, 235, 158, 220] };
     }
@@ -3925,7 +4049,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    const territories = buildHitTerritories(labels, canvas.width, areaSeeds);
+    const territories = buildHitTerritories(labels, canvas.width, canvas.height, areaSeeds);
     const borderPoints = findSharedBorderPoints(labels, territories, canvas.width, canvas.height);
     areaHitMap = { width: canvas.width, height: canvas.height, labels, componentSeeds, territories, borderPoints };
     areaOverlayCache.clear();
@@ -3936,7 +4060,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function buildHitTerritories(labels, width, areaSeeds) {
+  function buildHitTerritories(labels, width, height, areaSeeds) {
     const territoryIds = [...new Set(areaSeeds.map((seed) => seed.areaId))];
     const territoryIndexes = new Map(territoryIds.map((areaId, index) => [areaId, index]));
     const territoryLabels = new Int16Array(labels.length);
@@ -3963,7 +4087,47 @@ document.addEventListener("DOMContentLoaded", () => {
       if (index < labels.length - width) tail = enqueueTerritory(index + width, territoryIndex, labels, territoryLabels, queue, tail);
     }
 
-    return { ids: territoryIds, labels: territoryLabels };
+    return {
+      ids: territoryIds,
+      labels: territoryLabels,
+      focusPoints: buildTerritoryFocusPoints(territoryIds, territoryLabels, width, height)
+    };
+  }
+
+  function buildTerritoryFocusPoints(territoryIds, territoryLabels, width, height) {
+    const totals = territoryIds.map(() => ({ x: 0, y: 0, count: 0 }));
+    territoryLabels.forEach((territoryIndex, index) => {
+      if (territoryIndex < 0) return;
+      const total = totals[territoryIndex];
+      total.x += index % width;
+      total.y += Math.floor(index / width);
+      total.count += 1;
+    });
+
+    const centers = totals.map((total) => total.count ? {
+      x: total.x / total.count,
+      y: total.y / total.count
+    } : null);
+    const closest = territoryIds.map(() => null);
+
+    territoryLabels.forEach((territoryIndex, index) => {
+      if (territoryIndex < 0 || !centers[territoryIndex]) return;
+      const x = index % width;
+      const y = Math.floor(index / width);
+      const distance = ((x - centers[territoryIndex].x) ** 2) + ((y - centers[territoryIndex].y) ** 2);
+      if (!closest[territoryIndex] || distance < closest[territoryIndex].distance) {
+        closest[territoryIndex] = { x, y, distance };
+      }
+    });
+
+    return new Map(territoryIds.flatMap((areaId, territoryIndex) => {
+      const point = closest[territoryIndex];
+      if (!point) return [];
+      return [[areaId, {
+        x: (point.x / Math.max(1, width - 1)) * 100,
+        y: (point.y / Math.max(1, height - 1)) * 100
+      }]];
+    }));
   }
 
   function enqueueTerritory(index, territoryIndex, labels, territoryLabels, queue, tail) {

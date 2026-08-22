@@ -361,6 +361,19 @@ h3 {
   background: #0f1415;
 }
 
+.board.is-computer-focus {
+  scroll-behavior: smooth;
+  cursor: wait;
+}
+
+.board.is-computer-focus .board-stage {
+  pointer-events: none;
+}
+
+.board.is-computer-focus .board-canvas {
+  transition: transform 320ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
 .board::after {
   content: "";
   display: block;
@@ -677,6 +690,12 @@ h3 {
 .area-hotspot.is-drag-target {
   fill: rgba(255, 230, 140, 0.26);
   stroke: rgba(255, 230, 140, 0.95);
+}
+
+.area-hotspot.is-computer-focus {
+  fill: rgba(255, 211, 91, 0.38);
+  stroke: rgba(255, 236, 160, 1);
+  stroke-width: 0.7;
 }
 
 .area-hotspot.is-targeting {
