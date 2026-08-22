@@ -862,6 +862,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (retreatMovement()) return null;
 
+    const naval = navalMoveRoute(unit, target);
+    if (naval) return naval;
+
     const forceRoute = forceMarchRoute(unit, target);
     if (forceRoute) {
       return {
@@ -907,6 +910,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return `${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`;
     }
 
+    if (navalRouteAvailable(unit, target)) {
+      const departures = state.movement?.navalDepartures?.[unit.location] || 0;
+      if (departures >= 2) {
+        return `No more than 2 units may make a naval move from ${areaName(unit.location)} in one movement action.`;
+      }
+      if (navalInvasionCostDue(unit, target) && state.supply <= 0) {
+        return "Roman naval invasions require 1 supply per group.";
+      }
+    }
+
     const forceReason = forceMarchFailureReason(unit, target);
     if (forceReason) return forceReason;
     return `${unit.name} cannot move from ${areaName(unit.location)} to ${areaName(target)}.`;
@@ -943,6 +956,48 @@ document.addEventListener("DOMContentLoaded", () => {
       const blockers = areaUnits(middle).some((other) => isEnemy(other.owner, unit.owner) || other.owner === "neutral");
       return !blockers;
     }) || null;
+  }
+
+  function navalMoveRoute(unit, target) {
+    const sea = navalRouteSea(unit, target);
+    if (!sea) return null;
+    if ((state.movement?.navalDepartures?.[unit.location] || 0) >= 2) return null;
+    if (navalInvasionCostDue(unit, target) && state.supply <= 0) return null;
+
+    return {
+      force: false,
+      naval: true,
+      entry: unit.location,
+      via: sea,
+      border: "naval",
+      steps: [
+        { from: unit.location, to: sea, border: "naval" },
+        { from: sea, to: target, border: "naval" }
+      ]
+    };
+  }
+
+  function navalRouteAvailable(unit, target) {
+    return Boolean(navalRouteSea(unit, target));
+  }
+
+  function navalRouteSea(unit, target) {
+    if (retreatMovement()) return null;
+    if (!areas[unit.location]?.port || !areas[target]?.port) return null;
+    if (state.movement?.units?.[unit.id]?.steps) return null;
+
+    return areas[unit.location].links.find((areaId) => {
+      const sea = areas[areaId];
+      return sea?.sea &&
+        borderType(unit.location, areaId) === "naval" &&
+        sea.links.includes(target) &&
+        borderType(areaId, target) === "naval";
+    }) || null;
+  }
+
+  function navalInvasionCostDue(unit, target) {
+    if (unit.owner !== "roman" || unit.type !== "roman" || !areaHasStopper(target, unit.owner)) return false;
+    return !Object.prototype.hasOwnProperty.call(state.movement?.navalLandings || {}, unit.location);
   }
 
   function forceMarchFailureReason(unit, target) {

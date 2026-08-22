@@ -60,6 +60,38 @@ class GameRules::MovementTest < ActiveSupport::TestCase
     assert_equal 14, session.reload.data["supply"]
   end
 
+  test "moves Caesar and a legion from Esuvii to Britannia by naval invasion" do
+    state = base_state(target_area: "belgae")
+    state["movement"]["areas"] = ["esuvii"]
+    state["supply"] = 2
+    state["units"] = {
+      "legion_x" => {
+        "id" => "legion_x", "name" => "Legion X", "type" => "roman", "owner" => "roman",
+        "location" => "esuvii", "step" => 0
+      },
+      "legion_xii" => {
+        "id" => "legion_xii", "name" => "Legion XII", "type" => "roman", "owner" => "roman",
+        "location" => "esuvii", "step" => 0
+      },
+      "belgae" => {
+        "id" => "belgae", "name" => "Belgae", "type" => "barbarian", "owner" => "neutral",
+        "location" => "belgae", "home" => "belgae", "step" => 0
+      }
+    }
+    session = GameSession.create!(data: state)
+
+    first = move(session, "legion_x", "belgae")
+    result = move(session, "legion_xii", "belgae")
+
+    assert_equal "belgae", result.dig("units", "legion_x", "location")
+    assert_equal "belgae", result.dig("units", "legion_xii", "location")
+    assert first.dig("movement", "units", "legion_x", "naval")
+    assert result.dig("movement", "units", "legion_xii", "naval")
+    assert_equal 1, result["supply"]
+    assert_equal 2, result.dig("movement", "navalDepartures", "esuvii")
+    assert_equal 2, result.dig("movement", "crossings", "esuvii->oceanus_britannicus")
+  end
+
   test "rejects movement before a movement card has been played" do
     state = base_state
     state["movement"] = nil
