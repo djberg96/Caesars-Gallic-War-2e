@@ -1,7 +1,22 @@
 class BoardController < ApplicationController
   def index
+    prepare_board
+  end
+
+  def show
+    session = GameSession.find(params[:id])
+    @initial_state = session.data.deep_dup
+    @initial_state["gameSessionId"] = session.id
+    prepare_board
+    render :index
+  end
+
+  private
+
+  def prepare_board
     @game_data = {
       map: helpers.asset_path("Map/CGW_Map_atlas.png"),
+      initialState: @initial_state,
       markers: {
         roman_supply: helpers.asset_path("Blocks/Markers/Roman_Supply.svg"),
         roman_vp_x1: helpers.asset_path("Blocks/Markers/Roman_VP_x1.svg"),
@@ -20,8 +35,6 @@ class BoardController < ApplicationController
       variable_areas: %w[atrebates carnutes esuvii menapi pictones atuatuci tarbelli tolosates]
     }
   end
-
-  private
 
   def areas
     @areas ||= begin

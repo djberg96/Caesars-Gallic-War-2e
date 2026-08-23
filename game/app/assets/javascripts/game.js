@@ -351,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       state = result.state;
       state.gameSessionId = result.game_session_id;
+      showGameInAddressBar(state.gameSessionId);
       normalizeLoadedState();
       handHidden = false;
       zoomedCardId = null;
@@ -6182,6 +6183,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await postJson("/game_sessions", { state: imported });
       state = result.state;
       state.gameSessionId = result.game_session_id;
+      showGameInAddressBar(state.gameSessionId);
       normalizeLoadedState();
       log("Imported game loaded.");
       els.importDialog.close();
@@ -6210,6 +6212,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const result = await postJson("/game_sessions", { state });
       state.gameSessionId = result.game_session_id;
+      showGameInAddressBar(state.gameSessionId);
     } catch (error) {
       log(`Database session was not created: ${error.message}`);
       render();
@@ -6220,6 +6223,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.gameSessionId) return;
     await createGameSession();
     if (!state.gameSessionId) throw new Error("No database session is available.");
+  }
+
+  function showGameInAddressBar(gameSessionId) {
+    if (!gameSessionId || !window.history?.replaceState) return;
+    const path = `/game/${encodeURIComponent(gameSessionId)}`;
+    if (window.location.pathname === path) return;
+    window.history.replaceState({ gameSessionId }, "", path);
   }
 
   function closeGameMenu() {
@@ -6383,5 +6393,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("resize", () => layoutMapZoom());
   }
   prepareAreaHitMap();
-  newGame();
+  if (gameData.initialState) {
+    state = structuredClone(gameData.initialState);
+    normalizeLoadedState();
+    render();
+  } else {
+    newGame();
+  }
 });

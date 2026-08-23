@@ -148,4 +148,29 @@ class BoardControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Legion X"
     assert_includes response.body, "Caesar's celebrated Legio X Equestris"
   end
+
+  test "loads a persisted game from its friendly URL" do
+    session = GameSession.create!(data: {
+      "turn" => 2,
+      "phase" => "Card Phase",
+      "active" => "roman",
+      "supply" => 9,
+      "vp" => 4,
+      "mode" => "solitaire",
+      "units" => {},
+      "hands" => { "roman" => [], "barbarian" => [] },
+      "discard" => [],
+      "log" => ["Persisted game loaded."]
+    })
+
+    get game_url(session, host: "localhost")
+
+    assert_response :success
+    payload = JSON.parse(css_select("script#game-data").sole.text)
+    assert_equal session.id, payload.dig("initialState", "gameSessionId")
+    assert_equal 2, payload.dig("initialState", "turn")
+    assert_equal 9, payload.dig("initialState", "supply")
+    assert_equal 4, payload.dig("initialState", "vp")
+    assert_equal ["Persisted game loaded."], payload.dig("initialState", "log")
+  end
 end

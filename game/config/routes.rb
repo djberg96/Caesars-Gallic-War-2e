@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   root "board#index"
+  get "game/:id" => "board#show", as: :game
 
   resources :game_sessions, only: :create do
     post :commit_card, on: :member

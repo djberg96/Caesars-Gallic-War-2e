@@ -1,7 +1,7 @@
 <% content_for :title, "Caesar's Gallic War" %>
 
 <script type="application/json" id="game-data">
-  <%= raw JSON.pretty_generate(@game_data) %>
+  <%= raw json_escape(JSON.generate(@game_data)) %>
 </script>
 
 <main class="shell">
