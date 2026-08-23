@@ -5311,7 +5311,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.selectedArea = state.battle.area;
     piecesHidden = false;
     els.selection.textContent = `Retreat ${unit.name} from ${areaName(state.battle.area)}.`;
-    els.areaDetail.textContent = "Choose one of the highlighted legal destinations on the map. The enemy entry area is prohibited.";
+    els.areaDetail.textContent = "Choose a highlighted adjacent destination or eligible friendly port. The enemy entry area is prohibited.";
     if (els.battleDialog?.open) els.battleDialog.close();
     document.querySelector("#board")?.scrollIntoView({ block: "center", inline: "center" });
     render();
@@ -5324,9 +5324,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!targets.includes(areaId)) {
       state.selectedArea = areaId;
       els.selection.textContent = `${areaName(areaId)} is not a legal retreat for ${unit.name}.`;
-      els.areaDetail.textContent = areas[state.battle.area]?.links?.includes(areaId)
-        ? `Blocked: ${voluntaryRetreatBlockReason(state.battle, unit, areaId) || "not a legal destination"}.`
-        : "Retreats must move to an adjacent highlighted area.";
+      els.areaDetail.textContent = `Blocked: ${voluntaryRetreatBlockReason(state.battle, unit, areaId) || "not a legal destination"}.`;
       render();
       return;
     }
@@ -5347,7 +5345,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function legalVoluntaryRetreatTargets(battle, unit) {
     if (!battle || !unit) return [];
 
-    return areas[battle.area].links.filter((areaId) => !voluntaryRetreatBlockReason(battle, unit, areaId));
+    return Object.keys(areas).filter((areaId) => !voluntaryRetreatBlockReason(battle, unit, areaId));
   }
 
   function forcedRetreatUnits(battle) {
@@ -5369,10 +5367,44 @@ document.addEventListener("DOMContentLoaded", () => {
     if (areaUnits(areaId).some((occupant) => occupant.owner !== unit.owner)) return "enemy or neutral occupied";
     if (enemyBattleEntryAreas(battle, unit.owner).includes(areaId)) return "enemy entry area";
 
-    const capacity = borderCapacity(borderType(battle.area, areaId));
+    const directBorder = borderType(battle.area, areaId);
+    const navalSea = directBorder ? null : navalRetreatSea(battle, unit, areaId);
+    if (!directBorder && !navalSea) return "not adjacent and not an eligible friendly port";
+    if (navalSea) return Number(battle.navalRetreats || 0) >= 2 ? "naval retreat limit reached" : null;
+
+    const capacity = borderCapacity(directBorder);
     const used = battle.crossings?.[`${battle.area}->${areaId}`] || 0;
     if (capacity && used + 1 > capacity) return "border capacity";
     return null;
+  }
+
+  function navalRetreatSea(battle, unit, targetAreaId) {
+    const origin = areas[battle?.area];
+    const target = areas[targetAreaId];
+    if (!origin?.port || !target?.port || !friendlyPortArea(targetAreaId, unit.owner)) return null;
+
+    const defenderRetreat = unit.owner === battle.defender;
+    const moved = state.movement?.units?.[unit.id];
+    const amphibiousAttackerRetreat = unit.owner === battle.attacker && unit.type === "roman" && Boolean(moved?.naval);
+    if (!defenderRetreat && !amphibiousAttackerRetreat) return null;
+
+    return origin.links.find((areaId) =>
+      areas[areaId]?.sea &&
+      borderType(origin.id, areaId) === "naval" &&
+      areas[areaId].links.includes(targetAreaId) &&
+      borderType(areaId, targetAreaId) === "naval"
+    ) || null;
+  }
+
+  function friendlyPortArea(areaId, owner) {
+    const friendlyForce = areaUnits(areaId).some((unit) => unit.owner === owner && currentStrength(unit) > 0);
+    const friendlyHome = Object.values(state.units).some((unit) =>
+      unit.owner === owner &&
+      unit.home === areaId &&
+      currentStrength(unit) > 0 &&
+      Boolean(areas[unit.location])
+    );
+    return friendlyForce || friendlyHome;
   }
 
   function enemyBattleEntryAreas(battle, owner) {
@@ -6103,6 +6135,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.battle.fort ||= [];
       state.battle.halfHits ||= {};
       state.battle.retreated ||= [];
+      state.battle.navalRetreats ||= 0;
       state.battle.crossings ||= {};
     }
     if (state.regroupUnit && (!state.battle || state.units[state.regroupUnit]?.location !== state.battle.area)) {

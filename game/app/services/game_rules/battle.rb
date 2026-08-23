@@ -126,6 +126,7 @@ module GameRules
         "fort" => [],
         "halfHits" => {},
         "retreated" => [],
+        "navalRetreats" => 0,
         "crossings" => {},
         "winner" => nil
       }
@@ -366,15 +367,15 @@ module GameRules
 
       destination = Area.find_by(key: target)
       raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless destination && !destination.sea?
-      border = border(battle_area.key, target)
-      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless border
+      route = retreat_route(acting, target)
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless route
       raise InvalidAction, "Only German units may retreat into Germania." if target == "germania" && acting["type"] != "german"
       raise InvalidAction, "#{acting.fetch("name")} cannot retreat into an enemy or neutral occupied area." if non_friendly_units_in?(target, acting["owner"])
       if blocked_retreat_area?(acting, target)
         raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
       end
 
-      apply_retreat_capacity!(target, border)
+      apply_retreat_capacity!(target, route)
       acting["location"] = target
       battle["retreated"] << unit_id
       record_action_result({
@@ -385,7 +386,8 @@ module GameRules
         "targetName" => area_name(target)
       })
       battle["acted"] << unit_id
-      log("#{unit(unit_id).fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}.")
+      method = route[:naval] ? " by naval retreat" : ""
+      log("#{unit(unit_id).fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}#{method}.")
     end
 
     def forced_retreat!(unit_id, target)
@@ -399,15 +401,15 @@ module GameRules
 
       destination = Area.find_by(key: target)
       raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless destination && !destination.sea?
-      border = border(battle_area.key, target)
-      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless border
+      route = retreat_route(acting, target)
+      raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)}." unless route
       raise InvalidAction, "Only German units may retreat into Germania." if target == "germania" && acting["type"] != "german"
       raise InvalidAction, "#{acting.fetch("name")} cannot retreat into an enemy or neutral occupied area." if non_friendly_units_in?(target, acting["owner"])
       if blocked_retreat_area?(acting, target)
         raise InvalidAction, "#{acting.fetch("name")} cannot retreat to #{area_name(target)} because enemy units entered #{battle_area.name} from there."
       end
 
-      apply_retreat_capacity!(target, border)
+      apply_retreat_capacity!(target, route)
       acting["location"] = target
       battle["retreated"] << unit_id
       record_action_result({
@@ -417,7 +419,8 @@ module GameRules
         "target" => target,
         "targetName" => area_name(target)
       })
-      log("#{acting.fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}.")
+      method = route[:naval] ? " by naval retreat" : ""
+      log("#{acting.fetch("name")} retreats from #{battle_area.name} to #{area_name(target)}#{method}.")
     end
 
     def finish_forced_retreat!
@@ -841,7 +844,7 @@ module GameRules
 
     def retreat_target(unit_id)
       acting = unit(unit_id)
-      battle_area.outgoing_borders.map(&:to_area).reject(&:sea?).map(&:key).find { |target| legal_retreat_destination?(acting, target) }
+      legal_retreat_targets(acting).first
     end
 
     def legal_retreat_destination?(acting, target)
@@ -849,10 +852,12 @@ module GameRules
       return false if non_friendly_units_in?(target, acting["owner"])
       return false if blocked_retreat_area?(acting, target)
 
-      border_to_target = border(battle_area.key, target)
-      return false unless border_to_target
+      route = retreat_route(acting, target)
+      return false unless route
 
-      capacity = border_to_target.capacity
+      return battle.fetch("navalRetreats", 0).to_i < 2 if route[:naval]
+
+      capacity = route.fetch(:border).capacity
       return true unless capacity
 
       used = battle["crossings"].fetch("#{battle_area.key}->#{target}", 0).to_i
@@ -860,11 +865,44 @@ module GameRules
     end
 
     def legal_retreat_targets(acting)
-      battle_area.outgoing_borders
-        .map(&:to_area)
-        .reject(&:sea?)
-        .map(&:key)
+      Area.where(sea: false).pluck(:key)
         .select { |target| legal_retreat_destination?(acting, target) }
+    end
+
+    def retreat_route(acting, target)
+      direct = border(battle_area.key, target)
+      return { border: direct, naval: false } if direct && !direct.to_area.sea?
+
+      sea = naval_retreat_sea(acting, target)
+      sea ? { naval: true, sea: sea } : nil
+    end
+
+    def naval_retreat_sea(acting, target)
+      destination = Area.find_by(key: target)
+      return nil unless battle_area.port? && destination&.port?
+      return nil unless friendly_port?(destination, acting.fetch("owner"))
+
+      defender_retreat = acting.fetch("owner") == battle.fetch("defender")
+      movement_record = @state.dig("movement", "units", acting.fetch("id")) || {}
+      amphibious_attacker_retreat = acting.fetch("owner") == battle.fetch("attacker") &&
+        acting.fetch("type") == "roman" && movement_record["naval"]
+      return nil unless defender_retreat || amphibious_attacker_retreat
+
+      battle_area.outgoing_borders.includes(:to_area).find do |first_border|
+        first_border.kind == "naval" && first_border.to_area.sea? &&
+          border(first_border.to_area.key, target)&.kind == "naval"
+      end&.to_area&.key
+    end
+
+    def friendly_port?(area, owner)
+      friendly_force = area_units(area.key).any? do |candidate|
+        candidate["owner"] == owner && current_strength(candidate).positive?
+      end
+      friendly_home = units.values.any? do |candidate|
+        candidate["owner"] == owner && candidate["home"] == area.key &&
+          current_strength(candidate).positive? && Area.exists?(key: candidate["location"])
+      end
+      friendly_force || friendly_home
     end
 
     def blocked_retreat_area?(acting, target)
@@ -882,8 +920,16 @@ module GameRules
       areas.compact.uniq
     end
 
-    def apply_retreat_capacity!(target, border)
-      capacity = border.capacity
+    def apply_retreat_capacity!(target, route)
+      if route[:naval]
+        used = battle.fetch("navalRetreats", 0).to_i
+        raise InvalidAction, "No more than 2 units may make a naval retreat from #{battle_area.name}." if used >= 2
+
+        battle["navalRetreats"] = used + 1
+        return
+      end
+
+      capacity = route.fetch(:border).capacity
       return unless capacity
 
       key = "#{battle_area.key}->#{target}"

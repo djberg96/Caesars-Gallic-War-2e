@@ -530,6 +530,83 @@ class GameRules::BattleTest < ActiveSupport::TestCase
     assert_match "Legion VII has no legal retreat from Allobroges and is eliminated", result["log"].join(" ")
   end
 
+  test "Roman defenders in Britannia may retreat by sea to a friendly port" do
+    state = battle_state
+    state["units"] = {
+      "legion_vii" => roman_legion("legion_vii", "Legion VII", "belgae"),
+      "legion_viii" => roman_legion("legion_viii", "Legion VIII", "belgae"),
+      "legion_ix" => roman_legion("legion_ix", "Legion IX", "belgae"),
+      "cantiaci" => {
+        "id" => "cantiaci", "name" => "Cantiaci", "type" => "barbarian", "owner" => "barbarian",
+        "location" => "belgae", "home" => "belgae", "step" => 0, "strengths" => [1], "initiative" => "C", "fire" => 0
+      },
+      "luxovii" => {
+        "id" => "luxovii", "name" => "Luxovii", "type" => "barbarian", "owner" => "roman",
+        "location" => "esuvii", "home" => "esuvii", "step" => 0, "strengths" => [2], "initiative" => "C", "fire" => 0
+      }
+    }
+    state["battle"] = {
+      "area" => "belgae", "round" => 3, "maxRounds" => 3, "phase" => "retreat",
+      "attacker" => "barbarian", "defender" => "roman", "activeUnit" => nil,
+      "acted" => [], "fired" => [], "actionResults" => [], "attackers" => ["cantiaci"],
+      "defenders" => %w[legion_vii legion_viii legion_ix], "mainOrigin" => nil, "entries" => {},
+      "reserves" => [], "fort" => [], "halfHits" => {}, "retreated" => [], "navalRetreats" => 0,
+      "crossings" => {}, "winner" => "barbarian", "retreating" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    result = GameRules::Battle.new(session: session, state: session.data).act!(
+      action: "forced_retreat", unit_id: "legion_vii", target: "esuvii"
+    )
+    result = GameRules::Battle.new(session: session, state: result).act!(
+      action: "forced_retreat", unit_id: "legion_viii", target: "esuvii"
+    )
+
+    assert_equal "esuvii", result.dig("units", "legion_vii", "location")
+    assert_equal "esuvii", result.dig("units", "legion_viii", "location")
+    assert_equal 2, result.dig("battle", "navalRetreats")
+    assert_match "naval retreat", result["log"].join(" ")
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: result).act!(
+        action: "forced_retreat", unit_id: "legion_ix", target: "esuvii"
+      )
+    end
+    assert_match "No more than 2 units", error.message
+  end
+
+  test "naval retreat requires a friendly destination port" do
+    state = battle_state
+    state["units"] = {
+      "legion_vii" => roman_legion("legion_vii", "Legion VII", "belgae"),
+      "cantiaci" => {
+        "id" => "cantiaci", "name" => "Cantiaci", "type" => "barbarian", "owner" => "barbarian",
+        "location" => "belgae", "home" => "belgae", "step" => 0, "strengths" => [1], "initiative" => "C", "fire" => 0
+      },
+      "luxovii" => {
+        "id" => "luxovii", "name" => "Luxovii", "type" => "barbarian", "owner" => "neutral",
+        "location" => "esuvii", "home" => "esuvii", "step" => 0, "strengths" => [2], "initiative" => "C", "fire" => 0
+      }
+    }
+    state["battle"] = {
+      "area" => "belgae", "round" => 3, "maxRounds" => 3, "phase" => "retreat",
+      "attacker" => "barbarian", "defender" => "roman", "activeUnit" => nil,
+      "acted" => [], "fired" => [], "actionResults" => [], "attackers" => ["cantiaci"],
+      "defenders" => ["legion_vii"], "mainOrigin" => nil, "entries" => {}, "reserves" => [],
+      "fort" => [], "halfHits" => {}, "retreated" => [], "navalRetreats" => 0, "crossings" => {},
+      "winner" => "barbarian", "retreating" => "roman"
+    }
+    session = GameSession.create!(data: state)
+
+    error = assert_raises(GameRules::Battle::InvalidAction) do
+      GameRules::Battle.new(session: session, state: session.data).act!(
+        action: "forced_retreat", unit_id: "legion_vii", target: "esuvii"
+      )
+    end
+
+    assert_match "cannot retreat", error.message
+  end
+
   test "solitaire automatically retreats a defeated Barbarian attacker through its entry border" do
     state = battle_state
     state["mode"] = "solitaire"
