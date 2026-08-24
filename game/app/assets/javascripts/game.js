@@ -2962,6 +2962,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function render() {
+    if (!dragState) removeOrphanedPieceDragGhosts();
     renderStatus();
     renderYearlyObjectives();
     renderAreas();
@@ -4615,6 +4616,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function beginPieceDrag(event, unitId) {
     if (event.button !== 0) return;
     if (winterQuartersActive()) return;
+    if (dragState) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    removeOrphanedPieceDragGhosts();
     const unit = state.units[unitId];
     if (battleMapMode()) {
       if (!canBattleMapUnit(unit)) return;
@@ -4640,6 +4647,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dragState = {
       unitId,
+      piece: event.currentTarget,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -4650,6 +4658,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.currentTarget.addEventListener("pointermove", updatePieceDrag);
     event.currentTarget.addEventListener("pointerup", endPieceDrag);
     event.currentTarget.addEventListener("pointercancel", cancelPieceDrag);
+    event.currentTarget.addEventListener("lostpointercapture", cancelPieceDrag);
     dragState.activation = !battleMapMode() && !movementAreaActivated(movementOrigin(unit))
       ? activateMovementArea(movementOrigin(unit))
       : Promise.resolve(true);
@@ -4682,50 +4691,73 @@ document.addEventListener("DOMContentLoaded", () => {
     const unitId = dragState.unitId;
     if (dragged) suppressNextPieceClick = true;
     const activated = await activeDrag.activation;
-    if (dragState !== activeDrag) return;
+    if (dragState !== activeDrag) {
+      cleanupPieceDrag(piece, { drag: activeDrag });
+      return;
+    }
     if (!activated) {
-      cleanupPieceDrag(piece);
-      dragState = null;
+      cleanupPieceDrag(piece, { drag: activeDrag });
+      if (dragState === activeDrag) dragState = null;
       render();
       return;
     }
     if (dragged && target) {
-      cleanupPieceDrag(piece, { keepGhost: true });
+      cleanupPieceDrag(piece, { drag: activeDrag, keepGhost: true });
       try {
         if (battleMapMode()) await battleMapUnitTo(unitId, target);
         else await moveUnitTo(unitId, target);
       } finally {
-        cleanupPieceDrag(piece);
-        dragState = null;
+        cleanupPieceDrag(piece, { drag: activeDrag });
+        if (dragState === activeDrag) dragState = null;
       }
     } else {
-      cleanupPieceDrag(piece);
-      dragState = null;
+      cleanupPieceDrag(piece, { drag: activeDrag });
+      if (dragState === activeDrag) dragState = null;
       renderAreas();
     }
   }
 
   function cancelPieceDrag(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
-    cleanupPieceDrag(event.currentTarget);
-    dragState = null;
+    const activeDrag = dragState;
+    cleanupPieceDrag(event.currentTarget, { drag: activeDrag });
+    if (dragState === activeDrag) dragState = null;
     renderAreas();
   }
 
-  function cleanupPieceDrag(piece, { keepGhost = false } = {}) {
-    if (dragState && piece.hasPointerCapture?.(dragState.pointerId)) piece.releasePointerCapture(dragState.pointerId);
-    if (!keepGhost) dragState?.ghost?.remove();
-    if (!keepGhost) piece.classList.remove("is-dragging");
+  function abortPieceDrag() {
+    const activeDrag = dragState;
+    if (!activeDrag) {
+      removeOrphanedPieceDragGhosts();
+      return;
+    }
+
+    cleanupPieceDrag(activeDrag.piece, { drag: activeDrag });
+    if (dragState === activeDrag) dragState = null;
+    activeDrag.activation.finally(() => render());
+  }
+
+  function cleanupPieceDrag(piece, { drag = dragState, keepGhost = false } = {}) {
+    if (!piece || !drag) return;
     piece.removeEventListener("pointermove", updatePieceDrag);
     piece.removeEventListener("pointerup", endPieceDrag);
     piece.removeEventListener("pointercancel", cancelPieceDrag);
-    state.dragArea = null;
+    piece.removeEventListener("lostpointercapture", cancelPieceDrag);
+    if (piece.hasPointerCapture?.(drag.pointerId)) piece.releasePointerCapture(drag.pointerId);
+    if (!keepGhost) drag.ghost?.remove();
+    if (!keepGhost) piece.classList.remove("is-dragging");
+    if (dragState === drag) state.dragArea = null;
+  }
+
+  function removeOrphanedPieceDragGhosts() {
+    document.querySelectorAll(".piece-drag-ghost").forEach((ghost) => ghost.remove());
   }
 
   function createDragGhost(piece, clientX, clientY) {
     const ghost = piece.cloneNode(true);
     const bounds = piece.getBoundingClientRect();
     ghost.classList.add("piece-drag-ghost");
+    ghost.setAttribute("aria-hidden", "true");
     ghost.style.width = `${bounds.width}px`;
     ghost.style.height = `${bounds.height}px`;
     document.body.append(ghost);
@@ -6406,10 +6438,17 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
     }
   });
-  window.addEventListener("blur", stopMapPan);
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stopMapPan();
+  window.addEventListener("blur", () => {
+    stopMapPan();
+    abortPieceDrag();
   });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopMapPan();
+      abortPieceDrag();
+    }
+  });
+  window.addEventListener("pagehide", abortPieceDrag);
   document.addEventListener("click", (event) => {
     if (els.gameMenu?.open && !els.gameMenu.contains(event.target)) closeGameMenu();
     if (els.modeMenu?.open && !els.modeMenu.contains(event.target)) closeModeMenu();
